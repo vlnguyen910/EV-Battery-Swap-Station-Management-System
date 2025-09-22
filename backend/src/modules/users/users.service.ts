@@ -1,0 +1,66 @@
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { normalizeEmail, normalizePhone } from 'src/utils/normalizationUtil';
+import { hashPassword } from 'src/utils/hashPasswordUtil';
+
+@Injectable()
+export class UsersService {
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  async create(createUserDto: CreateUserDto) {
+    const { username, password, email, phone, role } = createUserDto;
+    
+    if (!email || !phone) {
+      throw new BadRequestException('Email and phone number are required');
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhone = normalizePhone(phone);
+
+    const existingEmailUser = await this.databaseService.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (existingEmailUser) {
+      throw new ConflictException('Email already in use');
+    }
+
+    const existingPhoneUser = await this.databaseService.user.findUnique({
+      where: { phone: normalizedPhone },
+    });
+    if (existingPhoneUser) {
+      throw new ConflictException('Phone number already in use');
+    }
+
+    const hashedPassword = hashPassword(password);
+
+    const newUser = await this.databaseService.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        role: role,
+      },
+    });
+
+    return newUser;
+  }
+
+  async findAll() {
+    return "This action returns all users";
+  }
+
+  async findOne(user_id: number) {
+    return "This action returns a #${user_id} user";
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    return "This action updates a #${id} user";
+  }
+
+  async remove(id: number) {
+    return "This action removes a #${id} user";
+  }
+}
