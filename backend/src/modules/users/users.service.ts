@@ -2,16 +2,17 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { normalizeEmail, normalizePhone } from 'src/utils/normalizationUtil';
-import { hashPassword } from 'src/utils/hashPasswordUtil';
+import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
+import { hashPassword } from 'src/shared/utils/hash-password.util';
+import { emit } from 'process';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: DatabaseService) { }
 
   async create(createUserDto: CreateUserDto) {
     const { username, password, email, phone, role } = createUserDto;
-    
+
     if (!email || !phone) {
       throw new BadRequestException('Email and phone number are required');
     }
@@ -54,6 +55,20 @@ export class UsersService {
 
   async findOne(user_id: number) {
     return "This action returns a #${user_id} user";
+  }
+
+  async findOneByEmailOrPhone(emailOrPhone: string) {
+    const isEmail = emailOrPhone.includes('@');
+
+    if (isEmail) {
+      return this.databaseService.user.findUnique({
+        where: { email: normalizeEmail(emailOrPhone) }
+      });
+    } else {
+      return this.databaseService.user.findUnique({
+        where: { phone: normalizePhone(emailOrPhone) }
+      });
+    }
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
