@@ -4,9 +4,13 @@ import {
   NotImplementedException,
   Post,
   HttpCode,
-  Body
+  Body,
+  UseGuards,
+  Get,
+  Request
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -15,7 +19,21 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   login(@Body() input: { emailOrPhone: string; password: string }) {
-    return this.authService.authenticate(input);
+    if (!input.emailOrPhone || !input.password) {
+      throw new NotImplementedException('Email/Phone and password are required');
+    }
+
+    return this.authService.signIn(input);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  refresh(@Body() body: { refreshToken: string }) {
+    if (!body.refreshToken) {
+      throw new NotImplementedException('Refresh token is required');
+    }
+    return this.authService.refreshAccessToken(body.refreshToken);
   }
 }
+
 

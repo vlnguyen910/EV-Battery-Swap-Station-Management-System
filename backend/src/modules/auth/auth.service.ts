@@ -1,6 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { LoginResponse } from './interfaces/LoginRespone.interface';
 import { isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
 
@@ -11,30 +10,45 @@ type AuthInput = {
 
 type AuthResult = {
     accessToken: string;
+    refreshToken: string;
 }
 
 type SignInData = {
-    user: {
-        id: number;
-        email: string;
-        phone: string;
-        name: string;
-        role: string;
-    }
+    id: number;
+    email: string;
+    phone: string;
+    name: string;
+    role: string;
 }
 
 @Injectable()
 export class AuthService {
     constructor(private usersService: UsersService, private jwtService: JwtService) { }
 
-    async authenticate(input: AuthInput): Promise<AuthResult> {
+    async signIn(input: AuthInput): Promise<AuthResult> {
         const user = await this.validateUser(input);
 
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        return this.signIn(user);
+        const tokenPayload = {
+            sub: user.id,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            username: user.name,
+        }
+
+        const accessToken = await this.jwtService.signAsync(tokenPayload);
+        const refreshToken = await this.jwtService.signAsync(tokenPayload, {
+            secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+            expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
+        });
+        return {
+            accessToken,
+            refreshToken
+        }
     }
 
     async validateUser(input: AuthInput): Promise<SignInData | null> {
@@ -46,33 +60,41 @@ export class AuthService {
 
         if (user && await isMatchPassword(input.password, user.password)) {
             return {
-                user: {
-                    id: user.user_id,
-                    email: user.email,
-                    phone: user.phone,
-                    name: user.username,
-                    role: user.role,
-                }
+                id: user.user_id,
+                email: user.email,
+                phone: user.phone,
+                name: user.username,
+                role: user.role,
             };
         }
 
         return null;
     }
 
-    async signIn(user: SignInData): Promise<AuthResult> {
-        const tokenPayload = {
-            sub: user.user.id,
-            userId: user.user.id,
-            email: user.user.email,
-            role: user.user.role,
-            username: user.user.name,
+    async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string }> {
+        const payload = await this.jwtService.verifyAsync(refreshToken, {
+            secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+        });
+
+        const user = await this.usersService.findOne(payload.sub);
+        if (!user) {
+            throw new UnauthorizedException('User not found');
         }
 
-        const accessToken = await this.jwtService.signAsync(tokenPayload);
+        const newTokenPayload = {
+            sub: user.user_id,
+            name: user.username,
+            email: user.email,
+            phone: user.phone,
+            role: user.role
+        };
 
-        return {
-            accessToken
-        }
+        const newAccessToken = await this.jwtService.signAsync(newTokenPayload, {
+            secret: process.env.JWT_SECRET,
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        });
+
+        return { accessToken: newAccessToken };
     }
 }
 

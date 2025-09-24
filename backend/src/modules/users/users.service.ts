@@ -50,11 +50,13 @@ export class UsersService {
   }
 
   async findAll() {
-    return "This action returns all users";
+    return await this.databaseService.user.findMany();
   }
 
   async findOne(user_id: number) {
-    return "This action returns a #${user_id} user";
+    return this.databaseService.user.findUnique({
+      where: { user_id }
+    });
   }
 
   async findOneByEmailOrPhone(emailOrPhone: string) {
