@@ -64,11 +64,10 @@ export class UsersService {
       return this.databaseService.user.findUnique({
         where: { email: normalizeEmail(emailOrPhone) }
       });
-    } else {
-      return this.databaseService.user.findUnique({
-        where: { phone: normalizePhone(emailOrPhone) }
-      });
     }
+    return this.databaseService.user.findUnique({
+      where: { phone: normalizePhone(emailOrPhone) }
+    });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
