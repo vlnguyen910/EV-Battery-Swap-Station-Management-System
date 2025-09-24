@@ -1,11 +1,8 @@
 import {
   IsEmail,
-  IsString,
   IsEnum,
   MinLength,
-  Matches,
   IsNotEmpty,
-  IsPhoneNumber,
 } from 'class-validator';
 import { Role } from '@prisma/client';
 
