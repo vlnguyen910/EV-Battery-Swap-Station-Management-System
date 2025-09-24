@@ -22,5 +22,22 @@ model User {
   role       Role
   created_at DateTime @default(now())
 
+  // Relationships
+  vehicles Vehicle[]
+
   @@map("users")
+}
+
+model Vehicle {
+  vehicle_id    Int    @id @default(autoincrement())
+  user_id       Int
+  battery_id    Int?
+  vin           String @unique @db.VarChar(50)
+  battery_model String @db.VarChar(50)
+  battery_type  String @db.VarChar(50)
+
+  // Relationships
+  user User? @relation(fields: [user_id], references: [user_id])
+
+  @@map("vehicles")
 }
