@@ -1,4 +1,10 @@
 // Stations page
 export default function Stations() {
-  return null;
+  return (
+    <>
+      <div>
+        Stations Page
+      </div>
+    </>
+  );
 }
