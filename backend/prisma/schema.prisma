@@ -13,6 +13,12 @@ enum Role {
   admin
 }
 
+enum StationStatus {
+  active
+  inactive
+  maintenance
+}
+
 model User {
   user_id    Int      @id @default(autoincrement())
   username   String
@@ -54,4 +60,15 @@ model BatteryServicePackage {
   active        Boolean
 
   @@map("battery_service_packages")
+}
+
+model ChangingStation {
+  station_id Int           @id @default(autoincrement())
+  name       String?
+  address    String?
+  latitude   Float?
+  longitude  Float?
+  status     StationStatus
+
+  @@map("changing_stations")
 }
