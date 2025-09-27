@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Stations from './pages/Stations'
 import Batteries from './pages/Batteries'
 import Users from './pages/Users'
+import Map from './pages/Map'
 import Reports from './pages/Reports'
 
 function App() {
@@ -13,7 +14,6 @@ function App() {
     <>
       <Navigation />
       <div>
-        <img src="/logo.png" alt="EV Battery Swap Station Management System" className="logo" />
         <h1>EV Battery Swap Station Management System</h1>
       </div>
       <Routes>
@@ -22,8 +22,10 @@ function App() {
         <Route path="/stations" element={<Stations />} />
         <Route path="/batteries" element={<Batteries />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/map" element={<Map />} />
         <Route path="/reports" element={<Reports />} />
       </Routes>
+      <img src="logo.png"  alt="Background" style={{ position: 'fixed', bottom: 0, right: 0, width: '200px', height: '200px', opacity: 0.5 }} />
     </>
   )
 }
