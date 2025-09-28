@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('vehicles')
+@UseGuards(AuthGuard, RolesGuard)
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) { }
 
@@ -13,6 +17,7 @@ export class VehiclesController {
   }
 
   @Get()
+  @Roles('admin', 'station_staff')
   findAll(@Query('userId') userId?: string) {
     if (userId) {
       return this.vehiclesService.findByUser(parseInt(userId, 10));
@@ -39,6 +44,7 @@ export class VehiclesController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.vehiclesService.remove(id);
   }
