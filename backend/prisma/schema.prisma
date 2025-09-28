@@ -13,10 +13,23 @@ enum Role {
   admin
 }
 
+enum VehicleStatus {
+  active
+  inactive
+}
+
+
 enum StationStatus {
   active
   inactive
   maintenance
+}
+
+enum BatteryStatus {
+  full
+  charging
+  booked
+  defective
 }
 
 model User {
@@ -35,20 +48,50 @@ model User {
 }
 
 model Vehicle {
-  vehicle_id    Int    @id @default(autoincrement())
+  vehicle_id    Int           @id @default(autoincrement())
   user_id       Int
-  battery_id    Int?
-  vin           String @unique @db.VarChar(50)
-  battery_model String @db.VarChar(50)
-  battery_type  String @db.VarChar(50)
+  battery_id    Int?          @unique
+  vin           String        @unique @db.VarChar(50)
+  battery_model String        @db.VarChar(50)
+  battery_type  String        @db.VarChar(50)
+  status        VehicleStatus
 
   // Relationships
-  user User? @relation(fields: [user_id], references: [user_id])
+  user    User?    @relation(fields: [user_id], references: [user_id])
+  battery Battery? @relation(fields: [battery_id], references: [battery_id])
 
   @@map("vehicles")
 }
 
-model BatteryServicePackage {
+model SwappingStation {
+  station_id Int           @id @default(autoincrement())
+  name       String        @db.VarChar(100)
+  address    String        @db.VarChar(255)
+  latitude   Decimal       @db.Decimal(10, 8) // 10 digits total, 8 after decimal
+  longitude  Decimal       @db.Decimal(11, 8) // 11 digits total, 8 after decimal
+  status     StationStatus
+
+  batteries Battery[]
+}
+
+model Battery {
+  battery_id     Int           @id @default(autoincrement())
+  vehicle_id     Int?          @unique
+  station_id     Int?
+  model          String        @db.VarChar(100)
+  type           String        @db.VarChar(50)
+  capacity       Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+  current_charge Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+  soh            Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+  status         BatteryStatus
+
+  // Relationships
+  vehicle Vehicle?
+  station SwappingStation? @relation(fields: [station_id], references: [station_id])
+
+  @@map("batteries")
+  
+  model BatteryServicePackage {
   package_id    Int     @id @default(autoincrement())
   name          String  @db.VarChar(100)
   base_distance Int
