@@ -103,7 +103,6 @@ export class StationsService {
     return `This action removes a #${id} station`;
   }
 
-  // ✅ Sửa lại calculateDistance để work với Decimal
   private calculateDistance(lat1: Decimal, lon1: Decimal, lat2: Decimal, lon2: Decimal): number {
     const R = 6371; // Earth's radius in kilometers
 
@@ -125,7 +124,6 @@ export class StationsService {
     return R * c;
   }
 
-  // ✅ Sửa lại toRadians để work với number
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
