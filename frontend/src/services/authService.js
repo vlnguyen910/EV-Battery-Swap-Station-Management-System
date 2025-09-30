@@ -3,7 +3,7 @@ import api from "./api";
 import { API_ENDPOINTS } from "../constants";
 
 //Login function
-export const login = async (credentials) => {
+const login = async (credentials) => {
   try {
     const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
     return response.data;
@@ -14,17 +14,23 @@ export const login = async (credentials) => {
 };
 
 //Logout function
-export const logout = async () => {
+const logout = async () => {
   try {
-    await api.post(API_ENDPOINTS.AUTH.LOGOUT);
+    // Clear localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return { success: true };
   } catch (error) {
-    console.error("Logout error:", error);
-    throw error;
+    // Vẫn clear localStorage dù API lỗi
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    console.log("Logout error:", error);
+    return { success: true };
   }
 };
 
 //Register function
-export const register = async (userInfo) => {
+const register = async (userInfo) => {
   try {
     const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userInfo);
     return response.data;
@@ -35,7 +41,7 @@ export const register = async (userInfo) => {
 };
 
 //get current user profile
-export const getProfile = async () => {
+const getProfile = async () => {
   try {
     const response = await api.get(API_ENDPOINTS.USERS.GET_PROFILE);
     return response.data;
