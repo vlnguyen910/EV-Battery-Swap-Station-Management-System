@@ -4,7 +4,7 @@ import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { $Enums } from '@prisma/client';
+import { $Enums, StationStatus } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UseGuards as UserGuards } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -16,13 +16,24 @@ export class StationsController {
   constructor(private readonly stationsService: StationsService) { }
 
   @Post()
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
   create(@Body() createStationDto: CreateStationDto) {
     return this.stationsService.create(createStationDto);
   }
 
   @Get()
-  findAll() {
-    return this.stationsService.findAll();
+  findAll(@Query('status') status?: StationStatus) {
+    return this.stationsService.findAll(status);
+  }
+
+  @Get('active')
+  findActive() {
+    return this.stationsService.findActiveStations();
+  }
+
+  @Get('search')
+  findByName(@Query('name') name: string) {
+    return this.stationsService.findByName(name);
   }
 
   @Roles($Enums.Role.driver)
@@ -36,17 +47,19 @@ export class StationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.stationsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.stationsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStationDto: UpdateStationDto) {
-    return this.stationsService.update(+id, updateStationDto);
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateStationDto: UpdateStationDto) {
+    return this.stationsService.update(id, updateStationDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.stationsService.remove(+id);
+  @Roles($Enums.Role.admin)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.stationsService.remove(id);
   }
 }

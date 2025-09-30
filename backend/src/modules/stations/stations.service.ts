@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { StationStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { DatabaseService } from '../database/database.service';
-import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class StationsService {
@@ -12,12 +13,37 @@ export class StationsService {
     private databaseService: DatabaseService
   ) { }
 
-  create(createStationDto: CreateStationDto) {
-    return 'This action adds a new station';
+  async create(createStationDto: CreateStationDto) {
+    try {
+      return await this.databaseService.swappingStation.create({
+        data: createStationDto,
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Station name already exists');
+      }
+      throw error;
+    }
   }
 
-  findAll() {
-    return `This action returns all stations`;
+  async findAll(status?: StationStatus) {
+    const whereClause = status ? { status } : {};
+    
+    return await this.databaseService.swappingStation.findMany({
+      where: whereClause,
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            status: true,
+            current_charge: true,
+          },
+        },
+      },
+      orderBy: {
+        station_id: 'asc',
+      },
+    });
   }
 
   async findAllAvailable(
@@ -91,16 +117,107 @@ export class StationsService {
     return result;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} station`;
+  async findOne(id: number) {
+    const station = await this.databaseService.swappingStation.findUnique({
+      where: { station_id: id },
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            model: true,
+            type: true,
+            status: true,
+            current_charge: true,
+            soh: true,
+          },
+        },
+      },
+    });
+
+    if (!station) {
+      throw new NotFoundException(`Station with ID ${id} not found`);
+    }
+
+    return station;
   }
 
-  update(id: number, updateStationDto: UpdateStationDto) {
-    return `This action updates a #${id} station`;
+  async findByName(name: string) {
+    return await this.databaseService.swappingStation.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            status: true,
+          },
+        },
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} station`;
+  async findActiveStations() {
+    return await this.databaseService.swappingStation.findMany({
+      where: { status: 'active' },
+      include: {
+        batteries: {
+          where: { status: 'full' },
+          select: {
+            battery_id: true,
+            model: true,
+            type: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
+
+  async update(id: number, updateStationDto: UpdateStationDto) {
+    await this.findOne(id); // Check if station exists
+
+    try {
+      return await this.databaseService.swappingStation.update({
+        where: { station_id: id },
+        data: updateStationDto,
+        include: {
+          batteries: {
+            select: {
+              battery_id: true,
+              status: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Station name already exists');
+      }
+      throw error;
+    }
+  }
+
+  async updateStatus(id: number, status: StationStatus) {
+    await this.findOne(id);
+
+    return await this.databaseService.swappingStation.update({
+      where: { station_id: id },
+      data: { status },
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id); // Check if station exists
+
+    return await this.databaseService.swappingStation.delete({
+      where: { station_id: id },
+    });
   }
 
   private calculateDistance(lat1: Decimal, lon1: Decimal, lat2: Decimal, lon2: Decimal): number {
