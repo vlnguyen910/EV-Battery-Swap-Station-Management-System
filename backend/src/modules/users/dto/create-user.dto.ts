@@ -3,6 +3,7 @@ import {
   IsEnum,
   MinLength,
   IsNotEmpty,
+  IsPhoneNumber,
 } from 'class-validator';
 import { Role } from '@prisma/client';
 
@@ -16,6 +17,7 @@ export class CreateUserDto {
   password: string;
 
   @IsNotEmpty({ message: 'Phone is required' })
+  @IsPhoneNumber('VN', { message: 'Invalid phone number format' })
   phone: string;
 
   @IsNotEmpty({ message: 'Email is required' })
