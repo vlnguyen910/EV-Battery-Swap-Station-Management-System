@@ -1,0 +1,21 @@
+enum Role {
+    driver
+    station_staff
+    admin
+}
+
+model User {
+    user_id    Int      @id @default(autoincrement())
+    username   String
+    password   String
+    phone      String   @unique
+    email      String   @unique
+    role       Role
+    created_at DateTime @default(now())
+
+    // Relationships
+    vehicles    Vehicle[]
+    Reservation Reservation[]
+
+    @@map("users")
+}

@@ -31,7 +31,7 @@ export class AuthController {
     return this.authService.register(input);
   }
 
-  // @HttpCode(HttpStatus.OK)
+  // @HttpCode(HttpStatus.OK)nl
   // @Post('refresh')
   // refresh(@Body() body: { refreshToken: string }) {
   //   if (!body.refreshToken) {
