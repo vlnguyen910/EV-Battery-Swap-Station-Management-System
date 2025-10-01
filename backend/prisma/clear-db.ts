@@ -21,7 +21,7 @@ async function clearDatabase() {
         await prisma.batteryServicePackage.deleteMany();
         
         console.log('Deleting swapping stations...');
-        await prisma.swappingStation.deleteMany();
+        await prisma.station.deleteMany();
         
         console.log('Deleting users...');
         await prisma.user.deleteMany();
@@ -32,7 +32,7 @@ async function clearDatabase() {
         const counts = {
             users: await prisma.user.count(),
             vehicles: await prisma.vehicle.count(),
-            stations: await prisma.swappingStation.count(),
+            stations: await prisma.station.count(),
             batteries: await prisma.battery.count(),
             packages: await prisma.batteryServicePackage.count(),
             reservations: await prisma.reservation.count()

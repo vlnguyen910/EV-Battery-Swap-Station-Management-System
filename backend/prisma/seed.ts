@@ -13,7 +13,7 @@ async function main() {
     await prisma.battery.deleteMany();
     await prisma.vehicle.deleteMany();
     await prisma.batteryServicePackage.deleteMany();
-    await prisma.swappingStation.deleteMany();
+    await prisma.station.deleteMany();
     await prisma.user.deleteMany();
 
     console.log('🗑️  Cleared existing data');
@@ -386,3 +386,4 @@ main()
         await prisma.$disconnect();
         console.log('📝 Database connection closed');
     });
+}

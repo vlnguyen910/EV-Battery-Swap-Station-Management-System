@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsInt, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsInt, IsDateString, IsEnum } from 'class-validator';
 import {ReservationStatus} from '@prisma/client';
 import { Type } from 'class-transformer';
 

@@ -22,7 +22,8 @@
     "clear-db": "ts-node prisma/clear-db.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "schema": "./prisma"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

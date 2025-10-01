@@ -1,0 +1,13 @@
+model BatteryServicePackage {
+    package_id    Int     @id @default(autoincrement())
+    name          String  @db.VarChar(100)
+    base_distance Int
+    base_price    Decimal @db.Decimal(12, 2)
+    swap_count    Int
+    penalty_fee   Int
+    duration_days Int
+    description   String? @db.VarChar(255)
+    active        Boolean
+
+    @@map("battery_service_packages")
+}
