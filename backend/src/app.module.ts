@@ -9,10 +9,11 @@ import { StationsModule } from './modules/stations/stations.module';
 import { BatteriesModule } from './modules/batteries/batteries.module';
 import { BatteryServicePackagesModule } from './modules/battery-service-packages/battery-service-packages.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 
 @Module({
-  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule],
+  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule, SubscriptionsModule],
   controllers: [AppController],
   providers: [AppService],
 })
