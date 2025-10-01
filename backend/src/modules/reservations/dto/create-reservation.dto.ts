@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsInt, IsDateString, IsOptional, IsEnum } from 'class-validator';
-import { ReservationStatus } from '@prisma/client';
+import { IsNotEmpty, IsInt, IsDateString } from 'class-validator';
+import {ReservationStatus} from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateReservationDto {
@@ -8,26 +8,21 @@ export class CreateReservationDto {
   @Type(() => Number)
   user_id: number;
 
-  @IsNotEmpty({ message: 'Station ID is required' })
-  @IsInt({ message: 'Station ID must be an integer' })
+  @IsNotEmpty({ message: 'Vehicle ID is required' })
+  @IsInt({ message: 'Vehicle ID must be an integer' })
   @Type(() => Number)
-  station_id: number;
+  vehicle_id: number;
 
   @IsInt({ message: 'Battery ID must be an integer' })
   @Type(() => Number)
   battery_id: number;
 
-  @IsNotEmpty({ message: 'Scheduled time is required' })
-  @IsDateString({}, { message: 'Scheduled time must be a valid date' })
-  scheduled_time: string;
+    @IsNotEmpty({ message: 'Station ID is required' })
+  @IsInt({ message: 'Station ID must be an integer' })
+  @Type(() => Number)
+  station_id: number;
 
   @IsNotEmpty({ message: 'Status is required' })
   @IsEnum(ReservationStatus, { message: 'Status must be one of the following: scheduled, completed, cancelled' })
   status: ReservationStatus;
-}
-
-export class UpdateReservationDto extends PartialType(CreateReservationDto) {
-  @IsOptional()
-  @IsEnum(ReservationStatus, { message: 'Invalid reservation status' })
-  status?: ReservationStatus;
 }

@@ -1,10 +1,10 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateBookingDto } from './create-booking.dto';
-import { IsOptional, IsEnum } from 'class-validator';
-import { BookingStatus } from '@prisma/client';
+import { CreateReservationDto } from './create-reservation.dto';
+import { IsNotEmpty, IsEnum } from 'class-validator';
+import { ReservationStatus } from '@prisma/client';
 
-export class UpdateBookingDto extends PartialType(CreateBookingDto) {
-  @IsOptional()
-  @IsEnum(BookingStatus, { message: 'Invalid booking status' })
-  status?: BookingStatus;
+export class UpdateReservationDto extends PartialType(CreateReservationDto) {
+    @IsNotEmpty({ message: 'Reservation ID is required' })
+    @IsEnum(ReservationStatus, { message: 'Status must be one of the following: scheduled, completed, cancelled' })
+    status: ReservationStatus;
 }

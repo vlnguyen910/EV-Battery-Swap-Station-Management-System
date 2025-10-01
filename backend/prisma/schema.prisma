@@ -63,8 +63,9 @@ model Vehicle {
   status        VehicleStatus
 
   // Relationships
-  user    User?    @relation(fields: [user_id], references: [user_id])
-  battery Battery? @relation(fields: [battery_id], references: [battery_id])
+  user        User?         @relation(fields: [user_id], references: [user_id])
+  battery     Battery?      @relation(fields: [battery_id], references: [battery_id])
+  Reservation Reservation[]
 
   @@map("vehicles")
 }
@@ -117,6 +118,7 @@ model BatteryServicePackage {
 model Reservation {
   reservation_id Int               @id @default(autoincrement())
   user_id        Int
+  vehicle_id     Int
   battery_id     Int
   station_id     Int
   scheduled_time DateTime
@@ -124,6 +126,7 @@ model Reservation {
 
   // Relationships
   user    User            @relation(fields: [user_id], references: [user_id])
+  vehicle Vehicle         @relation(fields: [vehicle_id], references: [vehicle_id])
   battery Battery         @relation(fields: [battery_id], references: [battery_id])
   station SwappingStation @relation(fields: [station_id], references: [station_id])
 
