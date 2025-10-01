@@ -9,5 +9,8 @@ model BatteryServicePackage {
     description   String? @db.VarChar(255)
     active        Boolean
 
+    // Relationships
+    subscriptions Subscription[]
+
     @@map("battery_service_packages")
 }
