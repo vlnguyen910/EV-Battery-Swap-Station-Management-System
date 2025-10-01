@@ -31,6 +31,12 @@ enum BatteryStatus {
   defective
 }
 
+enum ReservationStatus {
+  scheduled
+  completed
+  cancelled
+}
+
 model User {
   user_id    Int      @id @default(autoincrement())
   username   String
@@ -41,7 +47,8 @@ model User {
   created_at DateTime @default(now())
 
   // Relationships
-  vehicles Vehicle[]
+  vehicles    Vehicle[]
+  Reservation Reservation[]
 
   @@map("users")
 }
@@ -70,7 +77,8 @@ model SwappingStation {
   longitude  Decimal       @db.Decimal(11, 8) // 11 digits total, 8 after decimal
   status     StationStatus
 
-  batteries Battery[]
+  batteries   Battery[]
+  Reservation Reservation[]
 }
 
 model Battery {
@@ -85,8 +93,9 @@ model Battery {
   status         BatteryStatus
 
   // Relationships
-  vehicle Vehicle?
-  station SwappingStation? @relation(fields: [station_id], references: [station_id])
+  vehicle     Vehicle?
+  station     SwappingStation? @relation(fields: [station_id], references: [station_id])
+  Reservation Reservation[]
 
   @@map("batteries")
 }
@@ -103,4 +112,20 @@ model BatteryServicePackage {
   active        Boolean
 
   @@map("battery_service_packages")
+}
+
+model Reservation {
+  reservation_id Int               @id @default(autoincrement())
+  user_id        Int
+  battery_id     Int
+  station_id     Int
+  scheduled_time DateTime
+  status         ReservationStatus
+
+  // Relationships
+  user    User            @relation(fields: [user_id], references: [user_id])
+  battery Battery         @relation(fields: [battery_id], references: [battery_id])
+  station SwappingStation @relation(fields: [station_id], references: [station_id])
+
+  @@map("reservations")
 }

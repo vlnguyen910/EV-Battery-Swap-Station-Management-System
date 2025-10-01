@@ -1,6 +1,6 @@
 // prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library.js';
+import { Decimal } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -8,425 +8,381 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting database seeding...');
 
-    // Clear existing data (optional)
+    // Clear existing data in correct order (foreign keys first)
+    await prisma.reservation.deleteMany();
     await prisma.battery.deleteMany();
     await prisma.vehicle.deleteMany();
+    await prisma.batteryServicePackage.deleteMany();
     await prisma.swappingStation.deleteMany();
     await prisma.user.deleteMany();
 
-    // 1. Seed Users (same as before)
-    console.log('👥 Seeding users...');
-    const users = await Promise.all([
-        // Admin user
-        prisma.user.create({
-            data: {
-                username: 'admin',
-                password: await bcrypt.hash('admin123', 10),
-                phone: '0123456789',
-                email: 'admin@evswap.com',
-                role: 'admin',
-            },
-        }),
-        // Station staff
-        prisma.user.create({
-            data: {
-                username: 'staff01',
-                password: await bcrypt.hash('staff123', 10),
-                phone: '0123456790',
-                email: 'staff01@evswap.com',
-                role: 'station_staff',
-            },
-        }),
-        prisma.user.create({
-            data: {
-                username: 'staff02',
-                password: await bcrypt.hash('staff123', 10),
-                phone: '0123456791',
-                email: 'staff02@evswap.com',
-                role: 'station_staff',
-            },
-        }),
-        // Drivers
-        prisma.user.create({
-            data: {
-                username: 'driver01',
-                password: await bcrypt.hash('driver123', 10),
-                phone: '0123456792',
-                email: 'driver01@evswap.com',
-                role: 'driver',
-            },
-        }),
-        prisma.user.create({
-            data: {
-                username: 'driver02',
-                password: await bcrypt.hash('driver123', 10),
-                phone: '0123456793',
-                email: 'driver02@evswap.com',
-                role: 'driver',
-            },
-        }),
-        prisma.user.create({
-            data: {
-                username: 'driver03',
-                password: await bcrypt.hash('driver123', 10),
-                phone: '0123456794',
-                email: 'driver03@evswap.com',
-                role: 'driver',
-            },
-        }),
-    ]);
+    console.log('🗑️  Cleared existing data');
 
-    // 2. Seed Swapping Stations - ✅ Removed all capacity fields
-    console.log('🏢 Seeding swapping stations...');
-    const stations = await Promise.all([
-        // ✅ ACTIVE STATIONS - Trong nội thành TP.HCM
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station District 1 - Nguyen Hue',
-                address: '123 Nguyen Hue Street, District 1, Ho Chi Minh City',
-                latitude: new Decimal('10.7769'),
-                longitude: new Decimal('106.7009'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station District 3 - Vo Van Tan',
-                address: '456 Vo Van Tan Street, District 3, Ho Chi Minh City',
-                latitude: new Decimal('10.7859'),
-                longitude: new Decimal('106.6890'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Thu Duc - Landmark 81',
-                address: '101 Vo Nguyen Giap, Thu Duc City, Ho Chi Minh City',
-                latitude: new Decimal('10.8411'),
-                longitude: new Decimal('106.8097'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station District 7 - PMH',
-                address: '789 Nguyen Thi Thap, District 7, Ho Chi Minh City',
-                latitude: new Decimal('10.7411'),
-                longitude: new Decimal('106.7197'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Binh Thanh - Vincom',
-                address: '159 Xa Lo Ha Noi, Binh Thanh District, Ho Chi Minh City',
-                latitude: new Decimal('10.8012'),
-                longitude: new Decimal('106.7103'),
-                status: 'active',
-            },
-        }),
+    // 1. Create 5 Users
+    console.log('👥 Creating users...');
+    const usersData = [
+        {
+            username: 'admin',
+            password: 'admin123',
+            phone: '0123456789',
+            email: 'admin@evswap.com',
+            role: 'admin' as const,
+        },
+        {
+            username: 'staff01',
+            password: 'staff123',
+            phone: '0987654321',
+            email: 'staff01@evswap.com',
+            role: 'station_staff' as const,
+        },
+        {
+            username: 'driver01',
+            password: 'driver123',
+            phone: '0912345678',
+            email: 'driver01@evswap.com',
+            role: 'driver' as const,
+        },
+        {
+            username: 'driver02',
+            password: 'driver123',
+            phone: '0912345679',
+            email: 'driver02@evswap.com',
+            role: 'driver' as const,
+        },
+        {
+            username: 'driver03',
+            password: 'driver123',
+            phone: '0912345680',
+            email: 'driver03@evswap.com',
+            role: 'driver' as const,
+        },
+    ];
 
-        // ✅ ACTIVE STATIONS - Ngoại thành và xa hơn
-        prisma.swappingStation.create({
+    const users = [];
+    for (const userData of usersData) {
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        const user = await prisma.user.create({
             data: {
-                name: 'EV Station Tan Binh - Airport',
-                address: '202 Truong Son, Tan Binh District, Ho Chi Minh City',
-                latitude: new Decimal('10.8186'),
-                longitude: new Decimal('106.6524'),
-                status: 'active',
+                ...userData,
+                password: hashedPassword,
             },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Go Vap - Pham Van Dong',
-                address: '345 Pham Van Dong, Go Vap District, Ho Chi Minh City',
-                latitude: new Decimal('10.8406'),
-                longitude: new Decimal('106.6774'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station District 12 - Go Dua',
-                address: '678 Go Dua Street, District 12, Ho Chi Minh City',
-                latitude: new Decimal('10.8692'),
-                longitude: new Decimal('106.6389'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Nha Be - Industrial Zone',
-                address: '901 Nguyen Van Tao, Nha Be District, Ho Chi Minh City',
-                latitude: new Decimal('10.6941'),
-                longitude: new Decimal('106.7414'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Can Gio - Seaside',
-                address: '234 Can Gio Beach Road, Can Gio District, Ho Chi Minh City',
-                latitude: new Decimal('10.4078'),
-                longitude: new Decimal('106.9547'),
-                status: 'active',
-            },
-        }),
-
-        // ✅ ACTIVE STATIONS - Vùng phụ cận
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Binh Duong - Thuan An',
-                address: '456 National Road 13, Thuan An City, Binh Duong Province',
-                latitude: new Decimal('10.9045'),
-                longitude: new Decimal('106.7317'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Dong Nai - Bien Hoa',
-                address: '789 Phan Trung, Bien Hoa City, Dong Nai Province',
-                latitude: new Decimal('10.9460'),
-                longitude: new Decimal('106.8230'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Long An - Ben Luc',
-                address: '321 Hung Vuong, Ben Luc Town, Long An Province',
-                latitude: new Decimal('10.6542'),
-                longitude: new Decimal('106.4981'),
-                status: 'active',
-            },
-        }),
-
-        // ❌ MAINTENANCE/INACTIVE STATIONS
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Cu Chi - Under Maintenance',
-                address: '147 Tran Hung Dao, Cu Chi District, Ho Chi Minh City',
-                latitude: new Decimal('11.0515'),
-                longitude: new Decimal('106.4944'),
-                status: 'maintenance',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Hoc Mon - Temporarily Closed',
-                address: '852 Pham Van Coi, Hoc Mon District, Ho Chi Minh City',
-                latitude: new Decimal('10.8841'),
-                longitude: new Decimal('106.5927'),
-                status: 'inactive',
-            },
-        }),
-
-        // ✅ ACTIVE STATIONS - Xa hơn để test radius
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Tay Ninh - Border Station',
-                address: '963 Cach Mang Thang 8, Tay Ninh City, Tay Ninh Province',
-                latitude: new Decimal('11.3100'),
-                longitude: new Decimal('106.0983'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station Vung Tau - Beach Resort',
-                address: '741 Ha Long Street, Vung Tau City, Ba Ria Vung Tau Province',
-                latitude: new Decimal('10.3460'),
-                longitude: new Decimal('107.0840'),
-                status: 'active',
-            },
-        }),
-        prisma.swappingStation.create({
-            data: {
-                name: 'EV Station My Tho - Mekong Delta',
-                address: '159 Ap Bac Street, My Tho City, Tien Giang Province',
-                latitude: new Decimal('10.3600'),
-                longitude: new Decimal('106.3600'),
-                status: 'active',
-            },
-        }),
-    ]);
-
-    // 3. Seed Vehicles (same as before)
-    console.log('🚗 Seeding vehicles...');
-    const vehicles = await Promise.all([
-        // Driver01 vehicles
-        prisma.vehicle.create({
-            data: {
-                user_id: users[3].user_id, // driver01
-                vin: '1HGBH41JXMN109186',
-                battery_model: 'Tesla Model S Battery',
-                battery_type: 'Lithium-Ion',
-                status: 'active',
-            },
-        }),
-        prisma.vehicle.create({
-            data: {
-                user_id: users[3].user_id, // driver01
-                vin: '1HGBH41JXMN109187',
-                battery_model: 'BYD Blade Battery',
-                battery_type: 'LiFePO4',
-                status: 'active',
-            },
-        }),
-        // Driver02 vehicles
-        prisma.vehicle.create({
-            data: {
-                user_id: users[4].user_id, // driver02
-                vin: '2FMDK3GC8DBA12345',
-                battery_model: 'CATL NCM Battery',
-                battery_type: 'Lithium-Ion',
-                status: 'active',
-            },
-        }),
-        prisma.vehicle.create({
-            data: {
-                user_id: users[4].user_id, // driver02
-                vin: '2FMDK3GC8DBA12346',
-                battery_model: 'Tesla Model 3 Battery',
-                battery_type: 'Lithium-Ion',
-                status: 'inactive',
-            },
-        }),
-        // Driver03 vehicles
-        prisma.vehicle.create({
-            data: {
-                user_id: users[5].user_id, // driver03
-                vin: '3FA6P0HD9ER123456',
-                battery_model: 'VinFast VF8 Battery',
-                battery_type: 'NCM',
-                status: 'active',
-            },
-        }),
-    ]);
-
-    // 4. Seed Batteries - Phân bổ cho nhiều stations
-    console.log('🔋 Seeding batteries...');
-    type BatteryType = Awaited<ReturnType<typeof prisma.battery.create>>;
-    const batteries: BatteryType[] = [];
-
-    // Helper function để tạo battery
-    const createBattery = async (stationIndex: number, model: string, type: string, count: number, status: 'full' | 'charging' = 'full') => {
-        for (let i = 0; i < count; i++) {
-            const battery = await prisma.battery.create({
-                data: {
-                    model,
-                    type,
-                    capacity: new Decimal(getCapacityByModel(model)),
-                    current_charge: new Decimal(status === 'full'
-                        ? (Math.random() * 15 + 85).toFixed(2) // 85-100%
-                        : (Math.random() * 50 + 30).toFixed(2) // 30-80%
-                    ),
-                    soh: new Decimal((Math.random() * 20 + 75).toFixed(2)), // 75-95%
-                    status,
-                    station_id: stations[stationIndex].station_id,
-                },
-            });
-            batteries.push(battery);
-        }
-    };
-
-    // Helper function capacity by model
-    const getCapacityByModel = (model: string): string => {
-        switch (model) {
-            case 'Tesla Model S Battery': return '75.50';
-            case 'Tesla Model 3 Battery': return '54.00';
-            case 'BYD Blade Battery': return '60.00';
-            case 'CATL NCM Battery': return '65.00';
-            case 'VinFast VF8 Battery': return '87.70';
-            default: return '60.00';
-        }
-    };
-
-    // Station 0: District 1 - Mix batteries for all vehicle types
-    await createBattery(0, 'Tesla Model S Battery', 'Lithium-Ion', 4, 'full');
-    await createBattery(0, 'BYD Blade Battery', 'LiFePO4', 3, 'full');
-    await createBattery(0, 'CATL NCM Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(0, 'Tesla Model 3 Battery', 'Lithium-Ion', 2, 'full');
-    await createBattery(0, 'VinFast VF8 Battery', 'NCM', 2, 'charging'); // Some charging
-
-    // Station 1: District 3 - Focus on Tesla and CATL
-    await createBattery(1, 'Tesla Model S Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(1, 'Tesla Model 3 Battery', 'Lithium-Ion', 4, 'full');
-    await createBattery(1, 'CATL NCM Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(1, 'BYD Blade Battery', 'LiFePO4', 2, 'charging');
-
-    // Station 2: Thu Duc - Large station with all types
-    await createBattery(2, 'Tesla Model S Battery', 'Lithium-Ion', 5, 'full');
-    await createBattery(2, 'Tesla Model 3 Battery', 'Lithium-Ion', 4, 'full');
-    await createBattery(2, 'BYD Blade Battery', 'LiFePO4', 4, 'full');
-    await createBattery(2, 'CATL NCM Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(2, 'VinFast VF8 Battery', 'NCM', 4, 'full');
-
-    // Station 3: District 7 - Good mix
-    await createBattery(3, 'Tesla Model S Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(3, 'Tesla Model 3 Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(3, 'CATL NCM Battery', 'Lithium-Ion', 4, 'full');
-    await createBattery(3, 'VinFast VF8 Battery', 'NCM', 3, 'full');
-    await createBattery(3, 'BYD Blade Battery', 'LiFePO4', 2, 'charging');
-
-    // Station 4: Binh Thanh - Smaller station
-    await createBattery(4, 'Tesla Model 3 Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(4, 'CATL NCM Battery', 'Lithium-Ion', 3, 'full');
-    await createBattery(4, 'VinFast VF8 Battery', 'NCM', 2, 'full');
-    await createBattery(4, 'Tesla Model S Battery', 'Lithium-Ion', 2, 'charging');
-
-    // Station 5: Tan Binh Airport - Large capacity
-    await createBattery(5, 'Tesla Model S Battery', 'Lithium-Ion', 6, 'full');
-    await createBattery(5, 'Tesla Model 3 Battery', 'Lithium-Ion', 5, 'full');
-    await createBattery(5, 'BYD Blade Battery', 'LiFePO4', 4, 'full');
-    await createBattery(5, 'CATL NCM Battery', 'Lithium-Ion', 5, 'full');
-    await createBattery(5, 'VinFast VF8 Battery', 'NCM', 5, 'full');
-
-    // Station 6-12: Outer stations với ít battery hơn
-    for (let i = 6; i <= 12; i++) {
-        await createBattery(i, 'Tesla Model S Battery', 'Lithium-Ion', 2, 'full');
-        await createBattery(i, 'Tesla Model 3 Battery', 'Lithium-Ion', 2, 'full');
-        await createBattery(i, 'CATL NCM Battery', 'Lithium-Ion', 1, 'full');
-        await createBattery(i, 'VinFast VF8 Battery', 'NCM', 1, 'full');
-
-        if (Math.random() > 0.5) { // 50% chance có BYD
-            await createBattery(i, 'BYD Blade Battery', 'LiFePO4', 1, 'full');
-        }
+        });
+        users.push(user);
     }
 
-    // Station 13-17: Far stations với limited batteries
-    for (let i = 13; i <= 17; i++) {
-        await createBattery(i, 'Tesla Model S Battery', 'Lithium-Ion', 1, 'full');
-        await createBattery(i, 'Tesla Model 3 Battery', 'Lithium-Ion', 1, 'full');
+    console.log(`✅ Created ${users.length} users`);
 
-        if (i % 2 === 0) { // Every other station
-            await createBattery(i, 'CATL NCM Battery', 'Lithium-Ion', 1, 'full');
-        }
-        if (i % 3 === 0) { // Every third station  
-            await createBattery(i, 'VinFast VF8 Battery', 'NCM', 1, 'full');
-        }
+    // 2. Create 5 Swapping Stations
+    console.log('🏢 Creating swapping stations...');
+    const stationsData = [
+        {
+            name: 'EV Station District 1 - Nguyen Hue',
+            address: '123 Nguyen Hue Street, District 1, Ho Chi Minh City',
+            latitude: '10.7769',
+            longitude: '106.7009',
+            status: 'active' as const,
+        },
+        {
+            name: 'EV Station District 3 - Vo Van Tan',
+            address: '456 Vo Van Tan Street, District 3, Ho Chi Minh City',
+            latitude: '10.7859',
+            longitude: '106.6890',
+            status: 'active' as const,
+        },
+        {
+            name: 'EV Station Thu Duc - Landmark 81',
+            address: '101 Vo Nguyen Giap, Thu Duc City, Ho Chi Minh City',
+            latitude: '10.8411',
+            longitude: '106.8097',
+            status: 'active' as const,
+        },
+        {
+            name: 'EV Station District 7 - PMH',
+            address: '789 Nguyen Thi Thap, District 7, Ho Chi Minh City',
+            latitude: '10.7411',
+            longitude: '106.7197',
+            status: 'active' as const,
+        },
+        {
+            name: 'EV Station Binh Thanh - Vincom',
+            address: '159 Xa Lo Ha Noi, Binh Thanh District, Ho Chi Minh City',
+            latitude: '10.8012',
+            longitude: '106.7103',
+            status: 'maintenance' as const,
+        },
+    ];
+
+    const stations = [];
+    for (const stationData of stationsData) {
+        const station = await prisma.swappingStation.create({
+            data: {
+                ...stationData,
+                latitude: new Decimal(stationData.latitude),
+                longitude: new Decimal(stationData.longitude),
+            },
+        });
+        stations.push(station);
     }
 
-    console.log('✅ Database seeding completed!');
-    console.log(`Created ${users.length} users`);
-    console.log(`Created ${stations.length} swapping stations`);
-    console.log(`Created ${batteries.length} batteries`);
-    console.log(`Created ${vehicles.length} vehicles`);
+    console.log(`✅ Created ${stations.length} swapping stations`);
 
-    console.log('\n📊 Station Distribution:');
-    console.log('🏙️ Inner City Stations (0-15km): 5 stations');
-    console.log('🏘️ Outer City Stations (15-30km): 8 stations');
-    console.log('🌄 Provincial Stations (30km+): 5 stations');
-    console.log('⚠️ Maintenance/Inactive: 2 stations');
-    console.log('\n✅ All capacity fields removed from stations!');
+    // 3. Create 5 Vehicles
+    console.log('🚗 Creating vehicles...');
+    const vehiclesData = [
+        {
+            user_id: users[2].user_id, // driver01
+            vin: '1HGBH41JXMN109186',
+            battery_model: 'Tesla Model S Battery',
+            battery_type: 'Lithium-Ion',
+            status: 'active' as const,
+        },
+        {
+            user_id: users[2].user_id, // driver01
+            vin: '1HGBH41JXMN109187',
+            battery_model: 'BYD Blade Battery',
+            battery_type: 'LiFePO4',
+            status: 'active' as const,
+        },
+        {
+            user_id: users[3].user_id, // driver02
+            vin: '2FMDK3GC8DBA12345',
+            battery_model: 'CATL NCM Battery',
+            battery_type: 'Lithium-Ion',
+            status: 'active' as const,
+        },
+        {
+            user_id: users[3].user_id, // driver02
+            vin: '2FMDK3GC8DBA12346',
+            battery_model: 'Tesla Model 3 Battery',
+            battery_type: 'Lithium-Ion',
+            status: 'inactive' as const,
+        },
+        {
+            user_id: users[4].user_id, // driver03
+            vin: '3FA6P0HD9ER123456',
+            battery_model: 'VinFast VF8 Battery',
+            battery_type: 'NCM',
+            status: 'active' as const,
+        },
+    ];
+
+    const vehicles = [];
+    for (const vehicleData of vehiclesData) {
+        const vehicle = await prisma.vehicle.create({
+            data: vehicleData,
+        });
+        vehicles.push(vehicle);
+    }
+
+    console.log(`✅ Created ${vehicles.length} vehicles`);
+
+    // 4. Create 5 Battery Service Packages
+    console.log('📦 Creating battery service packages...');
+    const servicePackagesData = [
+        {
+            name: 'Basic Swap Package',
+            description: 'Standard battery swap service for daily commuters',
+            base_distance: 50,
+            base_price: '50000',
+            swap_count: 1,
+            penalty_fee: 10000,
+            duration_days: 1,
+            active: true,
+        },
+        {
+            name: 'Premium Daily Package',
+            description: 'Premium daily service with unlimited swaps',
+            base_distance: 100,
+            base_price: '150000',
+            swap_count: 999,
+            penalty_fee: 5000,
+            duration_days: 1,
+            active: true,
+        },
+        {
+            name: 'Weekly Commuter Package',
+            description: 'Weekly package for regular commuters',
+            base_distance: 300,
+            base_price: '300000',
+            swap_count: 10,
+            penalty_fee: 15000,
+            duration_days: 7,
+            active: true,
+        },
+        {
+            name: 'Monthly Business Package',
+            description: 'Monthly package for business users',
+            base_distance: 1000,
+            base_price: '1000000',
+            swap_count: 999,
+            penalty_fee: 20000,
+            duration_days: 30,
+            active: true,
+        },
+        {
+            name: 'Legacy Package',
+            description: 'Old package - no longer available',
+            base_distance: 25,
+            base_price: '25000',
+            swap_count: 1,
+            penalty_fee: 25000,
+            duration_days: 1,
+            active: false,
+        },
+    ];
+
+    const servicePackages = [];
+    for (const packageData of servicePackagesData) {
+        const servicePackage = await prisma.batteryServicePackage.create({
+            data: {
+                ...packageData,
+                base_price: new Decimal(packageData.base_price),
+            },
+        });
+        servicePackages.push(servicePackage);
+    }
+
+    console.log(`✅ Created ${servicePackages.length} service packages`);
+
+    // 5. Create 5 Batteries
+    console.log('🔋 Creating batteries...');
+    const batteriesData = [
+        {
+            model: 'Tesla Model S Battery',
+            type: 'Lithium-Ion',
+            capacity: '75.50',
+            current_charge: '95.25',
+            soh: '88.75',
+            status: 'full' as const,
+            station_id: stations[0].station_id,
+        },
+        {
+            model: 'BYD Blade Battery',
+            type: 'LiFePO4',
+            capacity: '60.00',
+            current_charge: '87.50',
+            soh: '92.00',
+            status: 'full' as const,
+            station_id: stations[0].station_id,
+        },
+        {
+            model: 'CATL NCM Battery',
+            type: 'Lithium-Ion',
+            capacity: '65.00',
+            current_charge: '76.25',
+            soh: '85.50',
+            status: 'charging' as const,
+            station_id: stations[1].station_id,
+        },
+        {
+            model: 'Tesla Model 3 Battery',
+            type: 'Lithium-Ion',
+            capacity: '54.00',
+            current_charge: '91.75',
+            soh: '89.25',
+            status: 'full' as const,
+            station_id: stations[2].station_id,
+        },
+        {
+            model: 'VinFast VF8 Battery',
+            type: 'NCM',
+            capacity: '87.70',
+            current_charge: '83.50',
+            soh: '91.75',
+            status: 'booked' as const,
+            station_id: stations[3].station_id,
+        },
+    ];
+
+    const batteries = [];
+    for (const batteryData of batteriesData) {
+        const battery = await prisma.battery.create({
+            data: {
+                ...batteryData,
+                capacity: new Decimal(batteryData.capacity),
+                current_charge: new Decimal(batteryData.current_charge),
+                soh: new Decimal(batteryData.soh),
+            },
+        });
+        batteries.push(battery);
+    }
+
+    console.log(`✅ Created ${batteries.length} batteries`);
+
+    // 6. Create 5 Reservations
+    console.log('📅 Creating reservations...');
+    const reservationsData = [
+        {
+            user_id: users[2].user_id, // driver01
+            battery_id: batteries[0].battery_id,
+            station_id: stations[0].station_id,
+            scheduled_time: new Date('2025-01-15T09:00:00Z'),
+            status: 'scheduled' as const,
+        },
+        {
+            user_id: users[3].user_id, // driver02
+            battery_id: batteries[1].battery_id,
+            station_id: stations[0].station_id,
+            scheduled_time: new Date('2025-01-15T14:30:00Z'),
+            status: 'scheduled' as const,
+        },
+        {
+            user_id: users[4].user_id, // driver03
+            battery_id: batteries[2].battery_id,
+            station_id: stations[1].station_id,
+            scheduled_time: new Date('2025-01-16T10:15:00Z'),
+            status: 'scheduled' as const,
+        },
+        {
+            user_id: users[2].user_id, // driver01
+            battery_id: batteries[3].battery_id,
+            station_id: stations[2].station_id,
+            scheduled_time: new Date('2025-01-14T16:45:00Z'),
+            status: 'completed' as const,
+        },
+        {
+            user_id: users[3].user_id, // driver02
+            battery_id: batteries[4].battery_id,
+            station_id: stations[3].station_id,
+            scheduled_time: new Date('2025-01-17T11:20:00Z'),
+            status: 'cancelled' as const,
+        },
+    ];
+
+    const reservations = [];
+    for (const reservationData of reservationsData) {
+        const reservation = await prisma.reservation.create({
+            data: reservationData,
+        });
+        reservations.push(reservation);
+    }
+
+    console.log(`✅ Created ${reservations.length} reservations`);
+
+    // Summary
+    console.log('\n🎉 Database seeding completed successfully!');
+    console.log('📊 Summary:');
+    console.log(`👥 Users: ${users.length} (1 admin, 1 staff, 3 drivers)`);
+    console.log(`🏢 Stations: ${stations.length} (4 active, 1 maintenance)`);
+    console.log(`🚗 Vehicles: ${vehicles.length} (4 active, 1 inactive)`);
+    console.log(`📦 Service Packages: ${servicePackages.length} (4 active, 1 legacy)`);
+    console.log(`🔋 Batteries: ${batteries.length} (3 full, 1 charging, 1 booked)`);
+    console.log(`📅 Reservations: ${reservations.length} (3 scheduled, 1 completed, 1 cancelled)`);
+
+    console.log('\n🔑 Test Accounts:');
+    console.log('Admin: admin / admin123');
+    console.log('Staff: staff01 / staff123');
+    console.log('Driver: driver01, driver02, driver03 / driver123');
+
+    console.log('\n🚀 Ready for testing with minimal data!');
 }
 
 main()
     .catch((e) => {
-        console.error('❌ Error during seeding:', e);
+        console.error('❌ Seeding failed:', e);
         process.exit(1);
     })
     .finally(async () => {
         await prisma.$disconnect();
+        console.log('📝 Database connection closed');
     });
