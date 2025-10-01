@@ -23,7 +23,7 @@ function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/reports" element={<Reports />} />
       </Routes>
-      <img src="logo.png"  alt="Background" style={{ position: 'fixed', bottom: 0, right: 0, width: '200px', height: '200px', opacity: 0.5 }} />
+      <img src="logo.png" alt="Background" style={{ position: 'fixed', bottom: 0, right: 0, width: '200px', height: '200px', opacity: 0.5 }} />
     </>
   )
 }
