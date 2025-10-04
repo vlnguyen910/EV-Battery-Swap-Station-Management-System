@@ -1,0 +1,25 @@
+enum BatteryStatus {
+    full
+    charging
+    booked
+    defective
+}
+
+model Battery {
+    battery_id     Int           @id @default(autoincrement())
+    vehicle_id     Int?          @unique
+    station_id     Int?
+    model          String        @db.VarChar(100)
+    type           String        @db.VarChar(50)
+    capacity       Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+    current_charge Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+    soh            Decimal       @db.Decimal(5, 2) // 5 digits total, 2 after decimal
+    status         BatteryStatus
+
+    // Relationships
+    vehicle     Vehicle?
+    station     Station?      @relation(fields: [station_id], references: [station_id])
+    Reservation Reservation[]
+
+    @@map("batteries")
+}

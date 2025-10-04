@@ -26,14 +26,19 @@ export class AuthController {
     return this.authService.signIn(input);
   }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('refresh')
-  refresh(@Body() body: { refreshToken: string }) {
-    if (!body.refreshToken) {
-      throw new NotImplementedException('Refresh token is required');
-    }
-    return this.authService.refreshAccessToken(body.refreshToken);
+  @Post('register')
+  register(@Body() input: { email: string; phone: string; username: string; password: string }) {
+    return this.authService.register(input);
   }
+
+  // @HttpCode(HttpStatus.OK)nl
+  // @Post('refresh')
+  // refresh(@Body() body: { refreshToken: string }) {
+  //   if (!body.refreshToken) {
+  //     throw new NotImplementedException('Refresh token is required');
+  //   }
+  //   return this.authService.refreshAccessToken(body.refreshToken);
+  // }
 }
 
 

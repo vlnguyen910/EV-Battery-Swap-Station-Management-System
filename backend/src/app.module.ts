@@ -5,11 +5,15 @@ import { DatabaseModule } from './modules/database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { StationsModule } from './modules/stations/stations.module';
+import { BatteriesModule } from './modules/batteries/batteries.module';
 import { BatteryServicePackagesModule } from './modules/battery-service-packages/battery-service-packages.module';
-import { ChangingStationsModule } from './modules/changing-stations/changing-stations.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+
 
 @Module({
-  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, ChangingStationsModule],
+  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule, SubscriptionsModule],
   controllers: [AppController],
   providers: [AppService],
 })
