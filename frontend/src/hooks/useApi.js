@@ -1,4 +1,28 @@
-// Custom hook for API calls
-export function useApi() {
-  // Hook logic will go here
-}
+// hooks/useApi.js
+import { useAuth } from "./useAuth";
+import api from "../services/api";
+
+export const useApi = () => {
+  const { token } = useAuth();
+
+  const callApi = async (method, url, data = null, config = {}) => {
+    try {
+      const response = await api({
+        method,
+        url,
+        data,
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+          ...config.headers,
+        },
+        ...config,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("API call error:", error);
+      throw error;
+    }
+  };
+
+  return { callApi };
+};
