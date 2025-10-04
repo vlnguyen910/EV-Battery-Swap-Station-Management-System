@@ -17,6 +17,7 @@ model User {
     vehicles      Vehicle[]
     Reservation   Reservation[]
     subscriptions Subscription[]
+    payments      Payment[]
 
     @@map("users")
 }
