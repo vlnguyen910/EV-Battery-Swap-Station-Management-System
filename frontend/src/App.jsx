@@ -1,24 +1,29 @@
 import { Toaster, toast } from 'sonner'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { useState } from 'react'
-import NotFound from './pages/NotFound'
-import HomePage from './pages/HomePage'
+import { Routes, Route } from 'react-router-dom'
 import Navigation from './components/layout/Navigation'
-import AppRoutes from './components/AppRoutes'
-
+import GuestPage from './pages/GuestPage'
+import LoginPage from './components/auth/Login'
+import Register from './components/auth/Register'
+import AdminPage from './pages/AdminPage'
+import StaffPage from './pages/StaffPage'
+import UserPage from './pages/UserPage'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
-    <>
-    <BrowserRouter>
+    <div className="App">
+      <Navigation />
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/staff" element={<StaffPage />} />
+        <Route path="/user" element={<UserPage />} />
       </Routes>
-    </BrowserRouter>
-    </>
-  )
+    </div>
+  );
 }
-import Home from './components/common/Map'
+export default App;
 
-export default App

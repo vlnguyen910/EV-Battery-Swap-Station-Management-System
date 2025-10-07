@@ -1,9 +1,7 @@
 import {
   IsEmail,
-  IsString,
   IsEnum,
   MinLength,
-  Matches,
   IsNotEmpty,
   IsPhoneNumber,
 } from 'class-validator';
@@ -19,6 +17,7 @@ export class CreateUserDto {
   password: string;
 
   @IsNotEmpty({ message: 'Phone is required' })
+  @IsPhoneNumber('VN', { message: 'Invalid phone number format' })
   phone: string;
 
   @IsNotEmpty({ message: 'Email is required' })

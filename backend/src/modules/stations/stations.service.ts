@@ -1,0 +1,247 @@
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { StationStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+import { CreateStationDto } from './dto/create-station.dto';
+import { UpdateStationDto } from './dto/update-station.dto';
+import { VehiclesService } from '../vehicles/vehicles.service';
+import { DatabaseService } from '../database/database.service';
+
+@Injectable()
+export class StationsService {
+  constructor(
+    private vehiclesService: VehiclesService,
+    private databaseService: DatabaseService
+  ) { }
+
+  async create(createStationDto: CreateStationDto) {
+    try {
+      return await this.databaseService.station.create({
+        data: createStationDto,
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Station name already exists');
+      }
+      throw error;
+    }
+  }
+
+  async findAll(status?: StationStatus) {
+    const whereClause = status ? { status } : {};
+    
+    return await this.databaseService.station.findMany({
+      where: whereClause,
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            status: true,
+            current_charge: true,
+          },
+        },
+      },
+      orderBy: {
+        station_id: 'asc',
+      },
+    });
+  }
+
+  async findAllAvailable(
+    user_id: number,
+    latitude: Decimal,
+    longitude: Decimal,
+    radiusKm: number = 20
+  ) {
+    const vehicles = await this.vehiclesService.findByUser(user_id);
+
+    if (vehicles.length === 0) {
+      throw new NotFoundException('No vehicles found for this user');
+    }
+
+    const activeVehicles = vehicles.filter(vehicles => vehicles.status === 'active');
+
+    if (activeVehicles.length === 0) {
+      throw new NotFoundException('No active vehicles found for this user');
+    }
+
+    const { battery_model, battery_type } = activeVehicles[0];
+
+    const allAvailableStations = await this.databaseService.station.findMany({
+      where: {
+        status: 'active',
+        batteries: {
+          some: {
+            model: battery_model,
+            type: battery_type,
+            status: 'full'
+          }
+        }
+      },
+      select: {
+        station_id: true,
+        name: true,
+        address: true,
+        latitude: true,
+        longitude: true,
+        status: true,
+        _count: {
+          select: {
+            batteries: {
+              where: {
+                model: battery_model,
+                type: battery_type,
+                status: 'full'
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (allAvailableStations.length === 0) {
+      throw new NotFoundException('No available stations found');
+    }
+
+    const result = allAvailableStations.map(station => ({
+      station_id: station.station_id,
+      name: station.name,
+      address: station.address,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      status: station.status,
+      available_batteries: station._count.batteries,
+      distance: this.calculateDistance(latitude, longitude, station.latitude, station.longitude)
+    }))
+      .sort((a, b) => a.distance - b.distance);
+
+    return result;
+  }
+
+  async findOne(id: number) {
+    const station = await this.databaseService.station.findUnique({
+      where: { station_id: id },
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            model: true,
+            type: true,
+            status: true,
+            current_charge: true,
+            soh: true,
+          },
+        },
+      },
+    });
+
+    if (!station) {
+      throw new NotFoundException(`Station with ID ${id} not found`);
+    }
+
+    return station;
+  }
+
+  async findByName(name: string) {
+    return await this.databaseService.station.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        batteries: {
+          select: {
+            battery_id: true,
+            status: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findActiveStations() {
+    return await this.databaseService.station.findMany({
+      where: { status: 'active' },
+      include: {
+        batteries: {
+          where: { status: 'full' },
+          select: {
+            battery_id: true,
+            model: true,
+            type: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
+
+  async update(id: number, updateStationDto: UpdateStationDto) {
+    await this.findOne(id); // Check if station exists
+
+    try {
+      return await this.databaseService.station.update({
+        where: { station_id: id },
+        data: updateStationDto,
+        include: {
+          batteries: {
+            select: {
+              battery_id: true,
+              status: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Station name already exists');
+      }
+      throw error;
+    }
+  }
+
+  async updateStatus(id: number, status: StationStatus) {
+    await this.findOne(id);
+
+    return await this.databaseService.station.update({
+      where: { station_id: id },
+      data: { status },
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id); // Check if station exists
+
+    return await this.databaseService.station.delete({
+      where: { station_id: id },
+    });
+  }
+
+  private calculateDistance(lat1: Decimal, lon1: Decimal, lat2: Decimal, lon2: Decimal): number {
+    const R = 6371; // Earth's radius in kilometers
+
+    // Convert all Decimal to number for mathematical operations
+    const lat1Num = lat1.toNumber();
+    const lon1Num = lon1.toNumber();
+    const lat2Num = lat2.toNumber();
+    const lon2Num = lon2.toNumber();
+
+    const dLat = this.toRadians(lat2Num - lat1Num);
+    const dLon = this.toRadians(lon2Num - lon1Num);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1Num)) * Math.cos(this.toRadians(lat2Num)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
+}
