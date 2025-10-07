@@ -1,33 +1,29 @@
-import { useState } from 'react'
+import { Toaster, toast } from 'sonner'
 import { Routes, Route } from 'react-router-dom'
 import Navigation from './components/layout/Navigation'
-import Home from './pages/Home'
-import Dashboard from './pages/Dashboard'
-import Stations from './pages/Stations'
-import Batteries from './pages/Batteries'
-import Users from './pages/Users'
-import Map from './pages/Map'
-import Reports from './pages/Reports'
+import GuestPage from './pages/GuestPage'
+import LoginPage from './components/auth/Login'
+import Register from './components/auth/Register'
+import AdminPage from './pages/AdminPage'
+import StaffPage from './pages/StaffPage'
+import UserPage from './pages/UserPage'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
-    <>
+    <div className="App">
       <Navigation />
-      <div>
-        <h1>EV Battery Swap Station Management System</h1>
-      </div>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/stations" element={<Stations />} />
-        <Route path="/batteries" element={<Batteries />} />
-        <Route path="/users" element={<Users />} />
-        <Route path="/map" element={<Map />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/" element={<GuestPage />} />
+        <Route path="*" element={<NotFound />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/staff" element={<StaffPage />} />
+        <Route path="/user" element={<UserPage />} />
       </Routes>
-      <img src="logo.png"  alt="Background" style={{ position: 'fixed', bottom: 0, right: 0, width: '200px', height: '200px', opacity: 0.5 }} />
-    </>
-  )
+    </div>
+  );
 }
+export default App;
 
-export default App

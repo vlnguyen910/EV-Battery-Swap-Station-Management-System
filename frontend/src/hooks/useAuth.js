@@ -1,4 +1,6 @@
-// Custom hook for authentication
+import { useContext } from "react";
+import { AuthContext } from "../contexts/AuthContext";
+
 export function useAuth() {
-  // Hook logic will go here
+  return useContext(AuthContext);
 }

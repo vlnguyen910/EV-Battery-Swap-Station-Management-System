@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function Map() {
+export default function Home() {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
@@ -138,7 +138,8 @@ export default function Map() {
   return (
     <div style={{ height: '100%', width: '100%' }}>
       <div style={{ padding: '20px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
-        <h2 style={{ margin: '0 0 10px 0' }}>Station Map</h2>
+        <h2 style={{ margin: '0 0 10px 0' }}>EV Battery Swap Station Management System</h2>
+        <p style={{ margin: '0 0 15px 0', color: '#666' }}>Welcome! Find the nearest battery swap stations on the map below.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'green' }}></div>
@@ -157,7 +158,7 @@ export default function Map() {
       <div
         ref={mapRef}
         style={{
-          height: 'calc(100vh - 200px)',
+          height: 'calc(100vh - 250px)',
           width: '100%'
         }}
       />
