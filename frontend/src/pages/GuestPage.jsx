@@ -1,33 +1,49 @@
 import { useNavigate } from 'react-router-dom'
+import HeroSection from '../components/landing/HeroSection'
+import KeyFeatures from '../components/landing/KeyFeatures'
+import Statistics from '../components/landing/Statistics'
+import CustomerTestimonials from '../components/landing/CustomerTestimonials'
+import QuickStartGuide from '../components/landing/QuickStartGuide'
+import PricingPlans from '../components/landing/PricingPlans'
 
 export default function GuestPage() {
   const navigate = useNavigate();
 
   return (
-    <div>
-      <div>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔋</div>
-        <h1>EV Battery Swap Station</h1>
-        <h2>Welcome, Guest!</h2>
 
-        <p>🚗 Manage your electric vehicle battery swapping</p>
+    <div className="min-h-screen w-full bg-white relative overflow-hidden">
+      {/* Light Sky Blue Glow */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+       radial-gradient(circle at center, #93c5fd, transparent)
+     `,
+        }}
+      />
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <HeroSection />
 
-        <p>Please log in to access the management system</p>
+        {/* Key Features */}
+        <KeyFeatures />
 
-        <button
-          onClick={() => navigate('/login')}
-        >
-          🚀 Login to System
-        </button>
-        <br />
-        <br />
-        <button
-          onClick={() => navigate('/register')}
-        >
-          🚀 Register to System
-        </button>
+        {/* Statistics */}
+        <Statistics />
+
+        {/* Customer Testimonials */}
+        <CustomerTestimonials />
+
+        {/* Quick Start Guide */}
+        <QuickStartGuide />
+
+        {/* Pricing Plans */}
+        <PricingPlans />
+
+        {/* Call to Action Section */}
 
       </div>
     </div>
+
   )
 }
