@@ -15,7 +15,7 @@ export class StationsService {
 
   async create(createStationDto: CreateStationDto) {
     try {
-      return await this.databaseService.swappingStation.create({
+      return await this.databaseService.station.create({
         data: createStationDto,
       });
     } catch (error) {
@@ -29,7 +29,7 @@ export class StationsService {
   async findAll(status?: StationStatus) {
     const whereClause = status ? { status } : {};
     
-    return await this.databaseService.swappingStation.findMany({
+    return await this.databaseService.station.findMany({
       where: whereClause,
       include: {
         batteries: {
@@ -66,7 +66,7 @@ export class StationsService {
 
     const { battery_model, battery_type } = activeVehicles[0];
 
-    const allAvailableStations = await this.databaseService.swappingStation.findMany({
+    const allAvailableStations = await this.databaseService.station.findMany({
       where: {
         status: 'active',
         batteries: {
@@ -118,7 +118,7 @@ export class StationsService {
   }
 
   async findOne(id: number) {
-    const station = await this.databaseService.swappingStation.findUnique({
+    const station = await this.databaseService.station.findUnique({
       where: { station_id: id },
       include: {
         batteries: {
@@ -142,7 +142,7 @@ export class StationsService {
   }
 
   async findByName(name: string) {
-    return await this.databaseService.swappingStation.findMany({
+    return await this.databaseService.station.findMany({
       where: {
         name: {
           contains: name,
@@ -161,7 +161,7 @@ export class StationsService {
   }
 
   async findActiveStations() {
-    return await this.databaseService.swappingStation.findMany({
+    return await this.databaseService.station.findMany({
       where: { status: 'active' },
       include: {
         batteries: {
@@ -183,7 +183,7 @@ export class StationsService {
     await this.findOne(id); // Check if station exists
 
     try {
-      return await this.databaseService.swappingStation.update({
+      return await this.databaseService.station.update({
         where: { station_id: id },
         data: updateStationDto,
         include: {
@@ -206,7 +206,7 @@ export class StationsService {
   async updateStatus(id: number, status: StationStatus) {
     await this.findOne(id);
 
-    return await this.databaseService.swappingStation.update({
+    return await this.databaseService.station.update({
       where: { station_id: id },
       data: { status },
     });
@@ -215,7 +215,7 @@ export class StationsService {
   async remove(id: number) {
     await this.findOne(id); // Check if station exists
 
-    return await this.databaseService.swappingStation.delete({
+    return await this.databaseService.station.delete({
       where: { station_id: id },
     });
   }

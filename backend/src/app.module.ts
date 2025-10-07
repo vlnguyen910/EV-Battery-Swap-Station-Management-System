@@ -9,11 +9,20 @@ import { StationsModule } from './modules/stations/stations.module';
 import { BatteriesModule } from './modules/batteries/batteries.module';
 import { BatteryServicePackagesModule } from './modules/battery-service-packages/battery-service-packages.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    DatabaseModule,
+    UsersModule,
+    VehiclesModule,
+    AuthModule,
+    BatteryServicePackagesModule,
+    StationsModule,
+    BatteriesModule,
+    ReservationsModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

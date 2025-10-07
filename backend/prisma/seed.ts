@@ -1,22 +1,22 @@
-// prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
-import * as bcrypt from 'bcrypt';
+// // backend/prisma/seed.ts
+// import { PrismaClient } from '@prisma/client';
+// import { Decimal } from '@prisma/client/runtime/library';
+// import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
-async function main() {
-    console.log('🌱 Starting database seeding...');
+// async function main() {
+//     console.log('🌱 Starting database seeding...');
 
-    // Clear existing data in correct order (foreign keys first)
-    await prisma.reservation.deleteMany();
-    await prisma.battery.deleteMany();
-    await prisma.vehicle.deleteMany();
-    await prisma.batteryServicePackage.deleteMany();
-    await prisma.swappingStation.deleteMany();
-    await prisma.user.deleteMany();
+//     // Clear existing data in correct order (foreign keys first)
+//     await prisma.reservation.deleteMany();
+//     await prisma.battery.deleteMany();
+//     await prisma.vehicle.deleteMany();
+//     await prisma.batteryServicePackage.deleteMany();
+//     await prisma.station.deleteMany();
+//     await prisma.user.deleteMany();
 
-    console.log('🗑️  Cleared existing data');
+//     console.log('🗑️  Cleared existing data');
 
 //     // 1. Create 5 Users
 //     console.log('👥 Creating users...');
@@ -114,7 +114,7 @@ async function main() {
 
 //     const stations = [];
 //     for (const stationData of stationsData) {
-//         const station = await prisma.swappingStation.create({
+//         const station = await prisma.station.create({
 //             data: {
 //                 ...stationData,
 //                 latitude: new Decimal(stationData.latitude),
@@ -244,9 +244,10 @@ async function main() {
 
 //     console.log(`✅ Created ${servicePackages.length} service packages`);
 
-//     // 5. Create 5 Batteries
+//     // 5. Create Batteries (Multiple batteries per station for reservation testing)
 //     console.log('🔋 Creating batteries...');
 //     const batteriesData = [
+//         // Station 1 batteries
 //         {
 //             model: 'Tesla Model S Battery',
 //             type: 'Lithium-Ion',
@@ -266,6 +267,16 @@ async function main() {
 //             station_id: stations[0].station_id,
 //         },
 //         {
+//             model: 'Tesla Model S Battery',
+//             type: 'Lithium-Ion',
+//             capacity: '75.50',
+//             current_charge: '92.00',
+//             soh: '89.50',
+//             status: 'full' as const,
+//             station_id: stations[0].station_id,
+//         },
+//         // Station 2 batteries
+//         {
 //             model: 'CATL NCM Battery',
 //             type: 'Lithium-Ion',
 //             capacity: '65.00',
@@ -281,15 +292,35 @@ async function main() {
 //             current_charge: '91.75',
 //             soh: '89.25',
 //             status: 'full' as const,
-//             station_id: stations[2].station_id,
+//             station_id: stations[1].station_id,
 //         },
+//         // Station 3 batteries
 //         {
 //             model: 'VinFast VF8 Battery',
 //             type: 'NCM',
 //             capacity: '87.70',
 //             current_charge: '83.50',
 //             soh: '91.75',
+//             status: 'full' as const,
+//             station_id: stations[2].station_id,
+//         },
+//         {
+//             model: 'Tesla Model S Battery',
+//             type: 'Lithium-Ion',
+//             capacity: '75.50',
+//             current_charge: '88.00',
+//             soh: '87.25',
 //             status: 'booked' as const,
+//             station_id: stations[2].station_id,
+//         },
+//         // Station 4 batteries
+//         {
+//             model: 'BYD Blade Battery',
+//             type: 'LiFePO4',
+//             capacity: '60.00',
+//             current_charge: '94.50',
+//             soh: '93.75',
+//             status: 'full' as const,
 //             station_id: stations[3].station_id,
 //         },
 //     ];
@@ -309,41 +340,46 @@ async function main() {
 
 //     console.log(`✅ Created ${batteries.length} batteries`);
 
-//     // 6. Create 5 Reservations
+//     // 6. Create Reservations (Updated to include vehicle_id)
 //     console.log('📅 Creating reservations...');
 //     const reservationsData = [
 //         {
 //             user_id: users[2].user_id, // driver01
-//             battery_id: batteries[0].battery_id,
+//             vehicle_id: vehicles[0].vehicle_id, // Tesla Model S vehicle
+//             battery_id: batteries[0].battery_id, // Tesla Model S Battery
 //             station_id: stations[0].station_id,
 //             scheduled_time: new Date('2025-01-15T09:00:00Z'),
 //             status: 'scheduled' as const,
 //         },
 //         {
 //             user_id: users[3].user_id, // driver02
-//             battery_id: batteries[1].battery_id,
-//             station_id: stations[0].station_id,
+//             vehicle_id: vehicles[2].vehicle_id, // CATL NCM vehicle
+//             battery_id: batteries[4].battery_id, // Tesla Model 3 Battery
+//             station_id: stations[1].station_id,
 //             scheduled_time: new Date('2025-01-15T14:30:00Z'),
 //             status: 'scheduled' as const,
 //         },
 //         {
 //             user_id: users[4].user_id, // driver03
-//             battery_id: batteries[2].battery_id,
-//             station_id: stations[1].station_id,
+//             vehicle_id: vehicles[4].vehicle_id, // VinFast VF8 vehicle
+//             battery_id: batteries[5].battery_id, // VinFast VF8 Battery
+//             station_id: stations[2].station_id,
 //             scheduled_time: new Date('2025-01-16T10:15:00Z'),
 //             status: 'scheduled' as const,
 //         },
 //         {
 //             user_id: users[2].user_id, // driver01
-//             battery_id: batteries[3].battery_id,
+//             vehicle_id: vehicles[0].vehicle_id, // Tesla Model S vehicle
+//             battery_id: batteries[6].battery_id, // Tesla Model S Battery (booked)
 //             station_id: stations[2].station_id,
 //             scheduled_time: new Date('2025-01-14T16:45:00Z'),
 //             status: 'completed' as const,
 //         },
 //         {
 //             user_id: users[3].user_id, // driver02
-//             battery_id: batteries[4].battery_id,
-//             station_id: stations[3].station_id,
+//             vehicle_id: vehicles[2].vehicle_id, // CATL NCM vehicle
+//             battery_id: batteries[3].battery_id, // CATL NCM Battery (charging)
+//             station_id: stations[1].station_id,
 //             scheduled_time: new Date('2025-01-17T11:20:00Z'),
 //             status: 'cancelled' as const,
 //         },
@@ -366,7 +402,7 @@ async function main() {
 //     console.log(`🏢 Stations: ${stations.length} (4 active, 1 maintenance)`);
 //     console.log(`🚗 Vehicles: ${vehicles.length} (4 active, 1 inactive)`);
 //     console.log(`📦 Service Packages: ${servicePackages.length} (4 active, 1 legacy)`);
-//     console.log(`🔋 Batteries: ${batteries.length} (3 full, 1 charging, 1 booked)`);
+//     console.log(`🔋 Batteries: ${batteries.length} (6 full, 1 charging, 1 booked)`);
 //     console.log(`📅 Reservations: ${reservations.length} (3 scheduled, 1 completed, 1 cancelled)`);
 
 //     console.log('\n🔑 Test Accounts:');
@@ -374,15 +410,26 @@ async function main() {
 //     console.log('Staff: staff01 / staff123');
 //     console.log('Driver: driver01, driver02, driver03 / driver123');
 
-//     console.log('\n🚀 Ready for testing with minimal data!');
+//     console.log('\n🚀 Ready for testing battery reservation system!');
+
+//     return {
+//         users,
+//         stations,
+//         vehicles,
+//         servicePackages,
+//         batteries,
+//         reservations
+//     };
 // }
 
-main()
-    .catch((e) => {
-        console.error('❌ Seeding failed:', e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-        console.log('📝 Database connection closed');
-    });
+// main()
+//     .catch((e) => {
+//         console.error('❌ Seeding failed:', e);
+//         process.exit(1);
+//     })
+//     .finally(async () => {
+//         await prisma.$disconnect();
+//         console.log('📝 Database connection closed');
+//     });
+
+// export { main as seedDatabase };
