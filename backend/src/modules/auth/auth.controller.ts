@@ -31,14 +31,14 @@ export class AuthController {
     return this.authService.register(input);
   }
 
-  // @HttpCode(HttpStatus.OK)nl
-  // @Post('refresh')
-  // refresh(@Body() body: { refreshToken: string }) {
-  //   if (!body.refreshToken) {
-  //     throw new NotImplementedException('Refresh token is required');
-  //   }
-  //   return this.authService.refreshAccessToken(body.refreshToken);
-  // }
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  refresh(@Body() body: { refreshToken: string }) {
+    if (!body.refreshToken) {
+      throw new NotImplementedException('Refresh token is required');
+    }
+    return this.authService.refreshAccessToken(body.refreshToken);
+  }
 }
 
 

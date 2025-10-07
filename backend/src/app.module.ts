@@ -10,11 +10,21 @@ import { BatteriesModule } from './modules/batteries/batteries.module';
 import { BatteryServicePackagesModule } from './modules/battery-service-packages/battery-service-packages.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule, SubscriptionsModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    DatabaseModule,
+    UsersModule,
+    VehiclesModule,
+    AuthModule,
+    BatteryServicePackagesModule,
+    StationsModule,
+    BatteriesModule,
+    ReservationsModule,
+    SubscriptionsModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
