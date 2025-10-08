@@ -10,18 +10,7 @@ export default function GuestPage() {
   const navigate = useNavigate();
 
   return (
-
-    <div className="min-h-screen w-full bg-white relative overflow-hidden">
-      {/* Light Sky Blue Glow */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          backgroundImage: `
-       radial-gradient(circle at center, #93c5fd, transparent)
-     `,
-        }}
-      />
-      <div className="min-h-screen">
+    <div className="min-h-screen">
         {/* Hero Section */}
         <HeroSection />
 
@@ -43,7 +32,6 @@ export default function GuestPage() {
         {/* Call to Action Section */}
 
       </div>
-    </div>
 
   )
 }
