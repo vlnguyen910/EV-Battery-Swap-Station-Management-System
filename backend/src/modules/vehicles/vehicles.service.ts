@@ -2,10 +2,12 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
+import { VehicleStatus } from '@prisma/client';
+import { stat } from 'fs';
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: DatabaseService) { }
 
   async create(createVehicleDto: CreateVehicleDto) {
     try {
@@ -70,6 +72,25 @@ export class VehiclesService {
   async findByUser(userId: number) {
     return await this.databaseService.vehicle.findMany({
       where: { user_id: userId },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            username: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findOneActiveByUserId(userId: number) {
+    return await this.databaseService.vehicle.findFirst({
+      where: {
+        user_id: userId,
+        status: VehicleStatus.active
+      },
       include: {
         user: {
           select: {

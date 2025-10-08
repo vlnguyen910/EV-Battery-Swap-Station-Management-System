@@ -58,8 +58,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 #Prisma
 /generated/prisma
-seed.ts
-clear-db.ts
+prisma/seed.ts
+prisma/clear-db.ts
 
 #Docker
 docker-compose.yml

@@ -5,7 +5,7 @@ import { UpdateBatteryDto } from './dto/update-battery.dto';
 
 @Controller('batteries')
 export class BatteriesController {
-  constructor(private readonly batteriesService: BatteriesService) {}
+  constructor(private readonly batteriesService: BatteriesService) { }
 
   @Post()
   create(@Body() createBatteryDto: CreateBatteryDto) {
@@ -16,6 +16,15 @@ export class BatteriesController {
   findAll() {
     return this.batteriesService.findAll();
   }
+
+  @Get('best')
+  findBestBattery(@Body() input: {
+    vehicle_id: number,
+    station_id: number
+  }) {
+    return this.batteriesService.findBestBatteryForVehicle(input.vehicle_id, input.station_id);
+  }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {
