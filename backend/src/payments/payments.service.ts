@@ -7,6 +7,12 @@ import { DatabaseService } from '../modules/database/database.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MockPaymentDto } from './dto/mock-payment.dto';
 import { vnpayConfig } from './config/vnpay.config';
+import {
+  validateVNPayParams,
+  generateSecureHash,
+  logVNPayParams,
+  sortObject,
+} from './utils/vnpay.utils';
 import * as crypto from 'crypto';
 import * as qs from 'qs';
 import moment from 'moment';
@@ -35,7 +41,7 @@ export class PaymentsService {
 
     // 2. Create payment record with pending status
     const vnpTxnRef = moment().format('DDHHmmss'); // Unique transaction reference
-    const amount = servicePackage.base_price.toNumber() * 100; // Convert to VND cents
+    const amount = Math.floor(servicePackage.base_price.toNumber() * 100); // Convert to VND cents (integer only)
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -53,8 +59,8 @@ export class PaymentsService {
 
     // 3. Build VNPAY payment URL
     const createDate = moment().format('YYYYMMDDHHmmss');
-    const orderId = moment().format('DDHHmmss');
 
+    // Build params - values will be encoded by sortObject()
     let vnpParams: any = {
       vnp_Version: '2.1.0',
       vnp_Command: 'pay',
@@ -64,29 +70,44 @@ export class PaymentsService {
       vnp_TxnRef: vnpTxnRef,
       vnp_OrderInfo: payment.order_info,
       vnp_OrderType: 'other',
-      vnp_Amount: amount,
+      vnp_Amount: amount * 100, // VNPAY expects number, sortObject will encode
       vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
       vnp_IpAddr: ipAddr,
       vnp_CreateDate: createDate,
     };
 
-    // Sort params by key
-    vnpParams = this.sortObject(vnpParams);
+    // Sort and encode params (VNPAY style)
+    vnpParams = sortObject(vnpParams);
 
-    // Create signature
+    // Create signature from encoded query string
     const signData = qs.stringify(vnpParams, { encode: false });
     const hmac = crypto.createHmac('sha512', vnpayConfig.vnp_HashSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+    
+    // Add signature to params
     vnpParams['vnp_SecureHash'] = signed;
 
+    // Log for debugging
+    console.log('========== VNPAY Payment URL Generation ==========');
+    console.log('TMN_CODE:', vnpayConfig.vnp_TmnCode);
+    console.log('Secret (first 15 chars):', vnpayConfig.vnp_HashSecret.substring(0, 15) + '...');
+    console.log('Sign data:', signData);
+    console.log('Signature:', signed);
+
     // Build payment URL
-    const paymentUrl =
-      vnpayConfig.vnp_Url + '?' + qs.stringify(vnpParams, { encode: false });
+    const paymentUrl = vnpayConfig.vnp_Url + '?' + qs.stringify(vnpParams, { encode: false });
+
+    console.log('Final payment URL:', paymentUrl);
+    console.log('==================================================');
 
     return {
       paymentUrl,
       payment_id: payment.payment_id,
       vnp_txn_ref: vnpTxnRef,
+      debug_params: {
+        ...sortObject(vnpParams),
+        vnp_SecureHash: signed,
+      }, // For debugging
     };
   }
 
@@ -98,8 +119,8 @@ export class PaymentsService {
     delete vnpParams['vnp_SecureHash'];
     delete vnpParams['vnp_SecureHashType'];
 
-    // Sort params
-    const sortedParams = this.sortObject(vnpParams);
+    // Sort and encode params (VNPAY style)
+    const sortedParams = sortObject(vnpParams);
 
     // Verify signature
     const signData = qs.stringify(sortedParams, { encode: false });
@@ -321,17 +342,6 @@ export class PaymentsService {
   }
 
   /**
-   * Sort object by key (for VNPAY signature)
-   */
-  private sortObject(obj: any) {
-    const sorted: any = {};
-    const keys = Object.keys(obj).sort();
-    keys.forEach((key) => {
-      sorted[key] = obj[key];
-    });
-    return sorted;
-  }
-
   /**
    * Mock payment for testing (simulate VNPAY flow without redirect)
    */
