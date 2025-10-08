@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
     LOGIN: "/auth/login",
     REGISTER: "/users",
     LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh-token",
+    // REFRESH: "/auth/refresh-token",
   },
   USER: {
     GET_PROFILE: "/users/me",

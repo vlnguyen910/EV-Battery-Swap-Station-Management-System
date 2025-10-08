@@ -107,7 +107,7 @@ export default function Register() {
 
       <form onSubmit={handleRegister}>
         <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="username">Tên đăng nhập:</label>
+          <label htmlFor="username">User Name:</label>
           <input
             type="text"
             id="username"
