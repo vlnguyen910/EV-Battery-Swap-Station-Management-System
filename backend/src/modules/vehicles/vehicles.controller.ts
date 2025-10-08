@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @Controller('vehicles')
 @UseGuards(AuthGuard, RolesGuard)
 export class VehiclesController {
-  constructor(private readonly vehiclesService: VehiclesService) {}
+  constructor(private readonly vehiclesService: VehiclesService) { }
 
   @Post()
   create(@Body() createVehicleDto: CreateVehicleDto) {

@@ -19,6 +19,7 @@ import { $Enums } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('users')
+@UseGuards(AuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
@@ -26,8 +27,7 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
-
-  @UseGuards(AuthGuard, RolesGuard)
+  
   @Roles($Enums.Role.admin)
   @Get()
   findAll() {

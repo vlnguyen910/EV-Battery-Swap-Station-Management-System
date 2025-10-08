@@ -3,41 +3,41 @@ import { UsersService } from '../users/users.service';
 import { isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
 
-type AuthInput = {
+type SignInInput = {
     emailOrPhone: string;
     password: string;
 }
 
-type AuthResult = {
+type SignInOutput = {
     accessToken: string;
     refreshToken: string;
 }
 
-type SignInData = {
-    id: number;
+type SignUpInput = {
     email: string;
     phone: string;
-    name: string;
-    role: string;
+    username: string;
+    password: string;
 }
 
 @Injectable()
 export class AuthService {
     constructor(private usersService: UsersService, private jwtService: JwtService) { }
 
-    async signIn(input: AuthInput): Promise<AuthResult> {
-        const user = await this.validateUser(input);
+    async signIn(input: SignInInput): Promise<SignInOutput> {
+        const user = await this.usersService.findOneByEmailOrPhone(input.emailOrPhone);
 
-        if (!user) {
+
+        if (!user || await !isMatchPassword(input.password, user.password)) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
         const tokenPayload = {
-            sub: user.id,
+            sub: user.user_id,
             email: user.email,
             phone: user.phone,
+            username: user.username,
             role: user.role,
-            username: user.name,
         }
 
         const accessToken = await this.jwtService.signAsync(tokenPayload);
@@ -45,30 +45,11 @@ export class AuthService {
             secret: process.env.JWT_REFRESH_TOKEN_SECRET,
             expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
         });
+
         return {
             accessToken,
             refreshToken
         }
-    }
-
-    async validateUser(input: AuthInput): Promise<SignInData | null> {
-        if (!input) {
-            return null;
-        }
-
-        const user = await this.usersService.findOneByEmailOrPhone(input.emailOrPhone);
-
-        if (user && await isMatchPassword(input.password, user.password)) {
-            return {
-                id: user.user_id,
-                email: user.email,
-                phone: user.phone,
-                name: user.username,
-                role: user.role,
-            };
-        }
-
-        return null;
     }
 
     async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string }> {
@@ -95,6 +76,18 @@ export class AuthService {
         });
 
         return { accessToken: newAccessToken };
+    }
+
+    async register(signUpInput: SignUpInput) {
+        const newUser = await this.usersService.create({
+            username: signUpInput.username,
+            password: signUpInput.password,
+            email: signUpInput.email,
+            phone: signUpInput.phone,
+            role: "driver"
+        });
+
+        return newUser;
     }
 }
 
