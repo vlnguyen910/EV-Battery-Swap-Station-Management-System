@@ -11,6 +11,7 @@ import { BatteryServicePackagesModule } from './modules/battery-service-packages
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     StationsModule,
     BatteriesModule,
     ReservationsModule,
-    SubscriptionsModule],
+    SubscriptionsModule,
+    SwapTransactionsModule],
   controllers: [AppController],
   providers: [AppService],
 })

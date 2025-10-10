@@ -17,9 +17,11 @@ model Battery {
     status         BatteryStatus
 
     // Relationships
-    vehicle     Vehicle?
-    station     Station?      @relation(fields: [station_id], references: [station_id])
-    Reservation Reservation[]
+    vehicle                 Vehicle?
+    station                 Station?          @relation(fields: [station_id], references: [station_id])
+    Reservation             Reservation[]
+    SwapTransactionTaken    SwapTransaction[] @relation("BatteryTaken")
+    SwapTransactionReturned SwapTransaction[] @relation("BatteryReturned")
 
     @@map("batteries")
 }

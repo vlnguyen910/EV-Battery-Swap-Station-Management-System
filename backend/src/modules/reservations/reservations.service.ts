@@ -22,7 +22,7 @@ export class ReservationsService {
   async create(dto: CreateReservationDto) {
     try {
       //1. Check user có tồn tại
-      const user = await this.userService.findOne(dto.user_id);
+      const user = await this.userService.findOneById(dto.user_id);
 
       if (!user) {
         throw new NotFoundException('User with ID: qq ' + dto.user_id + ' not exist');
@@ -155,7 +155,7 @@ export class ReservationsService {
     })
 
     if (!reservationUpdate || reservationUpdate.user_id != user_id) {
-      throw new NotFoundException('Reservation not found!');
+      throw new NotFoundException(`Reservation not found or made by user with ID ${user_id}`);
     }
 
     return await this.databaseService.reservation.update({
