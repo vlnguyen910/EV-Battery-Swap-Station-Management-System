@@ -70,8 +70,10 @@ export class BatteriesService {
     return bestBattery;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} battery`;
+  async findOne(id: number) {
+    return await this.databaseService.battery.findUnique({
+      where: { battery_id: id },
+    });
   }
 
   update(id: number, updateBatteryDto: UpdateBatteryDto) {

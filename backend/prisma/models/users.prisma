@@ -14,9 +14,10 @@ model User {
     created_at DateTime @default(now())
 
     // Relationships
-    vehicles      Vehicle[]
-    Reservation   Reservation[]
-    subscriptions Subscription[]
+    vehicles        Vehicle[]
+    Reservation     Reservation[]
+    subscriptions   Subscription[]
+    SwapTransaction SwapTransaction[]
 
     @@map("users")
 }

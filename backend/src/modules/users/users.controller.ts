@@ -27,7 +27,7 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
-  
+
   @Roles($Enums.Role.admin)
   @Get()
   findAll() {
@@ -36,7 +36,7 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneById(id);
   }
 
   @Patch(':id')
