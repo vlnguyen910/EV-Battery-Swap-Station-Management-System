@@ -1,0 +1,14 @@
+import { genSaltSync, hashSync, compare } from 'bcrypt-ts';
+
+const saltRounds = process.env.SALT_ROUNDS
+  ? parseInt(process.env.SALT_ROUNDS, 10)
+  : 10;
+
+export const hashPassword = (password: string): string => {
+  const salt = genSaltSync(saltRounds);
+  return hashSync(password, salt);
+};
+
+export const isMatchPassword = async (password: string, hash: string): Promise<boolean> => {
+  return await compare(password, hash);
+};
