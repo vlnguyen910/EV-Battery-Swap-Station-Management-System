@@ -12,6 +12,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
+import { SwappingModule } from './modules/swapping/swapping.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { SwapTransactionsModule } from './modules/swap-transactions/swap-transac
     BatteriesModule,
     ReservationsModule,
     SubscriptionsModule,
-    SwapTransactionsModule],
+    SwapTransactionsModule,
+    SwappingModule],
   controllers: [AppController],
   providers: [AppService],
 })
