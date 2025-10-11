@@ -1,22 +1,28 @@
 import { StationStatus } from "@prisma/client";
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsDecimal, IsEnum, IsNotEmpty, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateStationDto {
     @IsNotEmpty({ message: 'Name is required' })
     @IsString({ message: 'Name must be a string' })
+    @MaxLength(100)
     name: string;
 
-    @IsNotEmpty({ message: 'Address is required' })
-    @IsString({ message: 'Address must be a string' })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(255)
     address: string;
 
-    @IsNumber({}, { message: 'Latitude must be a number' })
-    @IsNotEmpty({ message: 'Latitude is required' })
-    latitude: number;
+    @IsNotEmpty()
+    @IsDecimal({ decimal_digits: '1,8' })
+    @Min(-90)
+    @Max(90)
+    latitude: string;
 
-    @IsNumber({}, { message: 'Longitude must be a number' })
-    @IsNotEmpty({ message: 'Longitude is required' })
-    longitude: number;
+    @IsNotEmpty()
+    @IsDecimal({ decimal_digits: '1,9' })
+    @Min(-180)
+    @Max(180)
+    longitude: string;
 
     @IsNotEmpty({ message: 'Status is required' })
     @IsEnum(StationStatus, { message: 'Status must be active, inactive, or maintenance  ' })

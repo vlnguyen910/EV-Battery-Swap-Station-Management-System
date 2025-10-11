@@ -57,7 +57,7 @@ export class AuthService {
             secret: process.env.JWT_REFRESH_TOKEN_SECRET,
         });
 
-        const user = await this.usersService.findOne(payload.sub);
+        const user = await this.usersService.findOneById(payload.sub);
         if (!user) {
             throw new UnauthorizedException('User not found');
         }

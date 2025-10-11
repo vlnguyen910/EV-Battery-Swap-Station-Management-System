@@ -59,7 +59,7 @@ export class UsersService {
     return await this.databaseService.user.findMany();
   }
 
-  async findOne(user_id: number) {
+  async findOneById(user_id: number) {
     return this.databaseService.user.findUnique({
       where: { user_id }
     });

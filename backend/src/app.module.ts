@@ -11,11 +11,25 @@ import { BatteryServicePackagesModule } from './modules/battery-service-packages
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { PaymentsModule } from './payments/payments.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
+import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
 
 @Module({
-  imports: [DatabaseModule, UsersModule, VehiclesModule, AuthModule, BatteryServicePackagesModule, StationsModule, BatteriesModule, ReservationsModule, SubscriptionsModule, PaymentsModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    DatabaseModule,
+    UsersModule,
+    VehiclesModule,
+    AuthModule,
+    BatteryServicePackagesModule,
+    StationsModule,
+    BatteriesModule,
+    ReservationsModule,
+    SubscriptionsModule,
+    SwapTransactionsModule,
+    SubscriptionsModule,
+    PaymentsModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
