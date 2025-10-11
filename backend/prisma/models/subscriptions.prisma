@@ -17,9 +17,10 @@ model Subscription {
   updated_at      DateTime           @updatedAt
 
   // Relationships
-  user    User                   @relation(fields: [user_id], references: [user_id])
-  package BatteryServicePackage @relation(fields: [package_id], references: [package_id])
-  vehicle Vehicle?               @relation(fields: [vehicle_id], references: [vehicle_id])
+  user     User                  @relation(fields: [user_id], references: [user_id])
+  package  BatteryServicePackage @relation(fields: [package_id], references: [package_id])
+  vehicle  Vehicle?              @relation(fields: [vehicle_id], references: [vehicle_id])
+  payments Payment[]
 
   @@map("subscriptions")
 }

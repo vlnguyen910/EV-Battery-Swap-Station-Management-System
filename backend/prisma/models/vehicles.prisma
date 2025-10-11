@@ -13,10 +13,11 @@ model Vehicle {
   status        VehicleStatus
 
   // Relationships
-  user          User?         @relation(fields: [user_id], references: [user_id])
-  battery       Battery?      @relation(fields: [battery_id], references: [battery_id])
-  Reservation   Reservation[]
-  subscriptions Subscription[]
+  user            User?             @relation(fields: [user_id], references: [user_id])
+  battery         Battery?          @relation(fields: [battery_id], references: [battery_id])
+  Reservation     Reservation[]
+  subscriptions   Subscription[]
+  SwapTransaction SwapTransaction[]
 
   @@map("vehicles")
 }
