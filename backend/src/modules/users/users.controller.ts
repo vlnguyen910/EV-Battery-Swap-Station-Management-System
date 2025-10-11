@@ -17,9 +17,13 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('users')
+@ApiTags('users')
 @UseGuards(AuthGuard, RolesGuard)
+@ApiBearerAuth('access-token')
+
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
