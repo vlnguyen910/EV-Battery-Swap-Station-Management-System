@@ -12,6 +12,9 @@ model Station {
     longitude  Decimal       @db.Decimal(11, 8) // 11 digits total, 8 after decimal
     status     StationStatus
 
-    batteries   Battery[]
-    Reservation Reservation[]
+    batteries         Battery[]
+    Reservation       Reservation[]
+    swap_transactions SwapTransaction[]
+
+    @@map("stations")
 }

@@ -8,5 +8,6 @@ import { DatabaseModule } from '../database/database.module';
   imports: [VehiclesModule, DatabaseModule],
   controllers: [StationsController],
   providers: [StationsService],
+  exports: [StationsService],
 })
 export class StationsModule { }

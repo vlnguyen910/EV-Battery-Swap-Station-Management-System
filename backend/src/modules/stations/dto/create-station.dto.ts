@@ -1,7 +1,5 @@
 import { StationStatus } from "@prisma/client";
-import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsString, Max, MaxLength, Min } from "class-validator";
-// import { Decimal } from "generated/prisma/runtime/library";
-import { Decimal } from '@prisma/client/runtime/library';
+import { IsDecimal, IsEnum, IsNotEmpty, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateStationDto {
     @IsNotEmpty({ message: 'Name is required' })
@@ -21,7 +19,7 @@ export class CreateStationDto {
     latitude: string;
 
     @IsNotEmpty()
-    @IsDecimal({ decimal_digits: '1,8' })
+    @IsDecimal({ decimal_digits: '1,9' })
     @Min(-180)
     @Max(180)
     longitude: string;
