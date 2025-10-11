@@ -40,9 +40,12 @@
     "bcrypt-ts": "^7.1.0",
     "class-transformer": "^0.5.1",
     "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
+    "moment": "^2.30.1",
     "dotenv": "^17.2.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "qs": "^6.14.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

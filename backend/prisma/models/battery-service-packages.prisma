@@ -11,6 +11,7 @@ model BatteryServicePackage {
 
     // Relationships
     subscriptions Subscription[]
+    payments      Payment[]
 
     @@map("battery_service_packages")
 }
