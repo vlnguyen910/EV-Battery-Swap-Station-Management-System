@@ -5,12 +5,13 @@ import Statistics from '../components/landing/Statistics'
 import CustomerTestimonials from '../components/landing/CustomerTestimonials'
 import QuickStartGuide from '../components/landing/QuickStartGuide'
 import PricingPlans from '../components/landing/PricingPlans'
+import Navigation from '../components/layout/Navigation'
 
 export default function GuestPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden w-full">
         {/* Hero Section */}
         <HeroSection />
 
