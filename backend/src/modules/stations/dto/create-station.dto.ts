@@ -1,6 +1,6 @@
 import { StationStatus } from "@prisma/client";
 import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsString, Max, MaxLength, Min } from "class-validator";
-import { Decimal } from "generated/prisma/runtime/library";
+// import { Decimal } from "generated/prisma/runtime/library";
 
 export class CreateStationDto {
     @IsNotEmpty({ message: 'Name is required' })
