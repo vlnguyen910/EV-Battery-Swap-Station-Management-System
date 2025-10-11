@@ -79,7 +79,7 @@ export function sortObject(obj: any): any {
   
   // Get all keys and encode them
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       str.push(encodeURIComponent(key));
     }
   }

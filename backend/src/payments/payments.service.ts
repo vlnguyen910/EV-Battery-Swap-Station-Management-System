@@ -70,7 +70,7 @@ export class PaymentsService {
       vnp_TxnRef: vnpTxnRef,
       vnp_OrderInfo: payment.order_info,
       vnp_OrderType: 'other',
-      vnp_Amount: amount * 100, // VNPAY expects number, sortObject will encode
+      vnp_Amount: amount, // Already multiplied by 100 at line 44
       vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
       vnp_IpAddr: ipAddr,
       vnp_CreateDate: createDate,
