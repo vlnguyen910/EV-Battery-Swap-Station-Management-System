@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { DatabaseService } from '../modules/database/database.service';
+import { DatabaseService } from '../database/database.service';
 import { SubscriptionStatus } from '@prisma/client';
 
 @Injectable()
