@@ -17,12 +17,6 @@ const stats = [
     color: "text-purple-600",
     bgColor: "bg-purple-50"
   },
-  {
-    label: "CO₂ Saved",
-    value: "127 kg",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50"
-  }
 ]
 
 export default function DriverStats() {
@@ -31,9 +25,9 @@ export default function DriverStats() {
       <h2 className="text-xl font-bold text-gray-800 mb-6">This Month</h2>
       <div className="space-y-4">
         {stats.map((stat, index) => (
-          <div key={index} className={`${stat.bgColor} rounded-lg p-4 flex justify-between items-center`}>
+          <div key={index} className={`bg-indigo-200 rounded-lg p-4 flex justify-between items-center`}>
             <span className="text-gray-700 font-medium">{stat.label}</span>
-            <span className={`font-bold text-2xl ${stat.color}`}>
+            <span className={`font-bold text-2xl text-indigo-700`}>
               {stat.value}
             </span>
           </div>
