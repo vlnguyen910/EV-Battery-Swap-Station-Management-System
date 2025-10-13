@@ -85,15 +85,24 @@ export default function MapPage() {
         onSearch={handleSearch}
       />
       
-      <MapContainer 
-        stations={mockStations}
-        onMapReady={handleMapReady}
-      />
-      
-      <StationsList 
-        stations={filteredStations}
-        onStationClick={handleStationClick}
-      />
+      {/* Main content area with Map and Stations side by side */}
+      <div className="flex flex-1 overflow-hidden bg-gray-50">
+        {/* Left side - Map */}
+        <div className="flex-1 h-full">
+          <MapContainer 
+            stations={mockStations}
+            onMapReady={handleMapReady}
+          />
+        </div>
+        
+        {/* Right side - Nearby Stations */}
+        <div className="w-96 bg-white overflow-y-auto">
+          <StationsList 
+            stations={filteredStations}
+            onStationClick={handleStationClick}
+          />
+        </div>
+      </div>
     </div>
   );
 }

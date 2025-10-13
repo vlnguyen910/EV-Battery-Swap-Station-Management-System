@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
-import { Map as TrackAsiaMap, Marker, Popup } from 'trackasia-gl';
+import trackasia from 'trackasia-gl';
+import 'trackasia-gl/dist/trackasia-gl.css';
 
 export default function MapContainer({ stations, onMapReady }) {
   const mapRef = useRef(null);
@@ -19,59 +20,19 @@ export default function MapContainer({ stations, onMapReady }) {
     }
   };
 
+  const mapInstanceRef = useRef(null);
+
+  // Initialize map once
   useEffect(() => {
-    if (mapRef.current) {
-      const mapInstance = new TrackAsiaMap({
+    if (mapRef.current && !mapInstanceRef.current) {
+      const mapInstance = new trackasia.Map({
         container: mapRef.current,
-        style: {
-          "version": 8,
-          "sources": {
-            "osm": {
-              "type": "raster",
-              "tiles": [
-                "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              ],
-              "tileSize": 256,
-              "attribution": "© OpenStreetMap contributors"
-            }
-          },
-          "layers": [
-            {
-              "id": "osm",
-              "type": "raster",
-              "source": "osm"
-            }
-          ]
-        },
+        style: 'https://maps.track-asia.com/styles/v2/streets.json?key=090ec4d01e17603677119843fa3c839c69',
         center: [106.6297, 10.8231], // Ho Chi Minh City
         zoom: 12
       });
 
-      // Add markers for stations
-      stations.forEach(station => {
-        const marker = new Marker({
-          color: getMarkerColor(station.status)
-        })
-          .setLngLat(station.coordinates)
-          .setPopup(
-            new Popup({ offset: 25 })
-              .setHTML(`
-                <div class="p-2">
-                  <h3 class="font-semibold">${station.name}</h3>
-                  <p class="text-sm text-gray-600">${station.address}</p>
-                  <p class="text-sm mt-1">
-                    <span class="font-medium">${station.availableBatteries}/${station.totalBatteries}</span> 
-                    batteries available
-                  </p>
-                </div>
-              `)
-          )
-          .addTo(mapInstance);
-
-        markersRef.current.push(marker);
-      });
+      mapInstanceRef.current = mapInstance;
 
       // Pass map instance to parent component
       if (onMapReady) {
@@ -83,22 +44,61 @@ export default function MapContainer({ stations, onMapReady }) {
         markersRef.current.forEach(marker => marker.remove());
         markersRef.current = [];
         // Remove map
-        mapInstance.remove();
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
       };
     }
-  }, [stations]); // Include stations as dependency
+  }, [onMapReady]);
+
+  // Update markers when stations change
+  useEffect(() => {
+    if (mapInstanceRef.current && stations) {
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+
+      // Add new markers
+      stations.forEach(station => {
+        const marker = new trackasia.Marker({
+          color: getMarkerColor(station.status)
+        })
+          .setLngLat(station.coordinates)
+          .setPopup(
+            new trackasia.Popup({ offset: 25 })
+              .setHTML(`
+                <div class="p-2">
+                  <h3 class="font-semibold">${station.name}</h3>
+                  <p class="text-sm text-gray-600">${station.address}</p>
+                  <p class="text-sm mt-1">
+                    <span class="font-medium">${station.availableBatteries}/${station.totalBatteries}</span> 
+                    batteries available
+                  </p>
+                </div>
+              `)
+          )
+          .addTo(mapInstanceRef.current);
+
+        markersRef.current.push(marker);
+      });
+    }
+  }, [stations]);
 
   return (
-    <div className="flex-1 relative">
-      <div 
-        ref={mapRef} 
-        className="w-full h-full"
-      />
-      
-      {/* Current Location Button */}
-      <button className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-        <MapPin size={20} className="text-blue-600" />
-      </button>
+    <div className="w-full h-full p-4">
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full relative overflow-hidden">
+        <div 
+          ref={mapRef} 
+          className="w-full h-full rounded-lg"
+          style={{ minHeight: '400px' }}
+        />
+        
+        {/* Current Location Button */}
+        <button className="absolute top-6 right-6 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow z-10 border border-gray-200">
+          <MapPin size={20} className="text-blue-600" />
+        </button>
+      </div>
     </div>
   );
 }
