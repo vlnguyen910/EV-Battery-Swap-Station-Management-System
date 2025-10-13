@@ -7,12 +7,14 @@ import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
 import UserPage from './pages/UserPage'
 import NotFound from './pages/NotFound'
+import Driver from './pages/Driver'
 
 function App() {
   return (
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
+        <Route path="/driver" element={<Driver />} />
         <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
