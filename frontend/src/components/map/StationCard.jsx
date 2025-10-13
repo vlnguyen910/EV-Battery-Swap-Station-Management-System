@@ -1,7 +1,23 @@
 import React from 'react';
 import { Clock, Battery, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function StationCard({ station, onClick }) {
+  const navigate = useNavigate();
+  
+  const handleBookNow = (e) => {
+    e.stopPropagation(); // Prevent triggering onClick
+    const params = new URLSearchParams({
+      stationId: station.id,
+      name: station.name,
+      address: station.address,
+      availableBatteries: station.availableBatteries,
+      totalBatteries: station.totalBatteries,
+      status: station.status
+    });
+    navigate(`/booking?${params.toString()}`);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Available':
@@ -44,10 +60,18 @@ export default function StationCard({ station, onClick }) {
           </div>
         </div>
         
-        <div className="ml-4">
+        <div className="ml-4 flex flex-col items-end gap-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(station.status)}`}>
             {station.status}
           </span>
+          {station.status !== 'No Slots' && (
+            <button
+              onClick={handleBookNow}
+              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md transition-colors"
+            >
+              Book Now
+            </button>
+          )}
         </div>
       </div>
     </div>
