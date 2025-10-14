@@ -9,27 +9,19 @@ export default function Driver() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Welcome Header - Full Width */}
-        <div className="mb-6">
-          <WelcomeHeader userName="Alex" />
-        </div>
-        
-        {/* Main 3-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column - Vehicle Status + Recent Activity */}
-          <div className="lg:col-span-6 space-y-6">
+        {/* Main 2-Column Layout */}
+        <div className="grid grid-row-5 lg:grid-cols-2 gap-6">
+          {/* Left Column - Welcome Header + Vehicle Status + Recent Activity */}
+          <div className="space-y-6">
+            <WelcomeHeader userName="Người dùng pro vip" />
             <VehicleStatus />
             <RecentActivity />
           </div>
           
-          {/* Middle Column - Nearby Stations */}
-          <div className="lg:col-span-3">
-            <NearbyStations />
-          </div>
-          
-          {/* Right Column - Driver Stats + Need Help */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* Right Column - Driver Stats + Nearby Stations */}
+          <div className="space-y-6">
             <DriverStats />
+            <NearbyStations />
             <NeedHelp />
           </div>
         </div>

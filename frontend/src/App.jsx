@@ -7,12 +7,16 @@ import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
 import UserPage from './pages/UserPage'
 import NotFound from './pages/NotFound'
+import MapPage from './pages/Map'
+import Driver from './pages/Driver'
+import Booking from './pages/Booking'
 
 function App() {
   return (
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
+        <Route path="/driver" element={<Driver />} />
         <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
@@ -20,6 +24,8 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/user" element={<UserPage />} />
+        <Route path="/map" element={<MapPage />} />
+        <Route path="/booking" element={<Booking />} />
       </Routes>
     </div>
   );

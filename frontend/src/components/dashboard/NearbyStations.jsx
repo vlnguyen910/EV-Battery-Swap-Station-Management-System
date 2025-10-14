@@ -30,7 +30,7 @@ const stations = [
 export default function NearbyStations() {
   return (
     <Card className="bg-white shadow-lg border border-gray-200">
-      <CardHeader className="bg-blue-600 text-white rounded-t-lg">
+      <CardHeader className="bg-blue-800 text-white rounded-lg pt-2">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg font-bold">Nearby Stations</h2>
           <button className="text-white hover:text-green-100 text-sm font-medium underline">
@@ -43,16 +43,16 @@ export default function NearbyStations() {
           {stations.map((station, index) => (
             <div 
               key={index} 
-              className={`${station.bgColor} rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer border border-gray-100`}
+              className={`bg-indigo-200 rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer border border-gray-100`}
             >
-              <div className="flex items-center space-x-3">
-                <span className="text-xl">{station.icon}</span>
+              <div className="flex items-center space-x-2">
+                {/* <span className="text-xl">{station.icon}</span> */}
                 <div>
-                  <p className={`font-semibold text-sm ${station.textColor}`}>{station.name}</p>
+                  <p className={`font-semibold text-sm text-indigo-800`}>{station.name}</p>
                   <p className="text-gray-600 text-xs font-medium">{station.distance}</p>
                 </div>
               </div>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors shadow-sm">
+              <button className="bg-blue-800 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors shadow-sm">
                 <span className="text-sm font-medium">→</span>
               </button>
             </div>
