@@ -3,6 +3,7 @@ enum BatteryStatus {
     charging
     booked
     defective
+    in_use
 }
 
 model Battery {
