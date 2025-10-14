@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import batteryService from '../services/batteryService';
 
+
 const BatteryContext = createContext();
 
 export const BatteryProvider = ({ children }) => {

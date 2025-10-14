@@ -8,7 +8,7 @@ export default function StaffPage() {
             <div className="min-h-screen bg-gray-50">
                 <Navigation type="staff" />
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="p-6">
                     {/* Trang con sẽ render ở đây */}
                     <Outlet />
                 </main>
