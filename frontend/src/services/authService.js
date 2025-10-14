@@ -40,13 +40,54 @@ const register = async (userInfo) => {
   }
 };
 
-//get current user profile
-const getProfile = async () => {
+//update user profile
+const updateProfile = async (profileData) => {
   try {
-    const response = await api.get(API_ENDPOINTS.USERS.GET_PROFILE);
+    const response = await api.patch(
+      API_ENDPOINTS.USER.UPDATE_PROFILE,
+      profileData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Update profile error:", error);
+    throw error;
+  }
+};
+
+//get current user profile
+const getProfile = async (userId) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.USER.GET_PROFILE(userId));
     return response.data;
   } catch (error) {
     console.error("Get profile error:", error);
+    if (error.response) console.log(error.response.data, error.response.status);
+    else if (error.request) console.log(error.request);
+    else console.log(error.message);
+    throw error;
+  }
+};
+
+//Get all users
+const getAllUsers = async () => {
+  try {
+    const response = await api.get(API_ENDPOINTS.USER.GET_ALL_USERS);
+    return response.data;
+  } catch (error) {
+    console.error("Get all users error:", error);
+    throw error;
+  }
+};
+
+// Delete user by ID
+const deleteUser = async (userId) => {
+  try {
+    const response = await api.delete(
+      `${API_ENDPOINTS.USER.DELETE_USER}/${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Delete user error:", error);
     throw error;
   }
 };
@@ -57,4 +98,7 @@ export const authService = {
   logout,
   register,
   getProfile,
+  getAllUsers,
+  updateProfile,
+  deleteUser,
 };

@@ -5,6 +5,10 @@ export class SwappingDto {
     @IsNotEmpty({ message: 'user_id should not be empty' })
     user_id: number;
 
+    @IsInt({ message: 'vehicle_id must be an integer' })
+    @IsNotEmpty({ message: 'vehicle_id should not be empty' })
+    vehicle_id: number;
+
     @IsInt({ message: 'station_id must be an integer' })
     @IsNotEmpty({ message: 'station_id should not be empty' })
     station_id: number;

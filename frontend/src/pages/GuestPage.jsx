@@ -5,33 +5,36 @@ import Statistics from '../components/landing/Statistics'
 import CustomerTestimonials from '../components/landing/CustomerTestimonials'
 import QuickStartGuide from '../components/landing/QuickStartGuide'
 import PricingPlans from '../components/landing/PricingPlans'
+import Navigation from '../components/layout/Navigation'
 
 export default function GuestPage() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen">
-        {/* Hero Section */}
-        <HeroSection />
+      <Navigation type="main" />
 
-        {/* Key Features */}
-        <KeyFeatures />
+      {/* Hero Section */}
+      <HeroSection />
 
-        {/* Statistics */}
-        <Statistics />
+      {/* Key Features */}
+      <KeyFeatures />
 
-        {/* Customer Testimonials */}
-        <CustomerTestimonials />
+      {/* Statistics */}
+      <Statistics />
 
-        {/* Quick Start Guide */}
-        <QuickStartGuide />
+      {/* Customer Testimonials */}
+      <CustomerTestimonials />
 
-        {/* Pricing Plans */}
-        <PricingPlans />
+      {/* Quick Start Guide */}
+      <QuickStartGuide />
 
-        {/* Call to Action Section */}
+      {/* Pricing Plans */}
+      <PricingPlans />
 
-      </div>
+      {/* Call to Action Section */}
+
+    </div>
 
   )
 }

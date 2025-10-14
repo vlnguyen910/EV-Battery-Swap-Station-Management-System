@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { DatabaseService } from '../modules/database/database.service';
+import { DatabaseService } from '../database/database.service';
 import { SubscriptionStatus } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     // 1. Check if package exists and is active
