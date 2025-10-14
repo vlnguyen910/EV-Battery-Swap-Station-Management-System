@@ -1,6 +1,7 @@
 // import { Toaster, toast } from 'sonner'
 import { Routes, Route } from 'react-router-dom'
 import Navigation from './components/layout/Navigation'
+import Driver from './pages/Driver'
 import GuestPage from './pages/GuestPage'
 import AuthContainer from './components/containers/AuthContainer'
 import AdminPage from './pages/AdminPage'
