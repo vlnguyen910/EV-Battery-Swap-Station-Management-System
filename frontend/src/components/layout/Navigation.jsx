@@ -6,14 +6,14 @@ export default function Navigation({ type = "main" }) {
 
   // --- NAVBAR CHO MAIN WEBSITE ---
   const MainNavigation = () => (
-    <nav className="bg-blue-600 text-white shadow-lg">
+    <nav className="bg-blue-800 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-lg">E</span>
+                <span className="text-blue-800 font-bold text-lg">E</span>
               </div>
               <span className="text-xl font-bold">EV SWAP</span>
             </Link>
@@ -40,21 +40,21 @@ export default function Navigation({ type = "main" }) {
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50">
                   <Link
                     to="/stations"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Trạm đổi pin
                   </Link>
                   <Link
                     to="/batteries"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Quản lý pin
                   </Link>
                   <Link
                     to="/dashboard"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Dashboard
@@ -80,7 +80,7 @@ export default function Navigation({ type = "main" }) {
               <span className="text-blue-200">VI</span>
               <span className="text-white">EN</span>
             </div>
-            <button className="bg-white text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">
+            <button className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">
               <Link to="/login">Đăng nhập</Link>
             </button>
           </div>
