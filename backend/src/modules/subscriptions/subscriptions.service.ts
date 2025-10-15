@@ -204,11 +204,6 @@ export class SubscriptionsService {
       throw new BadRequestException('Subscription is not active');
     }
 
-    // Check if swap limit is reached
-    if (subscription.swap_used >= subscription.package.swap_count) {
-      throw new BadRequestException('Swap limit reached');
-    }
-
     return this.prisma.subscription.update({
       where: { subscription_id: id },
       data: {
