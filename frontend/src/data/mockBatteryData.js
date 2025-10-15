@@ -73,7 +73,7 @@ export const generateMockBatteries = () => {
     {
       battery_id: 7,
       vehicle_id: 101,
-      station_id: null,
+      station_id: 2,
       model: "Model Y",
       capacity: 75000,
       status: "taken",
@@ -84,7 +84,7 @@ export const generateMockBatteries = () => {
     },
     {
       battery_id: 8,
-      vehicle_id: null,
+      vehicle_id: 2,
       station_id: 1,
       model: "Model X",
       capacity: 95000,
@@ -96,7 +96,7 @@ export const generateMockBatteries = () => {
     },
     {
       battery_id: 9,
-      vehicle_id: null,
+      vehicle_id: 2,
       station_id: 1,
       model: "Model Y",
       capacity: 75000,
@@ -108,7 +108,7 @@ export const generateMockBatteries = () => {
     },
     {
       battery_id: 10,
-      vehicle_id: null,
+      vehicle_id: 2,
       station_id: 1,
       model: "Model X",
       capacity: 95000,
@@ -121,7 +121,7 @@ export const generateMockBatteries = () => {
     {
       battery_id: 11,
       vehicle_id: null,
-      station_id: 1,
+      station_id: 3,
       model: "Model Y",
       capacity: 75000,
       status: "available",
