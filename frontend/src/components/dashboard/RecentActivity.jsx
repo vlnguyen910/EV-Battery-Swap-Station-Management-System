@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "../ui/card"
+import { History, CheckCircle, Clock, TrendingUp } from "lucide-react"
 
 //Nữa fetch data từ backend về
 const activities = [
@@ -35,7 +36,10 @@ export default function RecentActivity() {
     <Card className="bg-white shadow-lg border border-gray-200">
       <CardHeader className="bg-blue-800 text-white rounded-lg pt-2">
         <div className="flex flex-row items-center justify-between">
-          <h2 className="text-lg font-bold">Recent Activity</h2>
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5" />
+            <h2 className="text-lg font-bold">Recent Activity</h2>
+          </div>
           <button className="text-white hover:text-blue-100 text-sm font-medium underline">
             View All
           </button>
@@ -46,16 +50,22 @@ export default function RecentActivity() {
           {activities.map((activity, index) => (
             <div 
               key={index}
-              className={`bg-indigo-200 border ${activity.borderColor} rounded-lg p-4 flex justify-between items-center hover:shadow-md transition-all`}
+              className={`bg-gray-200 border ${activity.borderColor} rounded-lg p-4 flex justify-between items-center hover:bg-indigo-300 transition-all`}
             >
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center border-2 border-indigo-300">
-                  <span className="text-indigo-600 text-lg">✓</span>
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center border-2 border-green-300">
+                  <CheckCircle className="text-green-600 w-5 h-5" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{activity.station}</p>
-                  <p className="text-gray-600 text-sm font-medium">{activity.time}</p>
-                  <p className="text-gray-700 text-sm">{activity.progress}</p>
+                  <div className="flex items-center gap-1 text-gray-600 text-sm font-medium">
+                    <Clock className="w-3 h-3" />
+                    <p>{activity.time}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-700 text-sm">
+                    <TrendingUp className="w-3 h-3" />
+                    <p>{activity.progress}</p>
+                  </div>
                 </div>
               </div>
               <div className="text-right">

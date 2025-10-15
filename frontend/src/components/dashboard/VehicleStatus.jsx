@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
+import { Link } from "react-router-dom"
 
 export default function VehicleStatus() {
   const batteryLevel = 68
@@ -59,13 +60,15 @@ export default function VehicleStatus() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button className="bg-blue-800 hover:bg-blue-700 text-white font-medium py-3 shadow-md">
-             Find Stations
-          </Button>
-          <Button variant="outline" className="text-blue-800 border-blue-800 hover:bg-blue-50 font-medium py-3">
+        <div className="flex justify-center">
+          <Link to="/map">
+            <Button className="bg-blue-800 hover:bg-blue-900 text-white font-medium py-3 shadow-md w-full">
+              Find Stations
+            </Button>
+          </Link>
+          {/* <Button variant="outline" className="text-blue-800 border-blue-800 hover:bg-blue-50 font-medium py-3">
             Book Swap
-          </Button>
+          </Button> */}
         </div>
       </CardContent>
     </Card>
