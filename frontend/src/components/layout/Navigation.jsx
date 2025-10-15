@@ -91,32 +91,84 @@ export default function Navigation({ type = "main" }) {
 
   // --- NAVBAR CHO STAFF ---
   const StaffNavigation = () => (
-    <nav className="w-full flex items-center justify-between px-6 py-2 bg-white shadow-sm">
-      {/* Logo */}
-      <div className="flex items-center space-x-2">
-        <h1 className="text-2xl font-extrabold font-[Poppins] text-gray-900">
-          hman <span className="text-indigo-600">Power</span>
-        </h1>
-        <span className="text-sm text-gray-500">Staff Portal</span>
-      </div>
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <h1
+              className="text-2xl font-bold text-gray-900"
+              style={{ fontFamily: "Pacifico, serif" }}
+            >
+              hman Power
+            </h1>
+            <span className="ml-4 text-sm text-gray-500">Staff Portal</span>
+          </div>
 
-      {/* Menu items */}
-      <div className="flex items-center space-x-6 text-sm text-gray-700">
-        <button className="flex items-center gap-1 hover:text-indigo-600 transition">
-          <i className="ri-time-line"></i> Overview
-        </button>
-        <button className="flex items-center gap-1 hover:text-indigo-600 transition">
-          <i className="ri-search-line"></i> Kiểm tra pin
-        </button>
-        <button className="flex items-center gap-1 hover:text-indigo-600 transition">
-          <i className="ri-database-2-line"></i> Kho pin
-        </button>
-        <button className="hover:text-indigo-600 transition">Nhân viên</button>
-      </div>
+          <div className="flex items-center space-x-6">
+            <Link
+              to="/staff"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-layout-grid-line mr-2 text-blue-500"></i>
+              Overview
+            </Link>
 
-      {/* User icon */}
-      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
-        <i className="ri-user-line text-green-700 text-lg"></i>
+            <Link
+              to="/staff/inspection"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-search-line mr-2 text-blue-500"></i>
+              Kiểm tra pin
+            </Link>
+
+            <Link
+              to="/staff/inventory"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-archive-line mr-2 text-blue-500"></i>
+              Kho pin
+            </Link>
+
+            {/* Dropdown Status */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+              >
+                <i className="ri-battery-2-charge-line mr-2 text-blue-500"></i>
+                Trạng thái pin
+                <i
+                  className={`ri-arrow-down-s-line ml-1 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                ></i>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 shadow-lg rounded-md z-10">
+                  <button className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-time-line mr-2 text-blue-500"></i>
+                    Chờ xử lý
+                  </button>
+                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-loader-2-line mr-2 animate-spin text-yellow-500"></i>
+                    Đang xử lý
+                  </button>
+                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-check-double-line mr-2 text-green-500"></i>
+                    Hoàn thành
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-700">Nhân viên</span>
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <i className="ri-user-3-line text-green-600 text-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
   )

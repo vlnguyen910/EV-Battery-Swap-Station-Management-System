@@ -12,6 +12,9 @@ import MapPage from './pages/Map'
 import Driver from './pages/Driver'
 import Booking from './pages/Booking'
 import SwapHistory from './pages/SwapHistory'
+import StaffDashboard from './components/dashboard/StaffDashboard'
+import StaffInventory from './components/dashboard/StaffInventory'
+import StaffInspection from './components/dashboard/StaffInspection'
 
 function App() {
   const location = useLocation()
@@ -22,28 +25,25 @@ function App() {
   
   return (
     <div className="App">
-      {/* Show Sidebar for authenticated routes */}
-      {showSidebar && <Sidebar />}
-      
-      {/* Main Content Area */}
-      <div className={`${showSidebar ? 'ml-64' : ''} overflow-x-hidden min-h-screen`}>
-        {/* Show Navigation for guest routes */}
-        {!showSidebar && <Navigation />}
-        
-        <Routes>
-          <Route path="/driver" element={<Driver />} />
-          <Route path="/" element={<GuestPage />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/login" element={<AuthContainer mode="login" />} />
-          <Route path="/register" element={<AuthContainer mode="register" />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/staff" element={<StaffPage />} />
-          <Route path="/user" element={<UserPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/swap-history" element={<SwapHistory />} />
-        </Routes>
-      </div>
+      {/* <Navigation /> */}
+      <Routes>
+        <Route path="/driver" element={<Driver />} />
+        <Route path="/" element={<GuestPage />} />
+        <Route path="*" element={<NotFound />} />
+        <Route path="/login" element={<AuthContainer mode="login" />} />
+        <Route path="/register" element={<AuthContainer mode="register" />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/staff" element={<StaffPage />}>
+          {/* Route con */}
+          <Route index element={<StaffDashboard />} />
+          <Route path="inventory" element={<StaffInventory />} />
+          <Route path="inspection" element={<StaffInspection />} />
+        </Route>
+        <Route path="/user" element={<UserPage />} />
+
+        {/* Dashboard Routes */}
+        <Route path="/staff/inventory" element={<StaffInventory />} />
+      </Routes>
     </div>
   );
 }

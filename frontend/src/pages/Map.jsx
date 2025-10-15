@@ -56,7 +56,7 @@ export default function MapPage() {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    const filtered = mockStations.filter(station => 
+    const filtered = mockStations.filter(station =>
       station.name.toLowerCase().includes(query.toLowerCase()) ||
       station.address.toLowerCase().includes(query.toLowerCase())
     );
@@ -79,25 +79,25 @@ export default function MapPage() {
   return (
     <div className="flex flex-col h-screen bg-white">
       <MapHeader />
-      
-      <MapSearchBar 
+
+      <MapSearchBar
         searchQuery={searchQuery}
         onSearch={handleSearch}
       />
-      
+
       {/* Main content area with Map and Stations side by side */}
       <div className="flex flex-1 overflow-hidden bg-gray-50">
         {/* Left side - Map */}
         <div className="flex-1 h-full">
-          <MapContainer 
+          <MapContainer
             stations={mockStations}
             onMapReady={handleMapReady}
           />
         </div>
-        
+
         {/* Right side - Nearby Stations */}
         <div className="w-96 bg-white overflow-y-auto">
-          <StationsList 
+          <StationsList
             stations={filteredStations}
             onStationClick={handleStationClick}
           />
