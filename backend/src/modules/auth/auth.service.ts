@@ -28,7 +28,7 @@ export class AuthService {
         const user = await this.usersService.findOneByEmailOrPhone(input.emailOrPhone);
 
 
-        if (!user || await !isMatchPassword(input.password, user.password)) {
+        if (!user || !(await isMatchPassword(input.password, user.password))) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
