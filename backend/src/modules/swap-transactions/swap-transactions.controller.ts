@@ -14,8 +14,7 @@ export class SwapTransactionsController {
 
   @Post()
   create(@Body() createDto: CreateSwapTransactionDto) {
-    const tx = null;
-    return this.swapTransactionsService.create(createDto, tx);
+    return this.swapTransactionsService.create(createDto);
   }
 
   @Roles($Enums.Role.admin)

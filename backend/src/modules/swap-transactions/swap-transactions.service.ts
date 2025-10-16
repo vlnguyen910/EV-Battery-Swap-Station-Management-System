@@ -8,7 +8,6 @@ import { BatteriesService } from '../batteries/batteries.service';
 import { DatabaseService } from '../database/database.service';
 import { BatteryStatus, SwapTransactionStatus } from '@prisma/client';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
 
 
 @Injectable()
@@ -20,14 +19,13 @@ export class SwapTransactionsService {
     private readonly stationsService: StationsService,
     private readonly batteriesService: BatteriesService,
     private readonly subcriptionsService: SubscriptionsService,
-    private readonly batteryServicePackagesService: BatteryServicePackagesService
   ) { }
 
   private readonly logger = new Logger(SwapTransactionsService.name);
 
   async create(
     createDto: CreateSwapTransactionDto,
-    tx: any // transaction object
+    tx?: any // transaction object
   ) {
     const [user, vehicle, station, battery_taken, subscription] = await Promise.all([
       this.usersService.findOneById(createDto.user_id),
@@ -36,7 +34,9 @@ export class SwapTransactionsService {
       this.batteriesService.findOne(createDto.battery_taken_id),
       this.subcriptionsService.findOne(createDto.subscription_id),
     ]);
-    const prisma = tx || this.databaseService
+
+    const prisma = tx || this.databaseService;
+
     try {
       if (!user) {
         this.logger.warn(`User with ID ${createDto.user_id} not found`);
@@ -100,7 +100,7 @@ export class SwapTransactionsService {
 
       // Create swap transaction
       this.logger.log(`Creating swap transaction for user ${createDto.user_id} at station ${createDto.station_id}`);
-      return await this.databaseService.swapTransaction.create({
+      return await prisma.swapTransaction.create({
         data: {
           user_id: createDto.user_id,
           vehicle_id: createDto.vehicle_id,

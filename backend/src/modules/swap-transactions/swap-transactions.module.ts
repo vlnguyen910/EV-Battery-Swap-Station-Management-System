@@ -7,7 +7,6 @@ import { StationsModule } from '../stations/stations.module';
 import { BatteriesModule } from '../batteries/batteries.module';
 import { DatabaseModule } from '../database/database.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
-import { BatteryServicePackagesModule } from '../battery-service-packages/battery-service-packages.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { BatteryServicePackagesModule } from '../battery-service-packages/batter
     VehiclesModule,
     StationsModule,
     BatteriesModule,
-    BatteryServicePackagesModule,
     SubscriptionsModule
   ],
   controllers: [SwapTransactionsController],
