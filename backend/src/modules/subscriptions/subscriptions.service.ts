@@ -11,7 +11,7 @@ import { SubscriptionStatus } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     // 1. Check if package exists and is active
