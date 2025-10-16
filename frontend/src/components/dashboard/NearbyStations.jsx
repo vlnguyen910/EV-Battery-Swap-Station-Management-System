@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "../ui/card"
+import { MapPin, Navigation, ArrowRight, Zap } from "lucide-react"
 
 const stations = [
   {
@@ -30,9 +31,12 @@ const stations = [
 export default function NearbyStations() {
   return (
     <Card className="bg-white shadow-lg border border-gray-200">
-      <CardHeader className="bg-blue-600 text-white rounded-t-lg">
+      <CardHeader className="bg-blue-800 text-white rounded-lg pt-2">
         <div className="flex flex-row items-center justify-between">
-          <h2 className="text-lg font-bold">Nearby Stations</h2>
+          <div className="flex items-center gap-2">
+            <Navigation className="w-5 h-5" />
+            <h2 className="text-lg font-bold">Nearby Stations</h2>
+          </div>
           <button className="text-white hover:text-green-100 text-sm font-medium underline">
             View All
           </button>
@@ -43,17 +47,22 @@ export default function NearbyStations() {
           {stations.map((station, index) => (
             <div 
               key={index} 
-              className={`${station.bgColor} rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer border border-gray-100`}
+              className={`bg-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-indigo-300 transition-all cursor-pointer border border-gray-100`}
             >
               <div className="flex items-center space-x-3">
-                <span className="text-xl">{station.icon}</span>
+                <div className={`w-10 h-10 ${station.status === 'available' ? 'bg-green-100' : 'bg-yellow-100'} rounded-full flex items-center justify-center`}>
+                  <Zap className={`w-5 h-5 ${station.status === 'available' ? 'text-green-600' : 'text-yellow-600'}`} />
+                </div>
                 <div>
-                  <p className={`font-semibold text-sm ${station.textColor}`}>{station.name}</p>
-                  <p className="text-gray-600 text-xs font-medium">{station.distance}</p>
+                  <p className={`font-semibold text-sm text-indigo-800`}>{station.name}</p>
+                  <div className="flex items-center gap-1 text-gray-600 text-xs font-medium">
+                    <MapPin className="w-3 h-3" />
+                    <p>{station.distance}</p>
+                  </div>
                 </div>
               </div>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors shadow-sm">
-                <span className="text-sm font-medium">→</span>
+              <button className="bg-blue-800 hover:bg-blue-900 text-white p-2 rounded-lg transition-colors shadow-sm">
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ))}

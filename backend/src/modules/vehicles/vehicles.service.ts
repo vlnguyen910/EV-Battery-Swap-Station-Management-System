@@ -126,6 +126,22 @@ export class VehiclesService {
     return vehicle;
   }
 
+  async updateBatteryId(vehicle_id: number, battery_id: number) {
+    await this.findOne(vehicle_id); // Check if vehicle exists
+    return await this.databaseService.vehicle.update({
+      where: { vehicle_id },
+      data: { battery_id },
+    });
+  }
+
+  async removeBatteryFromVehicle(vehicle_id: number) {
+    await this.findOne(vehicle_id); // Check if vehicle exists
+    return await this.databaseService.vehicle.update({
+      where: { vehicle_id },
+      data: { battery_id: null },
+    });
+  }
+
   async update(id: number, updateVehicleDto: UpdateVehicleDto) {
     await this.findOne(id); // Check if vehicle exists
 
