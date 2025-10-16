@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { generateSwapHistory } from '../data/mockData';
 
 export default function SwapHistory() {
   // Pagination state
@@ -20,33 +21,6 @@ export default function SwapHistory() {
   
   // Total mock data count
   const TOTAL_MOCK_DATA = 230;
-
-  // Mock data for development
-  const generateMockData = (count) => {
-    const locations = [
-      'EV Station 01 - Downtown',
-      'Power Station B - Shopping Center',
-      'Quick Charge Hub - Airport',
-      'Express Station - Campus',
-      'Green Energy Point - Park',
-      'Urban Swap Center - Mall'
-    ];
-
-    const now = new Date();
-    return Array.from({ length: count }, (_, i) => {
-      // Generate dates spread across the past year
-      const daysAgo = Math.floor(Math.random() * 365);
-      const swapDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      
-      return {
-        id: i + 1,
-        date: swapDate.toISOString().split('T')[0],
-        time: `${String(Math.floor(Math.random() * 12) + 8).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
-        location: locations[Math.floor(Math.random() * locations.length)],
-        amount: Math.floor(Math.random() * 5) + 1 // 1-5 batteries
-      };
-    });
-  };
 
   // Filter data by time period
   const filterByTimePeriod = (data) => {
@@ -91,7 +65,7 @@ export default function SwapHistory() {
         
         // Mock data simulation
         await new Promise(resolve => setTimeout(resolve, 300));
-        const mockData = generateMockData(TOTAL_MOCK_DATA);
+        const mockData = generateSwapHistory(TOTAL_MOCK_DATA);
         
         // Apply time period filter
         const filteredByTime = filterByTimePeriod(mockData);

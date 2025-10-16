@@ -1,23 +1,27 @@
 import { RefreshCw, DollarSign, Clock, Calendar } from "lucide-react"
+import { calculateMonthlyStats } from "../../data/mockData"
+
+// Calculate stats for current user (user_id: 1)
+const monthlyStats = calculateMonthlyStats(1);
 
 const stats = [
   {
     label: "Total Swaps",
-    value: "18",
+    value: monthlyStats.totalSwaps.toString(),
     color: "text-blue-600",
     bgColor: "bg-blue-50",
     icon: RefreshCw
   },
   {
     label: "Total Cost",
-    value: "$153.00",
+    value: `$${(monthlyStats.totalCost / 1000).toFixed(2)}`,
     color: "text-green-600",
     bgColor: "bg-green-50",
     icon: DollarSign
   },
   {
     label: "Avg. Time",
-    value: "4.2 min",
+    value: `${monthlyStats.avgTime} min`,
     color: "text-purple-600",
     bgColor: "bg-purple-50",
     icon: Clock
