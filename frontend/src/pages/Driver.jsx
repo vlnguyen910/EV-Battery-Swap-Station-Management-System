@@ -9,6 +9,7 @@ import Navigation from '../components/layout/Navigation'
 export default function Driver() {
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-white">
+      <Navigation />
       {/* Aurora Dream Diagonal Flow */}
       <div
         className="absolute inset-0 z-0"

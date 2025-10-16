@@ -23,8 +23,8 @@ export default function GuestPage() {
         }}
       />
       {/* Your Content Here */}
-      <div className="min-h-screen pt-4 relative z-10">
-        {/* <Navigation type="main" /> */}
+      <div className="min-h-screen relative z-10">
+        <Navigation />
 
         {/* Hero Section */}
         <HeroSection />
