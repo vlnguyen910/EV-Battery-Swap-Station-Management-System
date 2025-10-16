@@ -12,10 +12,9 @@ import { $Enums } from '@prisma/client';
 export class SwapTransactionsController {
   constructor(private readonly swapTransactionsService: SwapTransactionsService) { }
 
-  @Roles($Enums.Role.driver)
   @Post()
-  create(@Body() dto: CreateSwapTransactionDto) {
-    return this.swapTransactionsService.create(dto);
+  create(@Body() createDto: CreateSwapTransactionDto) {
+    return this.swapTransactionsService.create(createDto);
   }
 
   @Roles($Enums.Role.admin)
@@ -31,7 +30,7 @@ export class SwapTransactionsController {
   }
 
   @Roles($Enums.Role.admin)
-  @Get(':id')
+  @Get('transaction/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.swapTransactionsService.findOne(id);
   }
