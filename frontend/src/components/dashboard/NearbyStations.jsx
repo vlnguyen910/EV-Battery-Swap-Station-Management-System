@@ -1,32 +1,18 @@
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { MapPin, Navigation, ArrowRight, Zap } from "lucide-react"
+import { getNearbyStations } from "../../data/mockData"
 
-const stations = [
-  {
-    name: "Downtown Station A",
-    distance: "0.8 km • 3 slots",
-    status: "available",
-    icon: "🟢",
-    bgColor: "bg-green-50",
-    textColor: "text-green-700"
-  },
-  {
-    name: "Mall Station B",
-    distance: "1.2 km • 2 slots",
-    status: "busy", 
-    icon: "🟡",
-    bgColor: "bg-yellow-50",
-    textColor: "text-yellow-700"
-  },
-  {
-    name: "University Station D",
-    distance: "1.5 km • 4 slots",
-    status: "available",
-    icon: "🟢",
-    bgColor: "bg-green-50",
-    textColor: "text-green-700"
-  }
-]
+// Get nearby stations based on current location (Ho Chi Minh City center)
+const userLocation = { latitude: 10.7769, longitude: 106.7009 };
+const stations = getNearbyStations(userLocation.latitude, userLocation.longitude, 5)
+  .slice(0, 3)
+  .map(station => ({
+    station_id: station.station_id,
+    name: station.name,
+    distance: `${station.distance} km • ${station.available_slots} slots`,
+    status: station.available_slots > 0 ? 'available' : 'busy',
+    address: station.address
+  }));
 
 export default function NearbyStations() {
   return (
@@ -44,9 +30,9 @@ export default function NearbyStations() {
       </CardHeader>
       <CardContent className="p-4">
         <div className="space-y-3">
-          {stations.map((station, index) => (
+          {stations.map((station) => (
             <div 
-              key={index} 
+              key={station.station_id} 
               className={`bg-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-indigo-300 transition-all cursor-pointer border border-gray-100`}
             >
               <div className="flex items-center space-x-3">

@@ -1,9 +1,4 @@
-import WelcomeHeader from '../components/dashboard/WelcomeHeader'
-import VehicleStatus from '../components/dashboard/VehicleStatus'
-import DriverStats from '../components/dashboard/DriverStats'
-import NearbyStations from '../components/dashboard/NearbyStations'
-import RecentActivity from '../components/dashboard/RecentActivity'
-import NeedHelp from '../components/dashboard/NeedHelp'
+import { Outlet } from 'react-router-dom'
 import Navigation from '../components/layout/Navigation'
 
 export default function Driver() {
@@ -24,26 +19,15 @@ export default function Driver() {
         }}
       />
 
+      {/* Navigation */}
+      <Navigation type="main" />
+
       {/* Content */}
       <div className="min-h-screen relative z-10">
-        <div className="max-w-7xl pt-4 mx-auto">
-          {/* Main 2-Column Layout */}
-          <div className="flex flex-rows-2 mb-6 p-12 lg:grid-cols-2 gap-12">
-            {/* Left Column - Welcome Header + Vehicle Status + Recent Activity */}
-            <div className="space-y-6">
-              <WelcomeHeader userName="Người dùng pro vip" />
-              <VehicleStatus />
-              <RecentActivity />
-            </div>
-
-            {/* Right Column - Driver Stats + Nearby Stations */}
-            <div className="space-y-6">
-              <DriverStats />
-              <NearbyStations />
-              <NeedHelp />
-            </div>
-          </div>
-        </div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Trang con sẽ render ở đây */}
+          <Outlet />
+        </main>
       </div>
     </div>
   )

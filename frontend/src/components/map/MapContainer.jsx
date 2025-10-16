@@ -30,6 +30,7 @@ export default function MapContainer({ stations, onMapReady }) {
     if (mapRef.current && !mapInstanceRef.current) {
       const mapInstance = new trackasia.Map({
         container: mapRef.current,
+        //style: `https://maps.track-asia.com/styles/v2/night.json?key=${TRACKASIA_API_KEY}`, DARK MODE
         style: `https://maps.track-asia.com/styles/v2/streets.json?key=${TRACKASIA_API_KEY}`,
         center: [106.6297, 10.8231], // Ho Chi Minh City
         zoom: 12,
