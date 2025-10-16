@@ -16,7 +16,7 @@ export function useLoginHandler() {
       } else if (user?.role === "station_staff") {
         navigate("/staff");
       } else {
-        navigate("/driver");
+        navigate("/user");
       }
 
       return user;
