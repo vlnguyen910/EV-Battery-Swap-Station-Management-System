@@ -22,7 +22,7 @@ export default function Driver() {
           `,
         }}
       />
-      
+
       {/* Content */}
       <div className="min-h-screen relative z-10">
         <div className="max-w-7xl pt-4 mx-auto">
@@ -34,7 +34,7 @@ export default function Driver() {
               <VehicleStatus />
               <RecentActivity />
             </div>
-            
+
             {/* Right Column - Driver Stats + Nearby Stations */}
             <div className="space-y-6">
               <DriverStats />
