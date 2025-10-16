@@ -134,12 +134,23 @@ export class VehiclesService {
     });
   }
 
-  async removeBatteryFromVehicle(vehicle_id: number) {
-    await this.findOne(vehicle_id); // Check if vehicle exists
-    return await this.databaseService.vehicle.update({
-      where: { vehicle_id },
-      data: { battery_id: null },
-    });
+  async removeBatteryFromVehicle(
+    vehicle_id: number,
+    tx: any // Pass the transaction object
+  ) {
+    try {
+      const vehicle = await this.findOne(vehicle_id); // Check if vehicle exists
+      if (!vehicle) {
+        throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
+      }
+
+      return await tx.vehicle.update({
+        where: { vehicle_id },
+        data: { battery_id: null },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async update(id: number, updateVehicleDto: UpdateVehicleDto) {

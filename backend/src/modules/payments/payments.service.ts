@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { DatabaseService } from '../modules/database/database.service';
+import { DatabaseService } from '../database/database.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MockPaymentDto } from './dto/mock-payment.dto';
 import { vnpayConfig } from './config/vnpay.config';

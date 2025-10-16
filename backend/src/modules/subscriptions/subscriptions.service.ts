@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { DatabaseService } from '../modules/database/database.service';
+import { DatabaseService } from '../database/database.service';
 import { SubscriptionStatus } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     // 1. Check if package exists and is active
@@ -202,11 +202,6 @@ export class SubscriptionsService {
     // Check if subscription is active
     if (subscription.status !== SubscriptionStatus.active) {
       throw new BadRequestException('Subscription is not active');
-    }
-
-    // Check if swap limit is reached
-    if (subscription.swap_used >= subscription.package.swap_count) {
-      throw new BadRequestException('Swap limit reached');
     }
 
     return this.prisma.subscription.update({

@@ -22,7 +22,9 @@ export class CreateSwapTransactionDto {
     @IsOptional()
     battery_returned_id?: number;
 
-    // TODO: Add user_package_id when user package feature is available
+    @IsInt({ message: 'subscription_id must be an integer' })
+    @IsNotEmpty({ message: 'subscription_id should not be empty' })
+    subscription_id: number;
 
     @IsNotEmpty({ message: 'status should not be empty' })
     @IsEnum(SwapTransactionStatus, { message: `status must be following ${Object.values(SwapTransactionStatus).join(', ')}` })
