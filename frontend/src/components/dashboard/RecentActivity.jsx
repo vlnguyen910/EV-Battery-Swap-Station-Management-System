@@ -1,35 +1,39 @@
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { History, CheckCircle, Clock, TrendingUp } from "lucide-react"
+import { mockSwapTransactions, mockStations, mockBatteries } from "../../data/mockData"
 
-//Nữa fetch data từ backend về
-const activities = [
-  {
-    station: "Downtown Station A",
-    time: "2 hours ago",
-    cost: "$8.50",
-    status: "completed",
-    progress: "40% → 100%",
-    borderColor: "border-indigo-200"
-  },
-  {
-    station: "Mall Station B", 
-    time: "Yesterday",
-    cost: "$8.50",
-    status: "completed",
-    progress: "25% → 100%",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200"
-  },
-  {
-    station: "Airport Station C",
-    time: "3 days ago", 
-    cost: "$8.50",
-    status: "completed",
-    progress: "30% → 100%",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200"
-  }
-]
+// Get recent 3 swap transactions
+const activities = mockSwapTransactions
+  .slice(0, 3)
+  .map(swap => {
+    const station = mockStations.find(s => s.station_id === swap.station_id);
+    const batteryTaken = mockBatteries.find(b => b.battery_id === swap.battery_taken_id);
+    const batteryReturned = mockBatteries.find(b => b.battery_id === swap.battery_returned_id);
+    
+    const createTime = new Date(swap.createAT);
+    const updateTime = new Date(swap.updateAt);
+    const durationMinutes = Math.floor((updateTime - createTime) / 60000);
+    
+    // Calculate time ago
+    const now = new Date();
+    const hoursAgo = Math.floor((now - createTime) / (1000 * 60 * 60));
+    const timeAgo = hoursAgo < 24 
+      ? `${hoursAgo} hours ago` 
+      : hoursAgo < 48 
+        ? 'Yesterday' 
+        : `${Math.floor(hoursAgo / 24)} days ago`;
+    
+    return {
+      transaction_id: swap.transaction_id,
+      station: station?.name || 'Unknown Station',
+      time: timeAgo,
+      cost: `$${(5000 / 1000).toFixed(2)}`, // Service fee in USD equivalent
+      status: swap.status,
+      progress: `${batteryReturned?.pin_hien_tai?.toFixed(0) || 40}% → ${batteryTaken?.pin_hien_tai?.toFixed(0) || 100}%`,
+      borderColor: "border-indigo-200",
+      duration: `${durationMinutes} min`
+    };
+  });
 
 export default function RecentActivity() {
   return (
@@ -47,9 +51,9 @@ export default function RecentActivity() {
       </CardHeader>
       <CardContent className="p-4">
         <div className="space-y-4">
-          {activities.map((activity, index) => (
+          {activities.map((activity) => (
             <div 
-              key={index}
+              key={activity.transaction_id}
               className={`bg-gray-200 border ${activity.borderColor} rounded-lg p-4 flex justify-between items-center hover:bg-indigo-300 transition-all`}
             >
               <div className="flex items-center space-x-4">

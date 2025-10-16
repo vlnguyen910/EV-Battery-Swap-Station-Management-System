@@ -31,6 +31,8 @@ function App() {
         <Route path="/login" element={<AuthContainer mode="login" />} />
         <Route path="/register" element={<AuthContainer mode="register" />} />
         <Route path="/admin" element={<AdminPage />} />
+        
+
 
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
