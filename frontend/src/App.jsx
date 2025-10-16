@@ -5,8 +5,8 @@ import GuestPage from './pages/GuestPage'
 import AuthContainer from './components/containers/AuthContainer'
 import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
-import UserPage from './pages/UserPage'
 import NotFound from './pages/NotFound'
+import Driver from './pages/Driver'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
@@ -27,7 +27,7 @@ function App() {
           <Route path="inventory" element={<StaffInventory />} />
           <Route path="inspection" element={<StaffInspection />} />
         </Route>
-        <Route path="/user" element={<UserPage />} />
+        <Route path="/driver" element={<Driver />} />
 
         {/* Dashboard Routes */}
         <Route path="/staff/inventory" element={<StaffInventory />} />
