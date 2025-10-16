@@ -1,4 +1,3 @@
-// import { Toaster, toast } from 'sonner'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navigation from './components/layout/Navigation'
 import Sidebar from './components/layout/Sidebar'
@@ -14,19 +13,19 @@ import SwapHistory from './pages/SwapHistory'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
+import DriverDashboard from './components/dashboard/DriverDashboard'
 
 function App() {
   const location = useLocation()
 
   // Routes that should show sidebar (authenticated user routes)
-  // const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
-  // const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
+  const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
+  const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
 
   return (
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
-        <Route path="/driver" element={<Driver />} />
         <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
@@ -41,15 +40,14 @@ function App() {
           <Route path="inspection" element={<StaffInspection />} />
         </Route>
 
-        {/* Driver Routes */}
+        {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
+          {/* Route con */}
+          <Route index element={<DriverDashboard />} />
           <Route path="booking" element={<Booking />} />
           <Route path="swap-history" element={<SwapHistory />} />
           <Route path="map" element={<MapPage />} />
         </Route>
-
-        {/* Dashboard Routes */}
-        <Route path="/staff/inventory" element={<StaffInventory />} />
       </Routes>
     </div>
   );

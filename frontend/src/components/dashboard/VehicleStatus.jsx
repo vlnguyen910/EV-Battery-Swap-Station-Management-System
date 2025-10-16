@@ -23,7 +23,7 @@ export default function VehicleStatus() {
             <span className="text-6xl">bla bla bla</span>
           </div>
         </div> */}
-        
+
         {/* Vehicle Info */}
         <div className="text-center space-y-2 bg-gray-200 shadow-md rounded-lg p-4">
           <h3 className="text-2xl font-bold text-gray-800">Tesla Model 3</h3>
@@ -37,11 +37,11 @@ export default function VehicleStatus() {
             <span className="text-gray-700 font-medium">Current Battery Level</span>
             <span className="text-3xl font-bold text-blue-800">{batteryLevel}%</span>
           </div>
-          
+
           {/* Battery Progress Bar */}
           <div className="relative">
             <div className="w-full bg-gray-300 rounded-full h-4 shadow-inner">
-              <div 
+              <div
                 className="bg-gradient-to-r from-blue-800 to-blue-500 h-4 rounded-full transition-all duration-300 shadow-sm"
                 style={{ width: `${batteryLevel}%` }}
               ></div>
@@ -61,7 +61,7 @@ export default function VehicleStatus() {
 
         {/* Action Buttons */}
         <div className="flex justify-center">
-          <Link to="/map">
+          <Link to="/driver/map">
             <Button className="bg-blue-800 hover:bg-blue-900 text-white font-medium py-3 shadow-md w-full">
               Find Stations
             </Button>
