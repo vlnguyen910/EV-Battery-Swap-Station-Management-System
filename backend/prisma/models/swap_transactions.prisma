@@ -11,18 +11,18 @@ model SwapTransaction {
     station_id          Int
     battery_taken_id    Int
     battery_returned_id Int?
-    //user_package_id Int    //todo: add later 
+    subscription_id     Int
     createAt            DateTime              @default(now())
     updateAt            DateTime              @updatedAt
     status              SwapTransactionStatus
 
     // Relationships
-    user             User     @relation(fields: [user_id], references: [user_id])
-    vehicle          Vehicle  @relation(fields: [vehicle_id], references: [vehicle_id])
-    station          Station  @relation(fields: [station_id], references: [station_id])
-    battery_taken    Battery  @relation("BatteryTaken", fields: [battery_taken_id], references: [battery_id])
-    battery_returned Battery? @relation("BatteryReturned", fields: [battery_returned_id], references: [battery_id])
-    //user_package UserPackage? @relation(fields: [user_package_id], references: [id])
+    user             User         @relation(fields: [user_id], references: [user_id])
+    vehicle          Vehicle      @relation(fields: [vehicle_id], references: [vehicle_id])
+    station          Station      @relation(fields: [station_id], references: [station_id])
+    battery_taken    Battery      @relation("BatteryTaken", fields: [battery_taken_id], references: [battery_id])
+    battery_returned Battery?     @relation("BatteryReturned", fields: [battery_returned_id], references: [battery_id])
+    subscription     Subscription @relation(fields: [subscription_id], references: [subscription_id])
 
     @@map("swap_transactions")
 }
