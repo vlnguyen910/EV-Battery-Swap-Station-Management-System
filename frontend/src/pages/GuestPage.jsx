@@ -12,45 +12,45 @@ export default function GuestPage() {
 
   return (
     <div className="min-h-screen w-full bg-white relative overflow-hidden">
-  {/* Blue Corner Glow Background */}
-  <div
-    className="absolute inset-0 z-0"
-    style={{
-      backgroundImage: `
+      {/* Blue Corner Glow Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
         radial-gradient(circle 600px at 0% 200px, #bfdbfe, transparent),
         radial-gradient(circle 600px at 100% 200px, #bfdbfe, transparent)
       `,
-    }}
-  />
-  {/* Your Content Here */}
-   <div className="min-h-screen pt-4 relative z-10">
-      {/* <Navigation type="main" /> */}
+        }}
+      />
+      {/* Your Content Here */}
+      <div className="min-h-screen relative z-10">
+        <Navigation />
 
-      {/* Hero Section */}
-      <HeroSection />
+        {/* Hero Section */}
+        <HeroSection />
 
-      {/* Key Features */}
-      <KeyFeatures />
+        {/* Key Features */}
+        <KeyFeatures />
 
-      {/* Statistics */}
-      <Statistics />
+        {/* Statistics */}
+        <Statistics />
 
-      {/* Customer Testimonials */}
-      <CustomerTestimonials />
+        {/* Customer Testimonials */}
+        <CustomerTestimonials />
 
-      {/* Quick Start Guide */}
-      <QuickStartGuide />
+        {/* Quick Start Guide */}
+        <QuickStartGuide />
 
-      {/* Pricing Plans */}
-      <PricingPlans />
+        {/* Pricing Plans */}
+        <PricingPlans />
 
-      {/* Call to Action Section */}
+        {/* Call to Action Section */}
 
+      </div>
     </div>
-</div>
 
 
-   
+
 
   )
 }

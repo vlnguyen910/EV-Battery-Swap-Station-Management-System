@@ -6,7 +6,6 @@ import GuestPage from './pages/GuestPage'
 import AuthContainer from './components/containers/AuthContainer'
 import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
-import UserPage from './pages/UserPage'
 import NotFound from './pages/NotFound'
 import MapPage from './pages/Map'
 import Driver from './pages/Driver'
@@ -18,11 +17,11 @@ import StaffInspection from './components/dashboard/StaffInspection'
 
 function App() {
   const location = useLocation()
-  
+
   // Routes that should show sidebar (authenticated user routes)
-  const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
-  const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
-  
+  // const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
+  // const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
+
   return (
     <div className="App">
       {/* <Navigation /> */}
@@ -33,13 +32,21 @@ function App() {
         <Route path="/login" element={<AuthContainer mode="login" />} />
         <Route path="/register" element={<AuthContainer mode="register" />} />
         <Route path="/admin" element={<AdminPage />} />
+
+        {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con */}
           <Route index element={<StaffDashboard />} />
           <Route path="inventory" element={<StaffInventory />} />
           <Route path="inspection" element={<StaffInspection />} />
         </Route>
-        <Route path="/user" element={<UserPage />} />
+
+        {/* Driver Routes */}
+        <Route path="/driver" element={<Driver />}>
+          <Route path="booking" element={<Booking />} />
+          <Route path="swap-history" element={<SwapHistory />} />
+          <Route path="map" element={<MapPage />} />
+        </Route>
 
         {/* Dashboard Routes */}
         <Route path="/staff/inventory" element={<StaffInventory />} />

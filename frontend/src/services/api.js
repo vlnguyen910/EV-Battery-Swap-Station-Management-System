@@ -4,7 +4,7 @@ import { API_BASE_URL } from "../constants";
 
 // Create an Axios instance with default configurations
 const api = axios.create({
-  baseURL: API_BASE_URL || "http://localhost:3000/api",
+  baseURL: API_BASE_URL || "http://localhost:8080/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
