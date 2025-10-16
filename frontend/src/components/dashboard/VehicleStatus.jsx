@@ -44,7 +44,7 @@ export default function VehicleStatus() {
             </div>
             <span className="text-3xl font-bold text-blue-800">{batteryLevel.toFixed(0)}%</span>
           </div>
-          
+
           {/* Battery Progress Bar */}
           <div className="relative">
             <div className="w-full bg-gray-300 rounded-full h-4 shadow-inner">
@@ -75,7 +75,7 @@ export default function VehicleStatus() {
 
         {/* Action Buttons */}
         <div className="flex justify-center">
-          <Link to="/map" className="w-full">
+          <Link to="/driver/map">
             <Button className="bg-blue-800 hover:bg-blue-900 text-white font-medium py-3 shadow-md w-full">
               Find Stations
             </Button>
