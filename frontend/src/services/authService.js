@@ -40,6 +40,17 @@ const register = async (userInfo) => {
   }
 };
 
+//Create account for staff
+const createStaffAccount = async (staffInfo) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.USERS, staffInfo);
+    return response.data;
+  } catch (error) {
+    console.error("Create staff account error:", error);
+    throw error;
+  }
+};
+
 //update user profile
 const updateProfile = async (profileData) => {
   try {
@@ -71,7 +82,7 @@ const getProfile = async (userId) => {
 //Get all users
 const getAllUsers = async () => {
   try {
-    const response = await api.get(API_ENDPOINTS.USER.GET_ALL_USERS);
+    const response = await api.get(API_ENDPOINTS.USER.USERS);
     return response.data;
   } catch (error) {
     console.error("Get all users error:", error);
@@ -101,4 +112,5 @@ export const authService = {
   getAllUsers,
   updateProfile,
   deleteUser,
+  createStaffAccount,
 };
