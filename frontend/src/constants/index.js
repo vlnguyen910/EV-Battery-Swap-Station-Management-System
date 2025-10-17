@@ -12,7 +12,7 @@ export const API_ENDPOINTS = {
     GET_PROFILE: (id) => `/users/${id}`,
     UPDATE_PROFILE: (id) => `/users/${id}`,
     // Admin and Staff only
-    USERS: "/auth/users",
+    USERS: "/users",
     DELETE_USER: (id) => `/users/${id}`,
   },
   VEHICLE: {

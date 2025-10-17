@@ -3,7 +3,7 @@ import { createContext, useState, useEffect } from "react";
 import { authService } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 
-const { login: loginService, logout: logoutService, register: registerService } = authService;
+const { login: loginService, logout: logoutService, register: registerService, createStaffAccount: createStaffAccountService } = authService;
 
 export const AuthContext = createContext();
 
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
-            const response = await createStaffAccount(staffInfo);
+            const response = await createStaffAccountService(staffInfo);
             console.log('Create staff account response:', response);
             return response;
         } catch (error) {

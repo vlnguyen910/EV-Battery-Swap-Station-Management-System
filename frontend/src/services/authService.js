@@ -43,10 +43,71 @@ const register = async (userInfo) => {
 //Create account for staff
 const createStaffAccount = async (staffInfo) => {
   try {
-    const response = await api.post(API_ENDPOINTS.USERS, staffInfo);
+    // Basic client-side validation to match backend CreateUserDto
+    const errors = [];
+    if (!staffInfo.username || staffInfo.username.trim().length < 2) {
+      errors.push("Username must be at least 2 characters");
+    }
+    if (!staffInfo.password || staffInfo.password.length < 6) {
+      errors.push("Password must be at least 6 characters");
+    }
+    if (!staffInfo.email || !/^\S+@\S+\.\S+$/.test(staffInfo.email)) {
+      errors.push("A valid email is required");
+    }
+    if (!staffInfo.phone) {
+      errors.push("Phone is required");
+    }
+    if (!staffInfo.role) {
+      errors.push("Role is required");
+    }
+
+    if (errors.length) {
+      // throw a shaped error so UI can display validation details
+      const err = new Error("Validation failed");
+      err.details = errors;
+      throw err;
+    }
+
+    // Normalize phone similar to backend normalization.util.normalizePhone
+    const normalizePhoneLocal = (phone) => {
+      if (!phone) return phone;
+      let normalized = phone.toString().replace(/\D/g, "");
+      // If starts with country code 84, convert to 0xxxx
+      if (normalized.startsWith("84")) {
+        normalized = "0" + normalized.slice(2);
+      }
+      return normalized;
+    };
+
+    const payload = {
+      username: staffInfo.username.trim(),
+      password: staffInfo.password,
+      phone: normalizePhoneLocal(staffInfo.phone),
+      email: staffInfo.email.trim().toLowerCase(),
+      role: staffInfo.role,
+    };
+
+    // use same key used by AuthContext ("token")
+    const token = localStorage.getItem("token");
+    const response = await api.post(API_ENDPOINTS.USER.USERS, payload, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
     return response.data;
   } catch (error) {
-    console.error("Create staff account error:", error);
+    // Surface server-side validation details if present
+    console.error("Create staff account error (raw):", error);
+    // If ValidationPipe returned details, attach the server 'message' array to error.details
+    if (error?.response?.data) {
+      const serverData = error.response.data;
+      console.error("Create staff server response:", serverData);
+      const err = new Error("Server validation error");
+      // prefer the message array (typical NestJS ValidationPipe shape)
+      err.details = serverData.message ?? serverData;
+      err.response = serverData;
+      throw err;
+    }
     throw error;
   }
 };
