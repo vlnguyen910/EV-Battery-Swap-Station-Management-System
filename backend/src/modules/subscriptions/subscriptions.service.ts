@@ -117,6 +117,15 @@ export class SubscriptionsService {
     return subscription;
   }
 
+  async findOneActiveByVehicleId(vehicleId: number) {
+    return await this.prisma.subscription.findFirst({
+      where: {
+        vehicle_id: vehicleId,
+        status: SubscriptionStatus.active,
+      },
+    });
+  }
+
   async findByUser(userId: number) {
     return this.prisma.subscription.findMany({
       where: { user_id: userId },
