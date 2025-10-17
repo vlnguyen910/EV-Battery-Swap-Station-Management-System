@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { CreateBatteryDto } from './dto/create-battery.dto';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { DatabaseService } from '../database/database.service';
@@ -14,11 +14,15 @@ export class BatteriesService {
     private stationsService: StationsService,
   ) { }
 
+  private readonly logger = new Logger(BatteriesService.name);
+
   create(createBatteryDto: CreateBatteryDto) {
+    this.logger.log('Creating a new battery');
     return 'This action adds a new battery';
   }
 
   findAll() {
+    this.logger.log('Retrieving all batteries');
     return `This action returns all batteries`;
   }
 
@@ -78,48 +82,70 @@ export class BatteriesService {
     });
   }
 
-  async assignBatteryToVehicle(battery_id: number, vehicle_id: number) {
-    // Check if battery exists and is full
-    const battery = await this.findOne(battery_id);
-    if (!battery) {
-      throw new NotFoundException(`Battery with ID ${battery_id} not found`);
-    }
-    if (battery.status !== 'full') {
-      throw new BadRequestException(`Battery with ID ${battery_id} is not full`);
-    }
+  async assignBatteryToVehicle(
+    battery_id: number,
+    vehicle_id: number,
+    tx: any //trasaction instance
+  ) {
+    try {
+      // Check if battery exists and is full
+      const battery = await this.findOne(battery_id);
+      if (!battery) {
+        throw new NotFoundException(`Battery with ID ${battery_id} not found`);
+      }
 
-    // Check if vehicle exists
-    const vehicle = await this.vehiclesService.findOne(vehicle_id);
-    if (!vehicle) {
-      throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
-    }
+      if (battery.status !== 'full') {
+        throw new BadRequestException(`Battery with ID ${battery_id} is not full`);
+      }
 
-    // Assign battery to vehicle
-    return await this.databaseService.battery.update({
-      where: { battery_id },
-      data: { vehicle_id, station_id: null, status: BatteryStatus.in_use },
-    });
+      // Check if vehicle exists
+      const vehicle = await this.vehiclesService.findOne(vehicle_id);
+      if (!vehicle) {
+        throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
+      }
+
+      // Assign battery to vehicle
+      this.logger.log(`Assigning battery ${battery_id} to vehicle ${vehicle_id}`);
+      return await this.databaseService.battery.update({
+        where: { battery_id },
+        data: { vehicle_id, station_id: null, status: BatteryStatus.in_use },
+      });
+    } catch (error) {
+      this.logger.error(`Error assigning battery to vehicle: ${error.message}`);
+      throw error;
+    }
   }
 
-  async returnBatteryFromVehicle(battery_id: number, station_id: number) {
-    // Check if battery exists
-    const battery = await this.findOne(battery_id);
-    if (!battery) {
-      throw new NotFoundException(`Battery with ID ${battery_id} not found`);
-    }
+  async returnBatteryToStation(
+    battery_id: number,
+    station_id: number,
+    tx: any // transaction instance
+  ) {
+    try {
+      // Check if battery exists
+      const battery = await this.findOne(battery_id);
+      if (!battery) {
+        throw new NotFoundException(`Battery with ID ${battery_id} not found`);
+      }
 
-    // Check if station exists
-    const station = await this.stationsService.findOne(station_id);
-    if (!station) {
-      throw new NotFoundException(`Station with ID ${station_id} not found`);
-    }
+      // Check if station exists
+      const station = await this.stationsService.findOne(station_id);
+      if (!station) {
+        throw new NotFoundException(`Station with ID ${station_id} not found`);
+      }
 
-    // Return battery to station
-    return await this.databaseService.battery.update({
-      where: { battery_id },
-      data: { station_id, vehicle_id: null, status: BatteryStatus.charging },
-    });
+      // Return battery to station
+      this.logger.log(`Returning battery ID ${battery_id} to station ID ${station_id}`);
+      return await this.databaseService.battery.update({
+        where: { battery_id },
+        data: { station_id, vehicle_id: null, status: BatteryStatus.charging },
+      });
+    } catch (error) {
+      this.logger.error(`Error returning battery to station: ${error.message}`);
+      throw error;
+    }
   }
+
 
   update(id: number, updateBatteryDto: UpdateBatteryDto) {
     return `This action updates a #${id} battery`;

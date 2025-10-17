@@ -6,7 +6,11 @@ import { VehiclesModule } from '../vehicles/vehicles.module';
 import { StationsModule } from '../stations/stations.module';
 
 @Module({
-  imports: [DatabaseModule, VehiclesModule, StationsModule],
+  imports: [
+    DatabaseModule,
+    VehiclesModule,
+    StationsModule
+  ],
   controllers: [BatteriesController],
   providers: [BatteriesService],
   exports: [BatteriesService],
