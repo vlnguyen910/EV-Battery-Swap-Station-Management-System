@@ -1,12 +1,14 @@
 // Auth context
 import { createContext, useState, useEffect } from "react";
 import { authService } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 const { login: loginService, logout: logoutService, register: registerService } = authService;
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -63,6 +65,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
+        navigate("/", { replace: true });
     };
 
     // Function to handle register
@@ -106,6 +109,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Function to create staff account
+    const createStaffAccount = async (staffInfo) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await createStaffAccount(staffInfo);
+            console.log('Create staff account response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Check user if reload page
     useEffect(() => {
         const saveUser = localStorage.getItem("user");
@@ -116,7 +136,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, error, isAuthenticated, login, logout, register }}
+            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount }}
         >
             {children}
         </AuthContext.Provider>
