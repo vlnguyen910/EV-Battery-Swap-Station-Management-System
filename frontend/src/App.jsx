@@ -10,6 +10,7 @@ import MapPage from './pages/Map'
 import Driver from './pages/Driver'
 import Booking from './pages/Booking'
 import SwapHistory from './pages/SwapHistory'
+import Plans from './pages/Plans'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
@@ -32,6 +33,9 @@ function App() {
         <Route path="/register" element={<AuthContainer mode="register" />} />
         <Route path="/admin" element={<AdminPage />} />
         
+
+  <Route path="/map" element={<MapPage />} />
+  <Route path="/plans" element={<Plans />} />
 
 
         {/* Staff Routes with Nested Routing */}
