@@ -91,16 +91,6 @@ export class VehiclesService {
         user_id: userId,
         status: VehicleStatus.active
       },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
     });
   }
 
@@ -126,9 +116,10 @@ export class VehiclesService {
     return vehicle;
   }
 
-  async updateBatteryId(vehicle_id: number, battery_id: number) {
+  async updateBatteryId(vehicle_id: number, battery_id: number, tx?: any) {
+    const prisma = tx || this.databaseService;
     await this.findOne(vehicle_id); // Check if vehicle exists
-    return await this.databaseService.vehicle.update({
+    return await prisma.vehicle.update({
       where: { vehicle_id },
       data: { battery_id },
     });

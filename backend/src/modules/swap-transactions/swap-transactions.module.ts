@@ -19,5 +19,6 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
   ],
   controllers: [SwapTransactionsController],
   providers: [SwapTransactionsService],
+  exports: [SwapTransactionsService],
 })
 export class SwapTransactionsModule { }

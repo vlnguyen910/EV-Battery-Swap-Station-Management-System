@@ -76,8 +76,9 @@ export class BatteriesService {
     return bestBattery;
   }
 
-  async findOne(id: number) {
-    return await this.databaseService.battery.findUnique({
+  async findOne(id: number, tx?: any) {
+    const db = tx ?? this.databaseService;
+    return await db.battery.findUnique({
       where: { battery_id: id },
     });
   }
@@ -85,11 +86,13 @@ export class BatteriesService {
   async assignBatteryToVehicle(
     battery_id: number,
     vehicle_id: number,
-    tx: any //trasaction instance
+    tx?: any // transaction instance
   ) {
     try {
-      // Check if battery exists and is full
-      const battery = await this.findOne(battery_id);
+      const db = tx ?? this.databaseService;
+
+      // Check if battery exists and is full (use tx if provided)
+      const battery = await this.findOne(battery_id, tx);
       if (!battery) {
         throw new NotFoundException(`Battery with ID ${battery_id} not found`);
       }
@@ -104,9 +107,15 @@ export class BatteriesService {
         throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
       }
 
+      // Ensure no other battery is currently assigned to this vehicle (avoid unique constraint)
+      await db.battery.updateMany({
+        where: { vehicle_id },
+        data: { vehicle_id: null },
+      });
+
       // Assign battery to vehicle
       this.logger.log(`Assigning battery ${battery_id} to vehicle ${vehicle_id}`);
-      return await this.databaseService.battery.update({
+      return await db.battery.update({
         where: { battery_id },
         data: { vehicle_id, station_id: null, status: BatteryStatus.in_use },
       });
@@ -119,11 +128,13 @@ export class BatteriesService {
   async returnBatteryToStation(
     battery_id: number,
     station_id: number,
-    tx: any // transaction instance
+    tx?: any // transaction instance
   ) {
     try {
+      const db = tx ?? this.databaseService;
+
       // Check if battery exists
-      const battery = await this.findOne(battery_id);
+      const battery = await this.findOne(battery_id, tx);
       if (!battery) {
         throw new NotFoundException(`Battery with ID ${battery_id} not found`);
       }
@@ -136,7 +147,7 @@ export class BatteriesService {
 
       // Return battery to station
       this.logger.log(`Returning battery ID ${battery_id} to station ID ${station_id}`);
-      return await this.databaseService.battery.update({
+      return await db.battery.update({
         where: { battery_id },
         data: { station_id, vehicle_id: null, status: BatteryStatus.charging },
       });
