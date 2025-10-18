@@ -87,13 +87,10 @@ const loginHandler = async (credentials) => {
 - **AuthContainer**: UI orchestration
 - **Login/Register**: Pure presentation
 
-## 🔧 Analogy dễ hiểu:
-
-```
-AuthContext = Database (lưu trữ global state)
 useAuthHandlers = Service Layer (business logic)
 AuthContainer = Controller (điều phối UI)
 Login/Register = View (hiển thị form)
+
 ```
 
 **Kiến trúc này chuẩn React patterns và scalable cho dự án lớn!** 🚀
@@ -101,22 +98,24 @@ Login/Register = View (hiển thị form)
 ## 📁 Cấu trúc file hoàn chỉnh:
 
 ```
+
 src/
 ├── contexts/
-│   └── AuthContext.jsx          # Global state management
+│ └── AuthContext.jsx # Global state management
 ├── hooks/
-│   ├── useAuth.js               # Hook interface layer
-│   ├── useAsyncHandler.js       # Generic async state handler
-│   └── useAuthHandlers.js       # Auth-specific business logic
+│ ├── useAuth.js # Hook interface layer
+│ ├── useAsyncHandler.js # Generic async state handler
+│ └── useAuthHandlers.js # Auth-specific business logic
 ├── components/
-│   ├── containers/
-│   │   └── AuthContainer.jsx    # UI container orchestration
-│   └── auth/
-│       ├── Login.jsx            # Pure presentation component
-│       └── Register.jsx         # Pure presentation component
+│ ├── containers/
+│ │ └── AuthContainer.jsx # UI container orchestration
+│ └── auth/
+│ ├── Login.jsx # Pure presentation component
+│ └── Register.jsx # Pure presentation component
 └── services/
-    ├── api.js                   # HTTP client
-    └── authService.js           # Auth API calls
+├── api.js # HTTP client
+└── authService.js # Auth API calls
+
 ```
 
 ##### SWAGGER and POSTMAN
@@ -186,3 +185,29 @@ User submit → Presentation gọi onSubmit(formData) → AuthContainer → useA
 ### Lưu ý thực tế:
 
 ![alt text](image-1.png)
+
+## Update: Rút gọn handler tạo staff (AdminPage.jsx)
+
+- Mục tiêu: làm cho `handleFormSubmit` ngắn, rõ ràng và ưu tiên sử dụng `AuthContainer` (parent `onSubmit`) khi có.
+- Những thay đổi chính:
+   - Bỏ các nhánh if/else lồng nhau và nhiều log console không cần thiết.
+   - Gọi `onSubmit(data)` nếu component nhận prop `onSubmit` từ `AuthContainer`; nếu không có thì fallback gọi `createStaffAccount(data)` (trường hợp dùng như trang độc lập).
+   - Hiển thị thông báo thành công với `username` nếu server trả về, còn không thì hiển thị thông báo chung "Yêu cầu tạo tài khoản đã được gửi".
+
+## Tóm tắt thành phần & luồng (ngắn gọn)
+
+- AuthContext: quản lý auth toàn cục (user, token, loading, error). Cung cấp các hàm core (login, logout, register, createStaffAccount) và lưu token/user vào localStorage khi cần.
+- authService: module HTTP (axios) gọi API, trả kết quả hoặc throw lỗi (bao gồm validation lỗi từ backend).
+- useAuthHandlers / useAuthHandler: hook business logic; gọi AuthContext, bọc bằng useAsyncHandler để quản lý loading/error và side-effects (ví dụ điều hướng theo role).
+- AuthContainer: container UI — nhận handler + trạng thái từ hook rồi truyền xuống presentation (Register / CreateStaffForm).
+- Presentation (Register, CreateStaffForm): render form + validate client-side; khi submit gọi props.onSubmit(data). Nếu không có container thì có fallback nhẹ gọi handler trực tiếp.
+
+Luồng submit (rút gọn):
+Presentation → props.onSubmit → AuthContainer → useAuthHandlers.run → AuthContext → authService → backend → response → AuthContext lưu token/user → useAuthHandlers xử side-effect → UI cập nhật.
+
+Lỗi & response: validation error thường là 400 với `message: ["..."]` (axios sẽ throw); success thường trả user + accessToken; auth error: 401/403.
+
+Quy tắc ngắn gọn: presentation chỉ render + gọi props.onSubmit; container bind hook và pass loading/error; AuthContext quản lý token/persist; authService lo mọi HTTP.
+
+Lợi ích: phân tách trách nhiệm rõ ràng, dễ test và dễ maintain (thay đổi ở layer dưới ít ảnh hưởng UI).
+```

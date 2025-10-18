@@ -5,10 +5,10 @@ import Navigation from "../layout/Navigation";
 
 const registerSchema = z
   .object({
-    username: z.string().min(3, "Tên đăng nhập ít nhất 3 ký tự"),
-    email: z.string().email("Email không hợp lệ"),
-    phone: z.string().min(10, "Số điện thoại không hợp lệ"),
-    password: z.string().min(6, "Mật khẩu ít nhất 6 ký tự"),
+    username: z.string().nonempty("Tên đăng nhập không được để trống").min(3, "Tên đăng nhập ít nhất 3 ký tự"),
+    email: z.string().nonempty("Email không được để trống").email("Email không hợp lệ"),
+    phone: z.string().nonempty("Số điện thoại không được để trống").min(10, "Số điện thoại không hợp lệ"),
+    password: z.string().nonempty("Vui lòng nhập mật khẩu").min(6, "Mật khẩu ít nhất 6 ký tự"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
