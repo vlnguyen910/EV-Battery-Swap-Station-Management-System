@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Navigation from '../components/layout/Navigation'
 
 export default function Driver() {
+
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-white">
       <Navigation />

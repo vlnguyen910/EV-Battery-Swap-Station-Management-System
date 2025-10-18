@@ -1,5 +1,5 @@
 // Constants
-export const API_BASE_URL = "http://localhost:8080/api/v1";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const API_ENDPOINTS = {
   AUTH: {
@@ -12,7 +12,7 @@ export const API_ENDPOINTS = {
     GET_PROFILE: (id) => `/users/${id}`,
     UPDATE_PROFILE: (id) => `/users/${id}`,
     // Admin and Staff only
-    GET_ALL_USERS: "/users",
+    USERS: "/users",
     DELETE_USER: (id) => `/users/${id}`,
   },
   VEHICLE: {

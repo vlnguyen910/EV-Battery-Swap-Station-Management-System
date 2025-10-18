@@ -1,8 +1,11 @@
 import { Outlet } from "react-router-dom";
 import Navigation from "../components/layout/Navigation";
 import { BatteryProvider } from "../contexts/BatteryContext";
+import { useAuth } from "../hooks/useAuth";
 
 export default function StaffPage() {
+    const { logout } = useAuth();
+
     return (
         <BatteryProvider>
             <div className="min-h-screen bg-gray-50">
@@ -11,7 +14,22 @@ export default function StaffPage() {
                 <main className="p-6">
                     {/* Trang con sẽ render ở đây */}
                     <Outlet />
+                    <button
+                        onClick={logout}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        🚪 Logout
+                    </button>
                 </main>
+
+
             </div>
         </BatteryProvider>
     );

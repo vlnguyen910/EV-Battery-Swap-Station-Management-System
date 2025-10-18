@@ -40,6 +40,32 @@ const register = async (userInfo) => {
   }
 };
 
+//Create account for staff
+const createStaffAccount = async (staffInfo) => {
+  const normalizePhone = (phone) => {
+    if (!phone) return phone;
+    let normalized = phone.toString().replace(/\D/g, "");
+    if (normalized.startsWith("84")) normalized = "0" + normalized.slice(2);
+    return normalized;
+  };
+
+  const payload = {
+    ...staffInfo,
+    phone: normalizePhone(staffInfo.phone),
+    email: staffInfo.email.trim().toLowerCase(),
+    username: staffInfo.username.trim(),
+  };
+
+  // Debug: log payload to help trace server 400 validation
+  console.log("createStaffAccount payload:", payload);
+
+  const token = localStorage.getItem("token");
+  const res = await api.post(API_ENDPOINTS.USER.USERS, payload, {
+    headers: { Authorization: token ? `Bearer ${token}` : undefined },
+  });
+  return res.data;
+};
+
 //update user profile
 const updateProfile = async (profileData) => {
   try {
@@ -71,7 +97,7 @@ const getProfile = async (userId) => {
 //Get all users
 const getAllUsers = async () => {
   try {
-    const response = await api.get(API_ENDPOINTS.USER.GET_ALL_USERS);
+    const response = await api.get(API_ENDPOINTS.USER.USERS);
     return response.data;
   } catch (error) {
     console.error("Get all users error:", error);
@@ -101,4 +127,5 @@ export const authService = {
   getAllUsers,
   updateProfile,
   deleteUser,
+  createStaffAccount,
 };
