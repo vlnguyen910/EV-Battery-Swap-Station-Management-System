@@ -15,6 +15,7 @@ model Station {
     batteries         Battery[]
     Reservation       Reservation[]
     swap_transactions SwapTransaction[]
+    supports          Support[]
 
     @@map("stations")
 }

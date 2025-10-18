@@ -19,6 +19,7 @@ model User {
     subscriptions   Subscription[]
     payments        Payment[]
     SwapTransaction SwapTransaction[]
+    supports        Support[]
 
     @@map("users")
 }
