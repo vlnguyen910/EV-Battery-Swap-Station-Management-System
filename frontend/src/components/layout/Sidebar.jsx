@@ -10,18 +10,18 @@ import {
   Moon, 
   LogOut 
 } from 'lucide-react'
-
+import { useAuth } from '../../hooks/useAuth'
 // Sidebar component
 export default function Sidebar() {
   const location = useLocation()
   const [darkMode, setDarkMode] = useState(false)
-
+  const { logout } = useAuth()
   const menuItems = [
     { name: 'Dashboard', path: '/driver', icon: LayoutDashboard },
-    { name: 'Stations', path: '/map', icon: MapPin },
-    { name: 'Plans', path: '/plans', icon: CreditCard },
-    { name: 'Profile', path: '/profile', icon: User },
-    { name: 'Support', path: '/support', icon: MessageCircle }
+    { name: 'Stations', path: '/driver/map', icon: MapPin },
+    { name: 'Plans', path: '/driver/plans', icon: CreditCard },
+    { name: 'Profile', path: '/driver/profile', icon: User },
+    { name: 'Support', path: '/driver/support', icon: MessageCircle }
   ]
 
   const handleLogout = () => {
@@ -94,7 +94,7 @@ export default function Sidebar() {
 
         {/* Logout Button */}
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors duration-200 font-medium"
         >
           <LogOut className="w-5 h-5" />

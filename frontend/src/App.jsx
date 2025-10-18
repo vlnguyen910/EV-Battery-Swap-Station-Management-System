@@ -34,8 +34,6 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         
 
-  <Route path="/map" element={<MapPage />} />
-  <Route path="/plans" element={<Plans />} />
 
 
         {/* Staff Routes with Nested Routing */}
@@ -52,6 +50,7 @@ function App() {
           <Route index element={<DriverDashboard />} />
           <Route path="booking" element={<Booking />} />
           <Route path="swap-history" element={<SwapHistory />} />
+          <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
         </Route>
       </Routes>
