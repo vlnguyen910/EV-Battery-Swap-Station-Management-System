@@ -6,13 +6,17 @@ import { VehiclesModule } from '../vehicles/vehicles.module';
 import { BatteriesModule } from '../batteries/batteries.module';
 import { StationsModule } from '../stations/stations.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { DatabaseModule } from '../database/database.module';
+import { SwapTransactionsModule } from '../swap-transactions/swap-transactions.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     UsersModule,
     VehiclesModule,
     BatteriesModule,
     StationsModule,
+    SwapTransactionsModule,
     SubscriptionsModule,
   ],
   controllers: [SwappingController],

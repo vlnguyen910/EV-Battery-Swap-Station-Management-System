@@ -205,7 +205,8 @@ export class SubscriptionsService {
     });
   }
 
-  async incrementSwapUsed(id: number) {
+  async incrementSwapUsed(id: number, tx?: any) {
+    const db = tx ?? this.prisma;
     const subscription = await this.findOne(id);
 
     // Check if subscription is active
@@ -213,7 +214,7 @@ export class SubscriptionsService {
       throw new BadRequestException('Subscription is not active');
     }
 
-    return this.prisma.subscription.update({
+    return db.subscription.update({
       where: { subscription_id: id },
       data: {
         swap_used: {
