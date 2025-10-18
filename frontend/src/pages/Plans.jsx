@@ -2,10 +2,30 @@ import { useEffect, useState } from 'react'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import { battery_service_packages } from '../data/mockData'
-import { getActivePlans } from '../utils/planMapper'
 
-// Get active plans from mock data
-const PLANS = getActivePlans(battery_service_packages)
+// Map the battery_service_packages shape into the UI-friendly plan shape
+const PLANS = battery_service_packages
+  .filter(p => p.active)
+  .map(p => ({
+    id: String(p.package_id),
+    name: p.name,
+    description: p.description,
+    price: p.base_price && p.base_price > 0 ? `$${p.base_price}` : 'Contact sales',
+    period:
+      p.duration_days && p.duration_days > 0
+        ? p.duration_days === 30
+          ? 'per month'
+          : `per ${p.duration_days} days`
+        : 'per swap',
+    features: [
+      p.base_distance && p.base_distance > 0 ? `${p.base_distance} km included` : 'Flexible swaps',
+      p.phi_phat && p.phi_phat > 0 ? `Extra fee: $${p.phi_phat}` : 'No extra fee',
+      'Access to all stations',
+      'Mobile app access',
+      '24/7 customer support'
+    ],
+    details: p.description
+  }))
 
 export default function Plans() {
   const [subscriptions, setSubscriptions] = useState([])
