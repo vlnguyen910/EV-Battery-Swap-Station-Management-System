@@ -26,3 +26,8 @@ dist-ssr
 /history 
 /.history
 .history
+
+# Env
+.env
+.env.local
+.env.*.local
