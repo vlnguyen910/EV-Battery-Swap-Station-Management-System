@@ -591,3 +591,37 @@ export const calculateMonthlyStats = (userId) => {
     avgTime: avgTime.toFixed(1)
   };
 };
+
+// Battery service packages (mock table: battery_service_packages)
+export const battery_service_packages = [
+  {
+    package_id: 1,
+    name: 'Pay-Per-Swap',
+    base_distance: 5,
+    base_price: 15.0,
+    phi_phat: 0,
+    duration_days: 0,
+    description: 'Pay per swap; no subscription. Base distance included.',
+    active: true
+  },
+  {
+    package_id: 2,
+    name: 'Monthly Subscription',
+    base_distance: 0,
+    base_price: 99.0,
+    phi_phat: 0,
+    duration_days: 30,
+    description: 'Up to 10 swaps per month. Auto-renewing monthly plan.',
+    active: true
+  },
+  {
+    package_id: 3,
+    name: 'Business Plan',
+    base_distance: 0,
+    base_price: 0.0,
+    phi_phat: 0,
+    duration_days: 365,
+    description: 'Custom pricing for fleets; contact sales.',
+    active: true
+  }
+];
