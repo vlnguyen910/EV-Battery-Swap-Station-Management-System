@@ -1,4 +1,3 @@
-import React from "react";
 import reservations from "../../data/mockReservationData";
 
 const statusClassMap = {
@@ -10,6 +9,7 @@ const statusClassMap = {
 export default function SwapHistory({ type = "swap" }) {
   const RecentTransactions = () => (
     <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200 mb-6">
+
       <h3 className="text-lg font-bold text-gray-800 mb-4">
         Giao dịch Đổi Pin Gần đây
       </h3>
