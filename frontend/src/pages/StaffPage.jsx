@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Navigation from "../components/layout/Navigation";
 import { BatteryProvider } from "../contexts/BatteryContext";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/useContext";
 
 export default function StaffPage() {
     const { logout } = useAuth();
