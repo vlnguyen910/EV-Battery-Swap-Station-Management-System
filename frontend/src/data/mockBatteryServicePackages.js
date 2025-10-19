@@ -21,4 +21,5 @@ const mockBatteryServicePackages = [
     active: true,
   },
 ];
+
 export default mockBatteryServicePackages;
