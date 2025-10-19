@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { CreateSwapTransactionDto } from './dto/create-swap-transaction.dto';
 import { UpdateSwapTransactionDto } from './dto/update-swap-transaction.dto';
 import { UsersService } from '../users/users.service';
@@ -21,8 +21,6 @@ export class SwapTransactionsService {
     private readonly subcriptionsService: SubscriptionsService,
   ) { }
 
-  private readonly logger = new Logger(SwapTransactionsService.name);
-
   async create(
     createDto: CreateSwapTransactionDto,
     tx?: any // transaction object
@@ -39,67 +37,54 @@ export class SwapTransactionsService {
 
     try {
       if (!user) {
-        this.logger.warn(`User with ID ${createDto.user_id} not found`);
         throw new NotFoundException({ message: `User with ID ${createDto.user_id} not found` });
       }
 
       if (!vehicle) {
-        this.logger.warn(`Vehicle with ID ${createDto.vehicle_id} not found`);
         throw new NotFoundException({ message: `Vehicle with ID ${createDto.vehicle_id} not found` });
       }
 
       if (vehicle.user_id !== createDto.user_id) {
-        this.logger.warn(`Vehicle with ID ${createDto.vehicle_id} not owned by user with ID ${createDto.user_id}`);
         throw new NotFoundException({ message: `Vehicle with ID ${createDto.vehicle_id} not owned by user with ID ${createDto.user_id}` });
       }
 
       if (!station) {
-        this.logger.warn(`Station with ID ${createDto.station_id} not found`);
         throw new NotFoundException({ message: `Station with ID ${createDto.station_id} not found` });
       }
 
       if (!battery_taken) {
-        this.logger.warn(`Battery with ID ${createDto.battery_taken_id} not found`);
         throw new NotFoundException({ message: `Battery with ID ${createDto.battery_taken_id} not found` });
       }
 
       if (battery_taken.station_id !== createDto.station_id) {
-        this.logger.warn(`Battery with ID ${createDto.battery_taken_id} not located at station with ID ${createDto.station_id}`);
         throw new NotFoundException({ message: `Battery with ID ${createDto.battery_taken_id} not located at station with ID ${createDto.station_id}` });
       }
 
       if (battery_taken.status !== BatteryStatus.full) {
-        this.logger.warn(`Battery with ID ${createDto.battery_taken_id} is not full`);
         throw new NotFoundException({ message: `Battery with ID ${createDto.battery_taken_id} is not full` });
       }
 
       if (createDto.battery_returned_id) {
-        this.logger.log(`Battery returned ID provided: ${createDto.battery_returned_id}`);
         const battery_returned = await this.batteriesService.findOne(createDto.battery_returned_id);
 
         if (!battery_returned) {
-          this.logger.warn(`Battery with ID ${createDto.battery_returned_id} not found`);
           throw new NotFoundException({ message: `Battery with ID ${createDto.battery_returned_id} not found` });
         }
       }
 
       if (!subscription) {
-        this.logger.warn(`No active subscription found for vehicle ID ${createDto.vehicle_id}`);
         throw new NotFoundException({ message: `No active subscription found for vehicle ID ${createDto.vehicle_id}` });
       }
 
       if (subscription.user_id !== createDto.user_id) {
-        this.logger.warn(`Subscription with ID ${subscription.subscription_id} not owned by user with ID ${createDto.user_id}`);
         throw new NotFoundException({ message: `Subscription with ID ${subscription.subscription_id} not owned by user with ID ${createDto.user_id}` });
       }
 
       if (subscription.vehicle_id !== createDto.vehicle_id) {
-        this.logger.warn(`Subscription with ID ${subscription.subscription_id} not for vehicle with ID ${createDto.vehicle_id}`);
         throw new NotFoundException({ message: `Subscription with ID ${subscription.subscription_id} not for vehicle with ID ${createDto.vehicle_id}` });
       }
 
       // Create swap transaction
-      this.logger.log(`Creating swap transaction for user ${createDto.user_id} at station ${createDto.station_id}`);
       return await prisma.swapTransaction.create({
         data: {
           user_id: createDto.user_id,
@@ -112,7 +97,6 @@ export class SwapTransactionsService {
         }
       });
     } catch (error) {
-      this.logger.error(`Failed to create swap transaction: ${error.message}`);
       throw new InternalServerErrorException({ message: `Failed to create swap transaction: ${error.message}` });
     }
   }
@@ -146,7 +130,6 @@ export class SwapTransactionsService {
         data: { status: status }
       });
     } catch (error) {
-      this.logger.error(`Failed to update swap transaction status: ${error.message}`);
       throw new InternalServerErrorException('Failed to update swap transaction status');
     }
   }

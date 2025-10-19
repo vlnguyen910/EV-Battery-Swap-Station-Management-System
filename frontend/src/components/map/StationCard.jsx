@@ -38,7 +38,7 @@ export default function StationCard({ station, onClick }) {
 
   const handleGoToPlans = () => {
     setShowSubscriptionAlert(false);
-    navigate('/plans');
+    navigate('/driver/plans');
   };
 
   const handleCloseAlert = () => {
@@ -47,11 +47,11 @@ export default function StationCard({ station, onClick }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Available':
+      case 'active':
         return 'bg-green-100 text-green-800';
-      case 'Limited':
+      case 'maintenance':
         return 'bg-yellow-100 text-yellow-800';
-      case 'No Slots':
+      case 'inactive':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';

@@ -13,9 +13,14 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
+import { SwappingModule } from './modules/swapping/swapping.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     DatabaseModule,
     UsersModule,
@@ -28,7 +33,9 @@ import { SwapTransactionsModule } from './modules/swap-transactions/swap-transac
     SubscriptionsModule,
     SwapTransactionsModule,
     SubscriptionsModule,
-    PaymentsModule],
+    PaymentsModule,
+    SwappingModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

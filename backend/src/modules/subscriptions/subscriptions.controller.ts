@@ -19,7 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @Controller('subscriptions')
 @UseGuards(AuthGuard, RolesGuard)
 export class SubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(private readonly subscriptionsService: SubscriptionsService) { }
 
   @Post()
   @Roles('driver', 'admin')

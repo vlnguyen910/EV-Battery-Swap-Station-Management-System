@@ -19,7 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "tsx prisma/seed.ts",
-    "clear-db": "ts-node prisma/clear-db.ts"
+    "clear-db": "ts-node prisma/clear-db.ts",
+    "export-data": "tsx prisma/export-data.ts",
+    "import-data": "tsx prisma/import-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts",
@@ -42,8 +44,8 @@
     "class-transformer": "^0.5.1",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
-    "moment": "^2.30.1",
     "dotenv": "^17.2.2",
+    "moment": "^2.30.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "qs": "^6.14.0",

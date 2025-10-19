@@ -13,11 +13,11 @@ export default function MapContainer({ stations, onMapReady }) {
 
   const getMarkerColor = (status) => {
     switch (status) {
-      case 'Available':
+      case 'active':
         return '#10B981'; // Green
-      case 'Limited':
+      case 'maintenance':
         return '#F59E0B'; // Yellow
-      case 'No Slots':
+      case 'inactive':
         return '#EF4444'; // Red
       default:
         return '#6B7280'; // Gray

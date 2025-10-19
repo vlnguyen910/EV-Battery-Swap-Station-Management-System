@@ -10,6 +10,7 @@ import MapPage from './pages/Map'
 import Driver from './pages/Driver'
 import Booking from './pages/Booking'
 import SwapHistory from './pages/SwapHistory'
+import Plans from './pages/Plans'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
@@ -39,6 +40,7 @@ function App() {
 
 
 
+
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con   */}
@@ -53,6 +55,7 @@ function App() {
           <Route index element={<DriverDashboard />} />
           <Route path="booking" element={<Booking />} />
           <Route path="swap-history" element={<SwapHistory />} />
+          <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
         </Route>
       </Routes>
