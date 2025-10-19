@@ -13,7 +13,7 @@ export default function StationsList({ stations, onStationClick }) {
         <div className="h-full overflow-y-auto pb-16">
           {stations.map((station) => (
             <StationCard
-              key={station.id}
+              key={station.station_id}
               station={station}
               onClick={onStationClick}
             />

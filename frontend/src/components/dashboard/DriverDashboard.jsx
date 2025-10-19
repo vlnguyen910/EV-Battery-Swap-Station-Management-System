@@ -7,7 +7,7 @@ import NeedHelp from './NeedHelp'
 import { useAuth } from '../../hooks/useContext';
 
 export default function DriverDashboard() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -18,19 +18,6 @@ export default function DriverDashboard() {
                     <WelcomeHeader userName={user?.name} />
                     <VehicleStatus />
                     <RecentActivity />
-                    <button
-                        onClick={logout}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        🚪 Logout
-                    </button>
                 </div>
 
                 {/* Right Column - Driver Stats + Nearby Stations */}
