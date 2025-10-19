@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional } from "class-validator";
 import { SwappingDto } from "./swapping.dto";
 
 export class FirstSwapDto extends SwappingDto {
@@ -13,5 +13,9 @@ export class FirstSwapDto extends SwappingDto {
     @IsInt({ message: 'subscription_id must be an integer' })
     @IsNotEmpty({ message: 'subscription_id is required' })
     subscription_id: number;
+
+    @IsInt({ message: 'reservation_id must be an integer' })
+    @IsOptional()
+    reservation_id?: number;
 }
 

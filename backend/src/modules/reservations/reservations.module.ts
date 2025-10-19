@@ -12,5 +12,6 @@ import { StationsModule } from '../stations/stations.module';
   imports: [BatteriesModule, DatabaseModule, VehiclesModule, UsersModule, SubscriptionsModule, StationsModule],
   controllers: [ReservationsController],
   providers: [ReservationsService],
+  exports: [ReservationsService],
 })
 export class ReservationsModule { }
