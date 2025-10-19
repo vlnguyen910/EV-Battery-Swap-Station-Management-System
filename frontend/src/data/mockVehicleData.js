@@ -17,6 +17,15 @@ const mockVehicleData = [
     battery_model: "Model 3",
     battery_type: "Lithium-ion",
   },
+  {
+    vehicle_id: 205,
+    user_id: 147, // hman
+    battery_id: 7,
+    vin: "VIN-202401EV205",
+    cong_suat_dong_co: 180, // kW
+    battery_model: "Model Y",
+    battery_type: "Lithium-ion",
+  },
 ];
 
 export default mockVehicleData;

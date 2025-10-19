@@ -9,7 +9,7 @@ export default function StationsList({ stations, onStationClick }) {
           <h2 className="font-semibold text-gray-900">Nearby Stations</h2>
           <p className="text-sm text-gray-600">{stations.length} stations found</p>
         </div>
-        
+
         <div className="h-full overflow-y-auto pb-16">
           {stations.map((station) => (
             <StationCard

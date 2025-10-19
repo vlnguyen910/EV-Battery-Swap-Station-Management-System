@@ -15,30 +15,35 @@ import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
 import DriverDashboard from './components/dashboard/DriverDashboard'
+//import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   const location = useLocation()
+
 
   // Routes that should show sidebar (authenticated user routes)
   const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
   const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
 
+
   return (
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
+        <Route path="/driver" element={<Driver />} />
         <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
         <Route path="/register" element={<AuthContainer mode="register" />} />
+
         <Route path="/admin" element={<AdminPage />} />
-        
+
 
 
 
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
-          {/* Route con */}
+          {/* Route con   */}
           <Route index element={<StaffDashboard />} />
           <Route path="inventory" element={<StaffInventory />} />
           <Route path="inspection" element={<StaffInspection />} />

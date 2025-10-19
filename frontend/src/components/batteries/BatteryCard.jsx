@@ -32,7 +32,7 @@ export default function BatteryCard({ battery }) {
   };
 
   return (
-    <div className="bg-[#0f172a] text-white p-2 rounded-lg w-[260px] shadow-md border border-gray-700 flex-shrink-0">
+    <div className="bg-[#0f172a] text-white p-2 rounded-lg w-[355px] shadow-md border border-gray-700 flex-shrink-0">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-lg font-semibold">BAT{String(battery.battery_id).padStart(3, '0')}</h2>
         <span className={`text-sm px-2 py-0.5 rounded-full ${getStatusBadgeColor(battery.status)}`}>

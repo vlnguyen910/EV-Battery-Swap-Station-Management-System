@@ -58,6 +58,15 @@ const mockUserData = [
     role: "driver",
     created_at: "2024-03-02T11:00:00Z",
   },
+  {
+    user_id: 147,
+    username: "hman",
+    password_hash: "hman123",
+    phone: "0334992929",
+    email: "hman@gmail.com",
+    role: "driver",
+    created_at: "2024-03-02T11:00:00Z",
+  },
 ];
 
 export default mockUserData;

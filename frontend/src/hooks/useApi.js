@@ -1,5 +1,5 @@
 // hooks/useApi.js
-import { useAuth } from "./useAuth";
+import { useAuth } from "./useContext";
 import api from "../services/api";
 
 export const useApi = () => {

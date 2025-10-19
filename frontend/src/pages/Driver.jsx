@@ -21,7 +21,7 @@ export default function Driver() {
 
       {/* Navigation */}
       {/* <Navigation type="main" /> */}
-        
+
       {/* Content */}
       <div className="min-h-screen relative z-10">
         <Sidebar />

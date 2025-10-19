@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 export default function StationCard({ station, onClick }) {
   const navigate = useNavigate();
   const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-  
+
   // Check if user has active subscription
   const checkSubscription = () => {
     const subscriptions = localStorage.getItem('subscriptions');
@@ -17,13 +17,13 @@ export default function StationCard({ station, onClick }) {
 
   const handleBookNow = (e) => {
     e.stopPropagation(); // Prevent triggering onClick
-    
+
     // Check if user has subscription
     if (!checkSubscription()) {
       setShowSubscriptionAlert(true);
       return;
     }
-    
+
     // Proceed with booking if user has subscription
     const params = new URLSearchParams({
       stationId: station.id,
@@ -38,7 +38,7 @@ export default function StationCard({ station, onClick }) {
 
   const handleGoToPlans = () => {
     setShowSubscriptionAlert(false);
-    navigate('/plans');
+    navigate('/driver/plans');
   };
 
   const handleCloseAlert = () => {
@@ -47,11 +47,11 @@ export default function StationCard({ station, onClick }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Available':
+      case 'active':
         return 'bg-green-100 text-green-800';
-      case 'Limited':
+      case 'maintenance':
         return 'bg-yellow-100 text-yellow-800';
-      case 'No Slots':
+      case 'inactive':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -75,7 +75,7 @@ export default function StationCard({ station, onClick }) {
                 <p className="text-sm text-gray-600">{station.address}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1 text-gray-600">
                 <Clock size={16} />
@@ -87,7 +87,7 @@ export default function StationCard({ station, onClick }) {
               </div>
             </div>
           </div>
-          
+
           <div className="ml-4 flex flex-col items-end gap-2">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(station.status)}`}>
               {station.status}
@@ -117,12 +117,12 @@ export default function StationCard({ station, onClick }) {
                   Chưa có gói đăng ký
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Bạn cần đăng ký một gói dịch vụ trước khi có thể đặt lịch thay pin. 
+                  Bạn cần đăng ký một gói dịch vụ trước khi có thể đặt lịch thay pin.
                   Vui lòng chọn gói phù hợp với nhu cầu của bạn.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={handleCloseAlert}

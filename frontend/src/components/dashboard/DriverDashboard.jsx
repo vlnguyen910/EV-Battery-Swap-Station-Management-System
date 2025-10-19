@@ -4,7 +4,7 @@ import DriverStats from './DriverStats'
 import NearbyStations from './NearbyStations'
 import RecentActivity from './RecentActivity'
 import NeedHelp from './NeedHelp'
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useContext';
 
 export default function DriverDashboard() {
     const { user, logout } = useAuth();
