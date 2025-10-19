@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
@@ -18,13 +18,13 @@ export class ReservationsController {
   }
 
 
-  @Get()
-  findAll() {
-    return this.reservationsService.findAll();
+  @Get('/user/:id')
+  findAllByUserId(@Param('id', ParseIntPipe) userId: number) {
+    return this.reservationsService.findManyByUserId(userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.reservationsService.findOne(+id);
   }
 

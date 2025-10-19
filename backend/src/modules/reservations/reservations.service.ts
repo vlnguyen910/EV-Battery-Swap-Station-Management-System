@@ -94,11 +94,7 @@ export class ReservationsService {
 
       return newReservation;
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
-        throw error;
-      }
-
-      throw new BadRequestException('Unexpected error while creating reservation');
+      throw error;
     }
   }
 
@@ -116,6 +112,25 @@ export class ReservationsService {
 
   findOne(id: number) {
     return `This action returns a #${id} reservation`;
+  }
+
+  async findOneScheduledByUserId(userId: number) {
+    try {
+      const vehicle = await this.vehicleService.findOneActiveByUserId(userId);
+      if (!vehicle) {
+        throw new NotFoundException('Not found driver vehicle or not active yet');
+      }
+
+      return this.databaseService.reservation.findFirst({
+        where: {
+          user_id: userId,
+          vehicle_id: vehicle.vehicle_id,
+          status: ReservationStatus.scheduled
+        }
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateReservationStatus(
