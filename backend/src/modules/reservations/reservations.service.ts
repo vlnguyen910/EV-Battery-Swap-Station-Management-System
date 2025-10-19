@@ -136,9 +136,12 @@ export class ReservationsService {
   async updateReservationStatus(
     id: number,
     user_id: number,
-    status: ReservationStatus
+    status: ReservationStatus,
+    tx?: any
   ) {
-    const reservationUpdate = await this.databaseService.reservation.findUnique({
+    const prisma = tx || this.databaseService;
+
+    const reservationUpdate = await prisma.reservation.findUnique({
       where: { reservation_id: id }
     })
 
@@ -146,7 +149,7 @@ export class ReservationsService {
       throw new NotFoundException(`Reservation not found or made by user with ID ${user_id}`);
     }
 
-    return await this.databaseService.reservation.update({
+    return await prisma.reservation.update({
       where: { reservation_id: id },
       data: { status }
     });

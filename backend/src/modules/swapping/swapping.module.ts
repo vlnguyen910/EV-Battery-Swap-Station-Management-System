@@ -8,6 +8,7 @@ import { StationsModule } from '../stations/stations.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { DatabaseModule } from '../database/database.module';
 import { SwapTransactionsModule } from '../swap-transactions/swap-transactions.module';
+import { ReservationsModule } from '../reservations/reservations.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SwapTransactionsModule } from '../swap-transactions/swap-transactions.m
     StationsModule,
     SwapTransactionsModule,
     SubscriptionsModule,
+    ReservationsModule
   ],
   controllers: [SwappingController],
   providers: [SwappingService],
