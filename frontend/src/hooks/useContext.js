@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { AuthContext } from "../contexts/AuthContext";
 import { StationContext } from "../contexts/StationContext";
 import { BatteryContext } from "../contexts/BatteryContext";
+import { ReservationContext } from "../contexts/ReservationContext";
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -13,4 +14,8 @@ export function useStation() {
 
 export function useBattery() {
   return useContext(BatteryContext);
+}
+
+export function useReservation() {
+  return useContext(ReservationContext);
 }
