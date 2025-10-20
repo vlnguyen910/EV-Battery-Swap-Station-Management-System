@@ -1,67 +1,52 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import batteryService from '../services/batteryService';
+import { createContext, useState, useEffect } from "react";
+import { batteryService } from "../services/batteryService";
+import { useNavigate } from "react-router-dom";
 
+const { getAllBatteries: getAllBatteriesService } = batteryService;
 
-const BatteryContext = createContext();
+export const BatteryContext = createContext();
 
 export const BatteryProvider = ({ children }) => {
     const [batteries, setBatteries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Real-time battery updates every 5 seconds
-    useEffect(() => {
-        const updateBatteries = async () => {
-            try {
-                const response = await batteryService.getAllBatteries();
-                setBatteries(response.data);
-            } catch (err) {
-                setError(err.message);
-            }
-        };
-
-        // Initial load
-        updateBatteries();
-
-        // Update every 5 seconds for real-time charging simulation
-        const interval = setInterval(updateBatteries, 5000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const value = {
-        batteries,
-        loading,
-        error,
-        setBatteries,
-        setLoading,
-        setError,
-        refreshBatteries: async () => {
-            setLoading(true);
-            try {
-                const response = await batteryService.getAllBatteries();
-                setBatteries(response.data);
-                setError(null);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
+    //function to fetch all batteries
+    const fetchAllBatteries = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllBatteriesService();
+            setBatteries(response.data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
+    //Function để đếm toàn bộ pin có trạng thái 'full' by stationId
+    const countAvailableBatteriesByStation = (stationId) => {
+        if (!stationId) return 0;
+        return batteries.filter(
+            (battery) => battery.stationId === stationId && battery.status === 'full'
+        ).length;
+
+    };
+    // Fetch all batteries on mount
+    // Fetch mà không được thì ra chuỗi rỗng
+    useEffect(() => {
+        fetchAllBatteries();
+    }, []);
+
     return (
-        <BatteryContext.Provider value={value}>
+        <BatteryContext.Provider value={{ batteries, loading, error, countAvailableBatteriesByStation }}>
             {children}
         </BatteryContext.Provider>
     );
 };
 
-// Custom hook
-export const useBattery = () => {
-    const context = useContext(BatteryContext);
-    if (!context) {
-        throw new Error('useBattery must be used within BatteryProvider');
-    }
-    return context;
-};
+
+
+
+
