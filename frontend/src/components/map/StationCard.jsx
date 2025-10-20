@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { Clock, Battery, Zap, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBattery } from '../../hooks/useContext';
@@ -28,12 +28,12 @@ export default function StationCard({ station, onClick }) {
 
     // Proceed with booking if user has subscription
     const params = new URLSearchParams({
-      stationId: station.id,
-      name: station.name,
-      address: station.address,
-      availableBatteries: station.availableBatteries,
-      totalBatteries: station.totalBatteries,
-      status: station.status
+      stationId: station?.station_id ?? station?.id,
+      name: station?.name,
+      address: station?.address,
+      availableBatteries: station?.availableBatteries,
+      totalBatteries: station?.totalBatteries,
+      status: station?.status
     });
     navigate(`/booking?${params.toString()}`);
   };
@@ -60,10 +60,13 @@ export default function StationCard({ station, onClick }) {
     }
   };
 
+  // If station prop is not provided, render nothing (avoid runtime errors)
+  if (!station) return null;
+
   return (
     <>
       <div
-        onClick={() => onClick(station)}
+        onClick={() => onClick && onClick(station)}
         className="px-4 py-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
       >
         <div className="flex items-start justify-between">
@@ -85,7 +88,7 @@ export default function StationCard({ station, onClick }) {
               </div>
               <div className="flex items-center gap-1 text-gray-600">
                 <Battery size={16} />
-                <span>{countAvailableBatteriesByStation(station.id)} Slots</span>
+                <span>{countAvailableBatteriesByStation(station?.station_id ?? station?.id)} Slots</span>
               </div>
             </div>
           </div>
