@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Clock, Battery, Zap, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useBattery } from '../../hooks/useContext';
 
 export default function StationCard({ station, onClick }) {
   const navigate = useNavigate();
+  const { countAvailableBatteriesByStation } = useBattery();
   const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
 
   // Check if user has active subscription
@@ -83,7 +85,7 @@ export default function StationCard({ station, onClick }) {
               </div>
               <div className="flex items-center gap-1 text-gray-600">
                 <Battery size={16} />
-                <span>{station.availableBatteries}/{station.totalBatteries} slots</span>
+                <span>{countAvailableBatteriesByStation(station.id)} Slots</span>
               </div>
             </div>
           </div>
