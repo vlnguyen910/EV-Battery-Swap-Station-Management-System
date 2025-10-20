@@ -31,11 +31,6 @@ export class BatteriesController {
     return this.batteriesService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBatteryDto: UpdateBatteryDto) {
-    return this.batteriesService.update(+id, updateBatteryDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.batteriesService.remove(+id);
