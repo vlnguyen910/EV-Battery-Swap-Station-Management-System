@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect } from "react";
 import { batteryService } from "../services/batteryService";
-import { useNavigate } from "react-router-dom";
 
 const { getAllBatteries: getAllBatteriesService } = batteryService;
 
@@ -17,7 +16,18 @@ export const BatteryProvider = ({ children }) => {
         setError(null);
         try {
             const response = await getAllBatteriesService();
-            setBatteries(response.data);
+            // service might return an array directly, or { data: [...] }, or { data: { data: [...] } }
+            let payload = response;
+            if (response && typeof response === 'object') {
+                if (Array.isArray(response)) payload = response;
+                else if (Array.isArray(response.data)) payload = response.data;
+                else if (response.data && Array.isArray(response.data.data)) payload = response.data.data;
+            }
+            if (!Array.isArray(payload)) {
+                console.warn('BatteryService returned unexpected shape for batteries:', response);
+                payload = [];
+            }
+            setBatteries(payload);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -25,16 +35,24 @@ export const BatteryProvider = ({ children }) => {
         }
     };
 
-    //Function để đếm toàn bộ pin có trạng thái 'full' by stationId
-    const countAvailableBatteriesByStation = (stationId) => {
-    if (!stationId || !batteries.length) return 0;
-    
-    return batteries.filter(
-      (battery) => 
-        battery.station_id === stationId && 
-        (battery.status === "full" || battery.status === "charging")
-    ).length;
-  };
+    // Function to count available batteries with status "full" by station ID
+    const countAvailableBatteriesByStation = (stationIdOrObj) => {
+        // accept either station id or station object
+        const stationId = typeof stationIdOrObj === 'object' && stationIdOrObj !== null
+            ? (stationIdOrObj.station_id ?? stationIdOrObj.stationId ?? stationIdOrObj.id)
+            : stationIdOrObj;
+
+        if (!Array.isArray(batteries)) return 0;
+
+        return batteries.reduce((count, battery) => {
+            if (!battery) return count;
+            const bStationId = battery.station_id ?? battery.stationId ?? battery.station ?? battery.stationId ?? battery.station_id ?? battery.station?.id;
+            const status = (battery.status || '').toString().toLowerCase();
+            if (String(bStationId) === String(stationId) && status === 'full') return count + 1;
+            return count;
+        }, 0);
+    };
+
     // Fetch all batteries on mount
     // Fetch mà không được thì ra chuỗi rỗng
     useEffect(() => {
