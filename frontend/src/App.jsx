@@ -12,7 +12,7 @@ import Booking from './pages/Booking'
 import SwapHistory from './pages/SwapHistory'
 import Plans from './pages/Plans'
 import StaffDashboard from './components/dashboard/StaffDashboard'
-import StaffInventory from './components/dashboard/StaffInventory'
+// import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
 import DriverDashboard from './components/dashboard/DriverDashboard'
 //import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -45,7 +45,7 @@ function App() {
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con   */}
           <Route index element={<StaffDashboard />} />
-          <Route path="inventory" element={<StaffInventory />} />
+          {/* <Route path="inventory" element={<StaffInventory />} /> */}
           <Route path="inspection" element={<StaffInspection />} />
         </Route>
 
