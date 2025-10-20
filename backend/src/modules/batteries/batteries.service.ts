@@ -22,8 +22,7 @@ export class BatteriesService {
   }
 
   findAll() {
-    this.logger.log('Retrieving all batteries');
-    return `This action returns all batteries`;
+    return this.databaseService.battery.findMany();
   }
 
   async findAllByStationId(station_id: number) {
@@ -155,11 +154,6 @@ export class BatteriesService {
       this.logger.error(`Error returning battery to station: ${error.message}`);
       throw error;
     }
-  }
-
-
-  update(id: number, updateBatteryDto: UpdateBatteryDto) {
-    return `This action updates a #${id} battery`;
   }
 
   updateBatteryStatus(id: number, status: BatteryStatus) {
