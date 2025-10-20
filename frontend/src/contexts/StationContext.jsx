@@ -19,11 +19,13 @@ export const StationProvider = ({ children }) => {
         try {
             const data = await getAllStationsService();
             setStations(data);
+            console.log("Stations data fetched successfully", data);
         } catch (error) {
             setError(error);
         } finally {
             setLoading(false);
         }
+        console.log("Fetched stations:", stations);
     };
 
     // Fetch all stations on mount
@@ -32,7 +34,7 @@ export const StationProvider = ({ children }) => {
     }, []);
 
     return (
-        <StationContext.Provider value={{ stations, loading, error }}>
+        <StationContext.Provider value={{ stations, loading, error, fetchAllStations }}>
             {children}
         </StationContext.Provider>
     );

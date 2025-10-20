@@ -3,7 +3,6 @@ import { createContext, useState, useEffect } from "react";
 import { vehicleService } from "../services/vehicleService";
 import { useNavigate } from "react-router-dom";
 
-
 const { getAllVehicles: getAllVehiclesService, 
         getVehicleById: getVehicleByIdService   
  } = vehicleService;

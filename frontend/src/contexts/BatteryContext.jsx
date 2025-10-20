@@ -27,12 +27,14 @@ export const BatteryProvider = ({ children }) => {
 
     //Function để đếm toàn bộ pin có trạng thái 'full' by stationId
     const countAvailableBatteriesByStation = (stationId) => {
-        if (!stationId) return 0;
-        return batteries.filter(
-            (battery) => battery.stationId === stationId && battery.status === 'full'
-        ).length;
-
-    };
+    if (!stationId || !batteries.length) return 0;
+    
+    return batteries.filter(
+      (battery) => 
+        battery.station_id === stationId && 
+        (battery.status === "full" || battery.status === "charging")
+    ).length;
+  };
     // Fetch all batteries on mount
     // Fetch mà không được thì ra chuỗi rỗng
     useEffect(() => {
