@@ -6,25 +6,25 @@ import { useBattery } from '../../hooks/useContext';
 export default function StationCard({ station, onClick }) {
   const navigate = useNavigate();
   const { countAvailableBatteriesByStation } = useBattery();
-  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+  // const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
 
   // Check if user has active subscription
-  const checkSubscription = () => {
-    const subscriptions = localStorage.getItem('subscriptions');
-    if (!subscriptions || JSON.parse(subscriptions).length === 0) {
-      return false;
-    }
-    return true;
-  };
+  // const checkSubscription = () => {
+  //   const subscriptions = localStorage.getItem('subscriptions');
+  //   if (!subscriptions || JSON.parse(subscriptions).length === 0) {
+  //     return false;
+  //   }
+  //   return true;
+  // };
 
   const handleBookNow = (e) => {
     e.stopPropagation(); // Prevent triggering onClick
 
     // Check if user has subscription
-    if (!checkSubscription()) {
-      setShowSubscriptionAlert(true);
-      return;
-    }
+    // if (!checkSubscription()) {
+    //   setShowSubscriptionAlert(true);
+    //   return;
+    // }
 
     // Proceed with booking if user has subscription
     const params = new URLSearchParams({
@@ -38,14 +38,14 @@ export default function StationCard({ station, onClick }) {
     navigate(`/booking?${params.toString()}`);
   };
 
-  const handleGoToPlans = () => {
-    setShowSubscriptionAlert(false);
-    navigate('/driver/plans');
-  };
+  // const handleGoToPlans = () => {
+  //   setShowSubscriptionAlert(false);
+  //   navigate('/driver/plans');
+  // };
 
-  const handleCloseAlert = () => {
-    setShowSubscriptionAlert(false);
-  };
+  // const handleCloseAlert = () => {
+  //   setShowSubscriptionAlert(false);
+  // };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -110,7 +110,7 @@ export default function StationCard({ station, onClick }) {
       </div>
 
       {/* Subscription Required Alert Modal */}
-      {showSubscriptionAlert && (
+      {/* {showSubscriptionAlert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
             <div className="flex items-start mb-4">
@@ -144,7 +144,7 @@ export default function StationCard({ station, onClick }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 }

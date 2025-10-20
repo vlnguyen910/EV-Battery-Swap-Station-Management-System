@@ -2,7 +2,7 @@ import { createContext, useState, useEffect } from "react";
 import { stationService } from "../services/stationService";
 import { useNavigate } from "react-router-dom";
 
-const { getAllStations: getAllStationsService } = stationService;
+const { getAllStations: getAllStationsService , getStationById: getStationByIdService } = stationService;
 
 export const StationContext = createContext();
 
@@ -27,6 +27,16 @@ export const StationProvider = ({ children }) => {
         }
         console.log("Fetched stations:", stations);
     };
+    // Function to fetch station by ID 
+    const getStationById = async (id) => {
+        try {
+            const station = await stationService.getStationByIdService(id);
+            return station;
+        } catch (error) {
+            console.error("Error fetching station by ID:", error);
+            throw error;
+        }
+    };
 
     // Fetch all stations on mount
     useEffect(() => {
@@ -34,7 +44,7 @@ export const StationProvider = ({ children }) => {
     }, []);
 
     return (
-        <StationContext.Provider value={{ stations, loading, error, fetchAllStations }}>
+        <StationContext.Provider value={{ stations, loading, error, fetchAllStations , getStationById }}>
             {children}
         </StationContext.Provider>
     );
