@@ -28,7 +28,7 @@ export default function StationCard({ station, onClick }) {
 
     // Proceed with booking if user has subscription
     const params = new URLSearchParams({
-      stationId: station?.station_id ?? station?.id,
+      station_id: station?.station_id ?? station?.id,
       name: station?.name,
       address: station?.address,
       availableBatteries: station?.availableBatteries,
@@ -88,7 +88,7 @@ export default function StationCard({ station, onClick }) {
               </div>
               <div className="flex items-center gap-1 text-gray-600">
                 <Battery size={16} />
-                <span>{countAvailableBatteriesByStation(station?.station_id ?? station?.id)} Slots</span>
+                <span>{countAvailableBatteriesByStation(station.station_id)} Slots</span>
               </div>
             </div>
           </div>
