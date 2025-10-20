@@ -124,33 +124,42 @@ export default function Booking() {
 
   // Booking Form UI (when state is 'idle')
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto overflow-hidden">
-        <BookingHeader 
-          stationName={stationName}
-          stationAddress={stationAddress}
-          onBackToMap={handleBackToMap}
-        />
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+      <div className="max-w-5xl mx-auto p-6">
+        {/* Card Container with Shadow */}
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <BookingHeader 
+            stationName={stationName}
+            stationAddress={stationAddress}
+            onBackToMap={handleBackToMap}
+          />
+          
+          {/* Station Image with Overlay */}
+          <div className="relative px-6 pb-6">
+            <div className="relative overflow-hidden rounded-xl shadow-lg">
+              <img
+                src="https://selex.vn/wp-content/uploads/2024/11/Group-1000002977-1.png"
+                alt="Battery Charging Station"
+                className="w-full h-72 object-cover transform hover:scale-105 transition-transform duration-500"
+              />
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+              
+            
+            </div>
+          </div>
         
-        {/* Station Image */}
-        <div className="bg-white px-6">
-          <img
-            src="https://readdy.ai/api/search-image?query=modern%20electric%20battery%20charging%20station%20with%20green%20energy%20technology%2C%20clean%20white%20background%2C%20professional%20lighting%2C%20high-tech%20equipment%20with%20digital%20displays%20showing%20battery%20levels&width=400&height=300&seq=station1&orientation=landscape"
-            alt="Battery Charging Station"
-            className="w-full h-64 object-cover rounded-lg"
+          <StationInfoPanel
+            stationInfo={stationInfo}
+            bookingState={bookingState}
+            timeRemaining={timeRemaining}
+            onConfirmBooking={handleConfirmBooking}
+            onCancelBooking={handleCancelClick}
+            showCancelDialog={showCancelDialog}
+            onConfirmCancel={handleConfirmCancel}
+            onCancelDialogClose={handleCancelDialogClose}
           />
         </div>
-      
-        <StationInfoPanel
-          stationInfo={stationInfo}
-          bookingState={bookingState}
-          timeRemaining={timeRemaining}
-          onConfirmBooking={handleConfirmBooking}
-          onCancelBooking={handleCancelClick}
-          showCancelDialog={showCancelDialog}
-          onConfirmCancel={handleConfirmCancel}
-          onCancelDialogClose={handleCancelDialogClose}
-        />
       </div>
     </div>
   );

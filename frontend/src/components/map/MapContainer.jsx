@@ -3,12 +3,13 @@ import { MapPin, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import trackasia from 'trackasia-gl';
 import 'trackasia-gl/dist/trackasia-gl.css';
+import { Link } from 'react-router-dom';
 
 export default function MapContainer({ stations, onMapReady }) {
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const navigate = useNavigate();
-  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+  // const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
   const TRACKASIA_API_KEY = '090ec4d01e17603677119843fa3c839c69';
 
   const getMarkerColor = (status) => {
@@ -112,9 +113,11 @@ export default function MapContainer({ stations, onMapReady }) {
             </p>
             <button 
               id="book-btn-${station.station_id}" 
-              class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
-              Book Now
+              <Link to= "/booking/${station.station_id}">
+                <span class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"  >
+                Book Now
+              </Link>
             </button>
           </div>
         `;
@@ -123,14 +126,14 @@ export default function MapContainer({ stations, onMapReady }) {
         const bookButton = popupContent.querySelector(`#book-btn-${station.station_id}`);
         bookButton.addEventListener('click', () => {
           // Check if user has active subscription
-          const subscriptions = localStorage.getItem('subscriptions');
-          const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
+          // const subscriptions = localStorage.getItem('subscriptions');
+          // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
 
-          if (!hasSubscription) {
-            // Show custom modal alert
-            setShowSubscriptionAlert(true);
-            return;
-          }
+          // if (!hasSubscription) {
+          //   // Show custom modal alert
+          //   setShowSubscriptionAlert(true);
+          //   return;
+          // }
 
           // If has subscription, proceed to booking
           const params = new URLSearchParams({
@@ -162,14 +165,14 @@ export default function MapContainer({ stations, onMapReady }) {
     }
   }, [stations]);
 
-  const handleGoToPlans = () => {
-    setShowSubscriptionAlert(false);
-    navigate('/driver/plans');
-  };
+  // const handleGoToPlans = () => {
+  //   setShowSubscriptionAlert(false);
+  //   navigate('/driver/plans');
+  // };
 
-  const handleCloseAlert = () => {
-    setShowSubscriptionAlert(false);
-  };
+  // const handleCloseAlert = () => {
+  //   setShowSubscriptionAlert(false);
+  // };
 
   return (
     <div className="w-full h-full p-4">
@@ -187,7 +190,7 @@ export default function MapContainer({ stations, onMapReady }) {
       </div>
 
       {/* Subscription Required Alert Modal - Same as StationCard */}
-      {showSubscriptionAlert && (
+      {/* {showSubscriptionAlert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
             <div className="flex items-start mb-4">
@@ -221,7 +224,7 @@ export default function MapContainer({ stations, onMapReady }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
