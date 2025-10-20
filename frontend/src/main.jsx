@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { StationProvider } from './contexts/StationContext.jsx';
 import { BatteryProvider } from './contexts/BatteryContext.jsx';
+import { SwapProvider } from './contexts/SwapContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <StationProvider>
           <BatteryProvider>
-            <App />
+            <SwapProvider>
+              <App />
+            </SwapProvider>
           </BatteryProvider>
         </StationProvider>
       </AuthProvider>

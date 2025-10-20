@@ -3,7 +3,11 @@ import { createContext, useState, useEffect } from "react";
 import { authService } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 
-const { login: loginService, logout: logoutService, register: registerService, createStaffAccount: createStaffAccountService } = authService;
+const { login: loginService,
+    logout: logoutService,
+    register: registerService,
+    createStaffAccount: createStaffAccountService,
+    getAllUsers: getAllUsersService } = authService;
 
 export const AuthContext = createContext();
 
@@ -126,6 +130,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Function to get all users (for admin and staff)
+    const getAllUsers = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllUsersService();
+            console.log('Get all users response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Check user if reload page
     useEffect(() => {
         const saveUser = localStorage.getItem("user");
@@ -136,7 +156,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount }}
+            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount, getAllUsers }}
         >
             {children}
         </AuthContext.Provider>
