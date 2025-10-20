@@ -3,18 +3,18 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 
 export default function BookingHeader({ stationName, stationAddress, onBackToMap }) {
   return (
-    <div className="bg-white p-6 border-b border-gray-200">
+    <div className="bg-blue-800 p-8 shadow-lg">
       <button 
         onClick={onBackToMap}
-        className="flex items-center text-blue-600 hover:text-blue-700 mb-4 text-sm font-medium"
+        className="flex items-center text-white hover:text-blue-100 mb-6 text-sm font-medium transition-colors duration-200"
       >
-        <ArrowLeft size={18} className="mr-1" />
-        Quay lại
+        <ArrowLeft size={20} className="mr-2" />
+        Back to Map
       </button>
       
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{stationName}</h1>
-      <p className="text-gray-600 flex items-center">
-        <MapPin size={16} className="mr-2 text-gray-500" />
+      <h1 className="text-3xl font-bold text-white mb-3">{stationName}</h1>
+      <p className="text-blue-100 flex items-center text-lg">
+        <MapPin size={18} className="mr-2 text-blue-200" />
         {stationAddress}
       </p>
     </div>

@@ -1,15 +1,19 @@
 import React from 'react';
+import { ListOrdered } from 'lucide-react';
 
 export default function InstructionsCard() {
   const instructions = [
-    'Đến trạm pin trong thời gian quy định',
-    'Xuất trình mã đặt lịch tại trạm',
-    'Thực hiện thay pin theo hướng dẫn'
+    'Arrive at the station within the specified time',
+    'Present your booking code at the station',
+    'Follow the instructions to complete the battery swap'
   ];
 
   return (
     <div className="bg-gray-50 rounded-lg p-5">
-      <h3 className="font-bold text-gray-900 mb-4 text-lg">Hướng Dẫn</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <ListOrdered className="w-5 h-5 text-blue-600" />
+        <h3 className="font-bold text-gray-900 text-lg">Instructions</h3>
+      </div>
       
       <div className="space-y-3">
         {instructions.map((instruction, index) => (

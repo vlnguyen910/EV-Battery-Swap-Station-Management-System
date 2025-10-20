@@ -1,4 +1,5 @@
 import React from 'react';
+import { Battery, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function StationInfoPanel({ 
   stationInfo, 
@@ -20,20 +21,23 @@ export default function StationInfoPanel({
   const progressPercentage = Math.round((stationInfo.availableSlots / stationInfo.totalSlots) * 100);
 
   return (
-    <div className="bg-white p-6">
+    <div className="bg-white p-8 rounded-2xl shadow-xl">
       {/* Battery Availability Status */}
-      <div className="bg-gray-50 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-gray-700 font-medium">Pin còn lại</span>
-          <span className="text-lg font-bold text-gray-900">
+      <div className="bg-blue-50 rounded-xl p-6 mb-6 shadow-md">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Battery className="w-5 h-5 text-blue-600" />
+            <span className="text-gray-700 font-semibold text-lg">Available Batteries</span>
+          </div>
+          <span className="text-2xl font-bold text-blue-800">
             {stationInfo.availableSlots}/{stationInfo.totalSlots}
           </span>
         </div>
         
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
           <div 
-            className="bg-green-500 h-full rounded-full transition-all duration-300"
+            className="bg-blue-800 h-full rounded-full transition-all duration-300 shadow-sm"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -45,43 +49,43 @@ export default function StationInfoPanel({
         <button
           onClick={onConfirmBooking}
           disabled={stationInfo.availableSlots === 0}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors shadow-md"
+          className="w-full bg-blue-800 hover:bg-blue-700 disabled:bg-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-5 px-6 rounded-xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
         >
-          Xác Nhận Đặt Lịch
+          <CheckCircle2 size={22} />
+          Confirm Booking
         </button>
       ) : (
         /* After Booking - Show Countdown Timer and Cancel */
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Section Title */}
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-           Vui lòng đến trạm trong thời gian sau để thực hiện việc hoán đổi pin
+          <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">
+           Please arrive at the station within the time limit to complete the battery swap
           </h3>
 
           {/* Countdown Timer Display */}
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 text-center">
-            <p className="text-gray-700 mb-3 font-medium text-lg">Thời gian còn lại</p>
-            <div className="text-6xl font-bold text-blue-600 mb-2 font-mono">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-8 text-center shadow-lg">
+            <p className="text-gray-700 mb-3 font-semibold text-lg">Time Remaining</p>
+            <div className="text-7xl font-bold text-blue-800 mb-2 font-mono">
               {formatTime(timeRemaining)}
             </div>
-            <p className="text-sm text-gray-600">phút</p>
+            <p className="text-sm text-gray-600 font-medium">minutes</p>
           </div>
 
           {/* Confirm Booking Status */}
-          <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 text-center">
+          <div className="bg-green-50 border-2 border-green-400 rounded-xl p-5 text-center shadow-md">
             <div className="flex items-center justify-center text-green-700">
-              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="font-semibold text-lg">Đã Xác Nhận Đặt Lịch</span>
+              <CheckCircle2 className="w-7 h-7 mr-2" strokeWidth={2.5} />
+              <span className="font-bold text-xl">Booking Confirmed</span>
             </div>
           </div>
 
           {/* Cancel Button */}
           <button
             onClick={onCancelBooking}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
-            Hủy Đặt Lịch
+            <XCircle size={20} />
+            Cancel Booking
           </button>
         </div>
       )}
@@ -90,22 +94,22 @@ export default function StationInfoPanel({
       {showCancelDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Xác nhận hủy đặt lịch</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Cancellation</h3>
             <p className="text-gray-600 mb-6">
-              Bạn có chắc chắn muốn hủy đặt lịch này không?
+              Are you sure you want to cancel this booking?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={onCancelDialogClose}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                Không
+                No
               </button>
               <button
                 onClick={onConfirmCancel}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                Có, hủy
+                Yes, Cancel
               </button>
             </div>
           </div>
