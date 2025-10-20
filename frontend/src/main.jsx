@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import { StationProvider } from './contexts/StationContext.jsx';
 import { BatteryProvider } from './contexts/BatteryContext.jsx';
 // import { SwapProvider } from './contexts/SwapContext.jsx';
+import { ReservationProvider } from './contexts/ReservationContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,9 +15,11 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <StationProvider>
           <BatteryProvider>
-            {/* <SwapProvider> */}
-            <App />
-            {/* </SwapProvider> */}
+            <ReservationProvider>
+              {/* <SwapProvider> */}
+              <App />
+              {/* </SwapProvider> */}
+            </ReservationProvider>
           </BatteryProvider>
         </StationProvider>
       </AuthProvider>
