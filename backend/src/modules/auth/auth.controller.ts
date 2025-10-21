@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -18,17 +19,13 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  login(@Body() input: { emailOrPhone: string; password: string }) {
-    if (!input.emailOrPhone || !input.password) {
-      throw new NotImplementedException('Email/Phone and password are required');
-    }
-
-    return this.authService.signIn(input);
+  login(@Body() emailOrPhone: string, password: string) {
+    return this.authService.signIn(emailOrPhone, password);
   }
 
   @Post('register')
-  register(@Body() input: { email: string; phone: string; username: string; password: string }) {
-    return this.authService.register(input);
+  register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
   }
 
   @HttpCode(HttpStatus.OK)

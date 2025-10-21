@@ -1,34 +1,23 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotImplementedException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
-
-type SignInInput = {
-    emailOrPhone: string;
-    password: string;
-}
-
-type SignInOutput = {
-    accessToken: string;
-    refreshToken: string;
-}
-
-type SignUpInput = {
-    email: string;
-    phone: string;
-    username: string;
-    password: string;
-}
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
     constructor(private usersService: UsersService, private jwtService: JwtService) { }
 
-    async signIn(input: SignInInput): Promise<SignInOutput> {
-        const user = await this.usersService.findOneByEmailOrPhone(input.emailOrPhone);
+    async signIn(emailOrPhone: string, password: string) {
+        if (!emailOrPhone || !password) {
+            throw new NotImplementedException('Email/Phone and password are required');
+        }
+
+        const user = await this.usersService.findOneByEmailOrPhone(emailOrPhone);
 
 
-        if (!user || !(await isMatchPassword(input.password, user.password))) {
+        if (!user || !(await isMatchPassword(password, user.password))) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
@@ -78,13 +67,13 @@ export class AuthService {
         return { accessToken: newAccessToken };
     }
 
-    async register(signUpInput: SignUpInput) {
+    async register(dto: CreateUserDto) {
         const newUser = await this.usersService.create({
-            username: signUpInput.username,
-            password: signUpInput.password,
-            email: signUpInput.email,
-            phone: signUpInput.phone,
-            role: "driver"
+            username: dto.username,
+            password: dto.password,
+            email: dto.email,
+            phone: dto.phone,
+            role: Role.driver,
         });
 
         return newUser;
