@@ -31,8 +31,6 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
 
 
-
-
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con   */}
