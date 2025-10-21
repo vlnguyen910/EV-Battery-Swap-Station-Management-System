@@ -4,6 +4,7 @@ import ProfileStats from '../components/profile/ProfileStats';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import VehiclesList from '../components/profile/VehiclesList';
 import { ArrowLeftRight, PiggyBank } from 'lucide-react';
+import { useVehicle } from '../hooks/useContext';
 
 export default function Profile() {
   // Read user from localStorage (fallback to demo user)
