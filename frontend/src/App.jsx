@@ -12,6 +12,8 @@ import BookingContainer from './components/containers/BookingContainer'
 import SwapHistory from './pages/SwapHistory'
 import Plans from './pages/Plans'
 import Profile from './pages/Profile'
+import Support from './pages/Support'
+import User from './pages/User'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 // import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
@@ -49,6 +51,8 @@ function App() {
           <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="support" element={<Support />} />
+          <Route path="user" element={<User />} />
         </Route>
       </Routes>
     </div>
