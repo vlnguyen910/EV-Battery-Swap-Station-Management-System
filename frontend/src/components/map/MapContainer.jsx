@@ -5,7 +5,7 @@ import trackasia from 'trackasia-gl';
 import 'trackasia-gl/dist/trackasia-gl.css';
 // Link not used in this file; popup uses plain DOM and programmatic navigation
 
-export default function MapContainer({ stations, onMapReady }) {
+export default function MapContainer({ stations, onMapReady, userLocation, onLocate }) {
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ export default function MapContainer({ stations, onMapReady }) {
   };
 
   const mapInstanceRef = useRef(null);
+  const userMarkerRef = useRef(null);
   const navigateRef = useRef(navigate);
 
   // Initialize map once
@@ -119,18 +120,18 @@ export default function MapContainer({ stations, onMapReady }) {
         // Add click handler for the Book Now button with subscription check
         const bookButton = popupContent.querySelector(`#book-btn-${station.station_id}`);
         if (bookButton) {
-        bookButton.addEventListener('click', () => {
-          // Check if user has active subscription
-          // const subscriptions = localStorage.getItem('subscriptions');
-          // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
+          bookButton.addEventListener('click', () => {
+            // Check if user has active subscription
+            // const subscriptions = localStorage.getItem('subscriptions');
+            // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
 
-          // if (!hasSubscription) {
-          //   // Show custom modal alert
-          //   setShowSubscriptionAlert(true);
-          //   return;
-          // }
+            // if (!hasSubscription) {
+            //   // Show custom modal alert
+            //   setShowSubscriptionAlert(true);
+            //   return;
+            // }
 
-          // If has subscription, proceed to booking
+            // If has subscription, proceed to booking
             const params = new URLSearchParams({
               stationId: station.station_id ?? station.id,
               name: station.name,
@@ -161,6 +162,20 @@ export default function MapContainer({ stations, onMapReady }) {
     }
   }, [stations]);
 
+  // Add/update current user location marker
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+    if (userLocation && userLocation.longitude != null && userLocation.latitude != null) {
+      userMarkerRef.current = new trackasia.Marker({ color: '#2563eb' })
+        .setLngLat([userLocation.longitude, userLocation.latitude])
+        .addTo(mapInstanceRef.current);
+    }
+  }, [userLocation, mapInstanceRef.current]);
+
   // const handleGoToPlans = () => {
   //   setShowSubscriptionAlert(false);
   //   navigate('/driver/plans');
@@ -180,7 +195,10 @@ export default function MapContainer({ stations, onMapReady }) {
         />
 
         {/* Current Location Button */}
-        <button className="absolute top-6 right-6 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow z-10 border border-gray-200">
+        <button
+          onClick={onLocate}
+          className="absolute top-6 right-6 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow z-10 border border-gray-200"
+        >
           <MapPin size={20} className="text-blue-600" />
         </button>
       </div>

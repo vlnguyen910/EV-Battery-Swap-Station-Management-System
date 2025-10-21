@@ -12,6 +12,17 @@ const getAllVehicles = async () => {
   }
 };
 
+// Get vehicle by user ID function
+const getVehicleByUserId = async (userId) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLES(userId));
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vehicles by user ID:", error);
+    throw error;
+  }
+};
+
 // Get vehicle by ID function
 const getVehicleById = async (id) => {
   try {
