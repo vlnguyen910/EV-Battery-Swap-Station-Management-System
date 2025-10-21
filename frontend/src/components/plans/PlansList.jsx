@@ -9,13 +9,16 @@ export default function PlansList({ plans, subscriptions, onSubscribe }) {
     )
   }
 
+  // Create a set of subscribed package_ids for O(1) lookup
+  const subscribedIds = new Set((subscriptions || []).map(s => String(s.package_id || s.rawData?.package_id || s.package?.package_id || s.id)))
+
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       {plans.map(plan => (
         <PlanCard
           key={plan.id}
           plan={plan}
-          subscribed={subscriptions.some(s => s.name === plan.name)}
+          subscribed={subscribedIds.has(String(plan.rawData?.package_id || plan.id))}
           onSubscribe={onSubscribe}
         />
       ))}
