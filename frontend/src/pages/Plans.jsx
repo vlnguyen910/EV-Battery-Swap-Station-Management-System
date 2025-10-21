@@ -1,58 +1,124 @@
 import { useEffect, useState } from 'react'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
-import { battery_service_packages } from '../data/mockData'
+import { packageService } from '../services/packageService'
 
-// Map the battery_service_packages shape into the UI-friendly plan shape
-const PLANS = battery_service_packages
-  .filter(p => p.active)
-  .map(p => ({
-    id: String(p.package_id),
-    name: p.name,
-    description: p.description,
-    price: p.base_price && p.base_price > 0 ? `$${p.base_price}` : 'Contact sales',
-    period:
-      p.duration_days && p.duration_days > 0
-        ? p.duration_days === 30
-          ? 'per month'
-          : `per ${p.duration_days} days`
-        : 'per swap',
+export default function Plans() {
+  const [packages, setPackages] = useState([])
+  const [subscriptions, setSubscriptions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Transform package data from backend to UI format
+  const transformPackageToUI = (pkg) => ({
+    id: String(pkg.package_id),
+    name: pkg.name,
+    description: pkg.description,
+    price: pkg.base_price && pkg.base_price > 0 ? `$${pkg.base_price}` : 'Contact sales',
+    period: pkg.duration_days && pkg.duration_days > 0
+      ? pkg.duration_days === 30
+        ? 'per month'
+        : `per ${pkg.duration_days} days`
+      : 'per swap',
     features: [
-      p.base_distance && p.base_distance > 0 ? `${p.base_distance} km included` : 'Flexible swaps',
-      p.phi_phat && p.phi_phat > 0 ? `Extra fee: $${p.phi_phat}` : 'No extra fee',
+      pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
+      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: $${pkg.phi_phat}` : 'No extra fee',
       'Access to all stations',
       'Mobile app access',
       '24/7 customer support'
     ],
-    details: p.description
-  }))
+    details: pkg.description,
+    rawData: pkg
+  })
 
-export default function Plans() {
-  const [subscriptions, setSubscriptions] = useState([])
+  // Fetch packages from backend
+  const fetchPackages = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await packageService.getAllPackages()
+      const packagesData = response.data || response
+      
+      // Filter active packages and transform for UI
+      const activePackages = packagesData
+        .filter(pkg => pkg.active)
+        .map(transformPackageToUI)
+      
+      setPackages(activePackages)
+    } catch (err) {
+      setError(err.message)
+      console.error('Error fetching packages:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  // Load subscriptions from localStorage (temporary until backend is ready)
   useEffect(() => {
-    // Load from localStorage if any
-    const stored = localStorage.getItem('subscriptions')
-    if (stored) setSubscriptions(JSON.parse(stored))
+    const savedSubscriptions = localStorage.getItem('subscriptions')
+    if (savedSubscriptions) {
+      try {
+        setSubscriptions(JSON.parse(savedSubscriptions))
+      } catch (err) {
+        console.error('Error parsing subscriptions:', err)
+        setSubscriptions([])
+      }
+    }
   }, [])
 
+  // Fetch packages on component mount
   useEffect(() => {
-    localStorage.setItem('subscriptions', JSON.stringify(subscriptions))
-  }, [subscriptions])
+    fetchPackages()
+  }, [])
 
   function handleSubscribe(plan) {
-    // Allow subscribing to multiple packages
     const newSub = {
-      id: plan.id + '-' + Date.now(),
+      id: Date.now(), // temporary ID
+      package_id: plan.rawData.package_id,
       name: plan.name,
-      description: plan.description,
       price: plan.price,
       period: plan.period,
-      details: plan.details,
       subscribedAt: new Date().toISOString()
     }
 
-    setSubscriptions(prev => [...prev, newSub])
+    const updatedSubscriptions = [...subscriptions, newSub]
+    setSubscriptions(updatedSubscriptions)
+    
+    // Save to localStorage (temporary until backend is ready)
+    localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions))
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg text-gray-600">Loading packages...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-red-800 font-medium text-lg">Error loading packages</h3>
+            <p className="text-red-600 text-sm mt-2">{error}</p>
+            <button 
+              onClick={fetchPackages}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -62,7 +128,7 @@ export default function Plans() {
 
         <section className="mb-8">
           <PlansList
-            plans={PLANS}
+            plans={packages}
             subscriptions={subscriptions}
             onSubscribe={handleSubscribe}
           />
@@ -75,4 +141,4 @@ export default function Plans() {
       </div>
     </div>
   )
-}
+}1111
