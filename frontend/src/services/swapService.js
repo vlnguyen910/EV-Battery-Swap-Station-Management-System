@@ -1,7 +1,7 @@
 import api from "./api";
 import { API_ENDPOINTS } from "../constants";
 
-const createSwapHistory = async (swapData) => {
+const createSwapTransaction = async (swapData) => {
   try {
     const response = await api.post(
       API_ENDPOINTS.SWAP_TRANSACTION.CREATE_TRANSACTION,
@@ -39,7 +39,7 @@ const updateSwapTransaction = async (transactionId, updateData) => {
   }
 };
 
-const getAllSwapHistories = async () => {
+const getAllSwapTransactions = async () => {
   try {
     const response = await api.get(
       API_ENDPOINTS.SWAP_TRANSACTION.GET_ALL_TRANSACTIONS
@@ -52,8 +52,8 @@ const getAllSwapHistories = async () => {
 };
 
 export const swapService = {
-  createSwapHistory,
-  getAllSwapHistories,
   getSwapTransactionById,
   updateSwapTransaction,
+  createSwapTransaction,
+  getAllSwapTransactions,
 };
