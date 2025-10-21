@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Navigation from './components/layout/Navigation'
 import Sidebar from './components/layout/Sidebar'
 import GuestPage from './pages/GuestPage'
@@ -18,14 +18,6 @@ import DriverDashboard from './components/dashboard/DriverDashboard'
 //import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
-  const location = useLocation()
-
-
-  // Routes that should show sidebar (authenticated user routes)
-  const sidebarRoutes = ['/driver', '/map', '/plans', '/profile', '/support', '/booking', '/swap-history']
-  const showSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route))
-
-
   return (
     <div className="App">
       {/* <Navigation /> */}

@@ -1,9 +1,5 @@
 import React from 'react';
 import { Battery, CheckCircle2, XCircle } from 'lucide-react';
-import { useReservation } from '../../hooks/useContext';
-
-
-
 
 export default function StationInfoPanel({ 
   stationInfo, 
@@ -15,8 +11,6 @@ export default function StationInfoPanel({
   onConfirmCancel,
   onCancelDialogClose
 }) {
-
-  const { reservations, createReservation } = useReservation();
 
 
   // Format time remaining as MM:SS
@@ -55,7 +49,7 @@ export default function StationInfoPanel({
       {bookingState === 'idle' ? (
         /* Before Booking - Show Confirm Booking Button */
         <button
-          onClick={createReservation}
+          onClick={onConfirmBooking}
           disabled={stationInfo.availableSlots === 0}
           className="w-full bg-blue-800 hover:bg-blue-700 disabled:bg-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-5 px-6 rounded-xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
         >
