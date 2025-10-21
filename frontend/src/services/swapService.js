@@ -1,7 +1,6 @@
 import api from "./api";
 import { API_ENDPOINTS } from "../constants";
 
-// Function to create a new swap history record
 const createSwapHistory = async (swapData) => {
   try {
     const response = await api.post(
@@ -15,7 +14,6 @@ const createSwapHistory = async (swapData) => {
   }
 };
 
-// Function to get swap transaction by id
 const getSwapTransactionById = async (transactionId) => {
   try {
     const response = await api.get(
@@ -28,7 +26,6 @@ const getSwapTransactionById = async (transactionId) => {
   }
 };
 
-// Function to update a swap transaction record
 const updateSwapTransaction = async (transactionId, updateData) => {
   try {
     const response = await api.patch(
@@ -42,7 +39,6 @@ const updateSwapTransaction = async (transactionId, updateData) => {
   }
 };
 
-// Function to get all swap history records
 const getAllSwapHistories = async () => {
   try {
     const response = await api.get(
