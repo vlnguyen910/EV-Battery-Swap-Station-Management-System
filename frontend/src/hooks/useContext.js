@@ -3,6 +3,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { StationContext } from "../contexts/StationContext";
 import { BatteryContext } from "../contexts/BatteryContext";
 import { ReservationContext } from "../contexts/ReservationContext";
+import { SubscriptionContext } from "../contexts/SubscriptionContext";
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -18,4 +19,8 @@ export function useBattery() {
 
 export function useReservation() {
   return useContext(ReservationContext);
+}
+
+export function useSubscription() {
+  return useContext(SubscriptionContext);
 }

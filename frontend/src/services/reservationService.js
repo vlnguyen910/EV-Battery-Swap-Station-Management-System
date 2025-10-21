@@ -4,7 +4,9 @@ import { API_ENDPOINTS } from "../constants";
 //Function to get all reservations
 const getAllReservations = async () => {
   try {
-    const response = await api.get(API_ENDPOINTS.GET_ALL_RESERVATIONS);
+    const response = await api.get(
+      API_ENDPOINTS.RESERVATION.GET_ALL_RESERVATIONS
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching reservations:", error);
@@ -16,7 +18,7 @@ const getAllReservations = async () => {
 const createReservation = async (reservationData) => {
   try {
     const response = await api.post(
-      API_ENDPOINTS.CREATE_RESERVATION,
+      API_ENDPOINTS.RESERVATION.CREATE_RESERVATION,
       reservationData
     );
     return response.data;
@@ -26,15 +28,15 @@ const createReservation = async (reservationData) => {
   }
 };
 
-// Function to get reservation by user_id
-const getReservationByUserId = async (userId) => {
+// Function to get reservation by ID (not user_id - use proper endpoint)
+const getReservationById = async (id) => {
   try {
     const response = await api.get(
-      `${API_ENDPOINTS.GET_RESERVATION}/${userId}`
+      API_ENDPOINTS.RESERVATION.GET_RESERVATION(id)
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching reservation by user ID:", error);
+    console.error("Error fetching reservation by ID:", error);
     throw error;
   }
 };
@@ -43,5 +45,5 @@ const getReservationByUserId = async (userId) => {
 export const reservationService = {
   getAllReservations,
   createReservation,
-  getReservationByUserId,
+  getReservationById,
 };

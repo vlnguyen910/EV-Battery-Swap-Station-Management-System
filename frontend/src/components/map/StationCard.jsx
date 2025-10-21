@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Clock, Battery, Zap, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBattery } from '../../hooks/useContext';
@@ -28,14 +28,14 @@ export default function StationCard({ station, onClick }) {
 
     // Proceed with booking if user has subscription
     const params = new URLSearchParams({
-      station_id: station?.station_id ?? station?.id,
+      stationId: station?.station_id ?? station?.id,
       name: station?.name,
       address: station?.address,
-      availableBatteries: station?.availableBatteries,
-      totalBatteries: station?.totalBatteries,
+      availableBatteries: station?.batteries ? station.batteries.filter(b => String(b.status || '').toLowerCase() === 'full').length : station?.availableBatteries,
+      totalBatteries: station?.batteries ? station.batteries.length : station?.totalBatteries,
       status: station?.status
     });
-    navigate(`/booking?${params.toString()}`);
+    navigate(`/driver/booking?${params.toString()}`);
   };
 
   // const handleGoToPlans = () => {
