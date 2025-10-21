@@ -11,6 +11,7 @@ import Driver from './pages/Driver'
 import Booking from './pages/Booking'
 import SwapHistory from './pages/SwapHistory'
 import Plans from './pages/Plans'
+import Profile from './pages/Profile'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 // import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
@@ -27,7 +28,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
         <Route path="/register" element={<AuthContainer mode="register" />} />
-
+        
         <Route path="/admin" element={<AdminPage />} />
 
 
@@ -49,6 +50,7 @@ function App() {
           <Route path="swap-history" element={<SwapHistory />} />
           <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </div>
