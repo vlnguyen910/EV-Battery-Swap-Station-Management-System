@@ -29,6 +29,8 @@ export const VehicleProvider = ({ children }) => {
         }
     };
 
+    
+
     //function to fetch vehicle by VIN
     const fetchVehicleByVin = async (vin) => {
         setLoading(true);
