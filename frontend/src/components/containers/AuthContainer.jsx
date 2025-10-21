@@ -1,6 +1,7 @@
 import Login from "../auth/Login";
 import Register from "../auth/Register";
 import CreateStaffForm from "../../pages/AdminPage";
+import Profile from "../../pages/Profile"
 import { useAuthHandler } from "../../hooks/useAuthHandler";
 
 export default function AuthContainer({ mode }) {
@@ -9,6 +10,7 @@ export default function AuthContainer({ mode }) {
         register,
         loading,
         createStaffAccount,
+        getProfile
     } = useAuthHandler();
 
     const handleLogin = async (data) => {
@@ -24,6 +26,16 @@ export default function AuthContainer({ mode }) {
             await register(data);
         } catch (e) {
             console.error("Register failed:", e);
+        }
+    };
+
+    const handleGetDriverProfile = async (userId) => {
+        try {
+            const profile = await getProfile(userId);
+            console.log('Get driver profile:', profile);
+            return profile;
+        } catch (e) {
+            console.error("Get driver profile failed:", e);
         }
     };
 
@@ -50,6 +62,9 @@ export default function AuthContainer({ mode }) {
             )}
             {mode === "createStaff" && (
                 <CreateStaffForm onSubmit={handleCreateStaff} loading={loading} error={null} success={null} />
+            )}
+            {mode === "getProfile" && (
+                <Profile onSubmit={handleGetDriverProfile} loading={loading} />
             )}
         </div>
     );

@@ -8,7 +8,7 @@ import StaffPage from './pages/StaffPage'
 import NotFound from './pages/NotFound'
 import MapPage from './pages/Map'
 import Driver from './pages/Driver'
-import Booking from './pages/Booking'
+import BookingContainer from './components/containers/BookingContainer'
 import SwapHistory from './pages/SwapHistory'
 import Plans from './pages/Plans'
 import StaffDashboard from './components/dashboard/StaffDashboard'
@@ -31,8 +31,6 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
 
 
-
-
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con   */}
@@ -45,7 +43,7 @@ function App() {
         <Route path="/driver" element={<Driver />}>
           {/* Route con */}
           <Route index element={<DriverDashboard />} />
-          <Route path="booking" element={<Booking />} />
+          <Route path="booking" element={<BookingContainer />} />
           <Route path="swap-history" element={<SwapHistory />} />
           <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
