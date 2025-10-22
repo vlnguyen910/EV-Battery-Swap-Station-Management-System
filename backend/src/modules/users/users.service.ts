@@ -77,6 +77,13 @@ export class UsersService {
     return "This action updates a #${id} user";
   }
 
+  async updateRefreshToken(user_id: number, refreshToken: string) {
+    await this.databaseService.user.update({
+      where: { user_id },
+      data: { refresh_token: refreshToken },
+    });
+  }
+
   async remove(id: number) {
     return "This action removes a #${id} user";
   }

@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser());
   // Enable CORS for frontend
   app.enableCors({
     origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'], // Vite dev server ports
@@ -48,7 +49,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // Enable cookie parsing
-  app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 8080);
 }
