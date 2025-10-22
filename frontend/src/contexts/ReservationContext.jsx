@@ -2,7 +2,7 @@ import { createContext, useState } from "react";
 import { reservationService } from "../services/reservationService";
 
 const {
-    getAllReservations: getAllReservationsService,
+    getReservationsByStationId: getReservationsByStationIdService,
     createReservation: createReservationService,
     getReservationById: getReservationByIdService,
     updateReservationStatus: updateReservationStatusService,
@@ -38,12 +38,12 @@ export const ReservationProvider = ({ children }) => {
         }
     };
 
-    // Function to get all reservations
-    const getAllReservations = async () => {
+    // Function to get all reservations by station ID
+    const getAllReservationsByStationId = async (stationId) => {
         setLoading(true);
         setError(null);
         try {
-            const allReservations = await getAllReservationsService();
+            const allReservations = await getReservationsByStationIdService(stationId);
             setReservations(allReservations);
         } catch (err) {
             console.error('fetchAllReservations error', err);
@@ -142,7 +142,7 @@ export const ReservationProvider = ({ children }) => {
                 loading,
                 error,
                 createReservation,
-                getAllReservations,
+                getAllReservationsByStationId,
                 getReservationById,
                 getReservationsByUserId,
                 updateReservationStatus,

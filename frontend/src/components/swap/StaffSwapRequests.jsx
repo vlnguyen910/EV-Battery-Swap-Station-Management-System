@@ -1,34 +1,60 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { reservationService } from '../../services/reservationService';
+import { useAuth } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
-import { subscriptionService } from '../../services/subscriptionService';
+import { useSubscription } from '../../hooks/useContext';
 
 export default function StaffSwapRequests() {
+    const { getSubscriptionsByUserId } = useSubscription();
     const navigate = useNavigate();
     const [scheduledReservations, setScheduledReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { user } = useAuth();
 
-    // Fetch scheduled reservations from database
+    // Fetch scheduled reservations for the staff's assigned station
     useEffect(() => {
         const fetchScheduledReservations = async () => {
             try {
                 setLoading(true);
-                const reservations = await reservationService.getScheduledReservations();
-                console.log('Fetched scheduled reservations:', reservations);
-                setScheduledReservations(reservations);
+
+                // Debug: log entire user object
+                console.log('Current logged-in user:', user);
+                console.log('User station_id:', user?.station_id);
+
+                const stationId = user?.station_id ? parseInt(user.station_id) : null;
+                console.log('Parsed stationId:', stationId);
+
+                // If staff isn't assigned to a station, show none
+                if (!stationId) {
+                    console.warn('Staff has no station_id assigned - showing empty list');
+                    setScheduledReservations([]);
+                    setError(null);
+                    setLoading(false);
+                    return;
+                }
+
+                console.log('Calling API: GET /reservations/station/' + stationId);
+                // Backend endpoint already filters by station_id AND status='scheduled'
+                const reservations = await reservationService.getReservationsByStationId(stationId);
+                console.log('API Response - Fetched scheduled reservations for station', stationId, ':', reservations);
+                console.log('Number of reservations:', reservations?.length || 0);
+
+                setScheduledReservations(reservations || []);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching scheduled reservations:', err);
+                console.error('Error details:', err.response?.data || err.message);
                 setError('Failed to load swap requests');
+                setScheduledReservations([]);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchScheduledReservations();
-    }, []);
+    }, [user]);
 
     const handleProcessRequest = async (reservation) => {
         try {
@@ -39,7 +65,7 @@ export default function StaffSwapRequests() {
             console.log('Vehicle info:', vehicle);
 
             // Fetch active subscription for this user
-            const subscription = await subscriptionService.getActiveSubscriptionByUserId(reservation.user_id);
+            const subscription = await getSubscriptionsByUserId(reservation.user_id);
             console.log('Subscription info:', subscription);
 
             // Navigate to manual swap transaction form with all data

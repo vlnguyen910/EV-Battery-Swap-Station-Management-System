@@ -36,21 +36,47 @@ export const AuthProvider = ({ children }) => {
             // Backend returns { accessToken, refreshToken }
             // Extract user info from JWT payload (decode without verification for display)
             const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
+            console.log('Decoded token payload:', tokenPayload);
+
+            // IMPORTANT: Set token to localStorage FIRST so api.js can use it
+            localStorage.setItem("token", response.accessToken);
+            localStorage.setItem("refreshToken", response.refreshToken);
+            setToken(response.accessToken);
 
             const userData = {
                 id: tokenPayload.sub,
                 name: tokenPayload.username,
                 email: tokenPayload.email,
                 phone: tokenPayload.phone,
-                role: tokenPayload.role
+                role: tokenPayload.role,
+                station_id: tokenPayload.station_id || tokenPayload.stationId || null // Include station_id from token
             };
 
-            setUser(userData);
-            setToken(response.accessToken);
+            console.log('User data extracted from token:', userData);
 
-            localStorage.setItem("token", response.accessToken);
-            localStorage.setItem("refreshToken", response.refreshToken);
+            // If station_id is not in token, fetch full profile to get it
+            if (!userData.station_id && userData.id) {
+                try {
+                    console.log('station_id not in token, fetching profile with userId:', userData.id);
+                    const profileResponse = await getProfileService(userData.id);
+                    console.log('Profile response:', profileResponse);
+
+                    if (profileResponse && profileResponse.station_id !== undefined && profileResponse.station_id !== null) {
+                        userData.station_id = profileResponse.station_id;
+                        console.log('✅ Updated user data with station_id from profile:', userData.station_id);
+                    } else {
+                        console.warn('⚠️ Profile response does not contain station_id');
+                    }
+                } catch (profileError) {
+                    console.error('❌ Failed to fetch profile for station_id:', profileError);
+                    // Continue anyway - station_id will be null
+                }
+            }
+
+            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
+
+            console.log('Final user data saved:', userData);
 
             return userData; // Return user base on role when successful login     
         } catch (error) {
@@ -88,12 +114,15 @@ export const AuthProvider = ({ children }) => {
             //Check response that does it have accessToken 
             if (response && response.accessToken) {
                 const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
+                console.log('Register - Decoded token payload:', tokenPayload);
+
                 const userData = {
                     id: tokenPayload.sub,
                     name: tokenPayload.username,
                     email: tokenPayload.email,
                     phone: tokenPayload.phone,
-                    role: tokenPayload.role
+                    role: tokenPayload.role,
+                    station_id: tokenPayload.station_id || tokenPayload.stationId || null
                 };
 
                 setUser(userData);

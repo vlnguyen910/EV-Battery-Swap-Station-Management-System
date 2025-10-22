@@ -1,11 +1,11 @@
 import api from "./api";
 import { API_ENDPOINTS } from "../constants";
 
-//Function to get all reservations
-const getAllReservations = async () => {
+//Function to get all reservations by station ID
+const getReservationsByStationId = async (stationId) => {
   try {
     const response = await api.get(
-      API_ENDPOINTS.RESERVATION.GET_ALL_RESERVATIONS
+      API_ENDPOINTS.RESERVATION.GET_RESERVATION_BY_STATION_ID(stationId)
     );
     return response.data;
   } catch (error) {
@@ -83,7 +83,7 @@ const getScheduledReservations = async () => {
 
 //Export các hàm dịch vụ
 export const reservationService = {
-  getAllReservations,
+  getReservationsByStationId,
   createReservation,
   getReservationById,
   updateReservationStatus,
