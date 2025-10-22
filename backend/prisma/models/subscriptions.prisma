@@ -10,11 +10,12 @@ model Subscription {
   package_id      Int
   vehicle_id      Int?
   start_date      DateTime           @default(now())
-  end_date        DateTime
-  status          SubscriptionStatus
-  swap_used       Int                @default(0)
-  created_at      DateTime           @default(now())
-  updated_at      DateTime           @updatedAt
+  end_date          DateTime
+  status            SubscriptionStatus
+  swap_used         Int                @default(0)
+  distance_traveled Float              @default(0) // Quãng đường đã di chuyển (km)
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
 
   // Relationships
   user             User                  @relation(fields: [user_id], references: [user_id])

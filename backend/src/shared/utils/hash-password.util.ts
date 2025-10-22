@@ -1,4 +1,4 @@
-import { genSaltSync, hashSync, compare } from 'bcrypt-ts';
+import { genSaltSync, hashSync, compare } from 'bcrypt';
 
 const saltRounds = process.env.SALT_ROUNDS
   ? parseInt(process.env.SALT_ROUNDS, 10)

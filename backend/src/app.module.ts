@@ -14,6 +14,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
 import { SwappingModule } from './modules/swapping/swapping.module';
+import { SupportsModule } from './modules/supports/supports.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -34,7 +35,8 @@ import { ConfigModule } from '@nestjs/config';
     SwapTransactionsModule,
     SubscriptionsModule,
     PaymentsModule,
-    SwappingModule
+    SwappingModule,
+    SupportsModule
   ],
   controllers: [AppController],
   providers: [AppService],
