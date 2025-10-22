@@ -107,7 +107,7 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
         popupContent.className = 'p-3';
         popupContent.innerHTML = `
           <div>
-            <h3 class="font-semibold text-gray-800">${station.name}</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-1 truncate">${station.name}</h3>
             <p class="text-sm text-gray-600 mb-2">${station.address}</p>
             <p class="text-sm mb-3">
               <span class="font-medium text-green-600">${station.availableBatteries || 0}/${station.totalBatteries || 0}</span> 
