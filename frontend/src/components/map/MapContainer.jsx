@@ -10,7 +10,7 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
   const markersRef = useRef([]);
   const navigate = useNavigate();
   // const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-  const TRACKASIA_API_KEY = '090ec4d01e17603677119843fa3c839c69';
+  const TRACKASIA_API_KEY = import.meta.env.VITE_TRACKASIA_API_KEY
 
   const getMarkerColor = (status) => {
     switch (status) {
@@ -71,6 +71,30 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
         }
       });
 
+      // Add map event listeners for popup positioning
+      mapInstance.on('move', () => {
+        if (activePopupRef.current && activeMarkerRef.current) {
+          activeMarkerRef.current._updatePopup();
+        }
+      });
+
+      mapInstance.on('zoom', () => {
+        if (activePopupRef.current && activeMarkerRef.current) {
+          activeMarkerRef.current._updatePopup();
+        }
+      });
+
+      // Hide popup on map click (outside markers)
+      mapInstance.on('click', (e) => {
+        // Check if click was on a marker
+        const features = mapInstance.queryRenderedFeatures(e.point);
+        if (features.length === 0 && activePopupRef.current) {
+          activePopupRef.current.style.display = 'none';
+          activePopupRef.current = null;
+          activeMarkerRef.current = null;
+        }
+      });
+
       // Pass map instance to parent component
       if (onMapReady) {
         onMapReady(mapInstance);
@@ -89,12 +113,20 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
     }
   }, [onMapReady]);
 
+  // Refs for popup management
+  const activePopupRef = useRef(null);
+  const activeMarkerRef = useRef(null);
+
   // Update markers when stations change
   useEffect(() => {
     if (mapInstanceRef.current && stations) {
-      // Clear existing markers
+      // Clear existing markers and popups
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
+      
+      // Remove all existing popups
+      const existingPopups = mapInstanceRef.current.getContainer().querySelectorAll('.station-popup-container');
+      existingPopups.forEach(p => p.remove());
 
       // Add new markers
       stations.forEach(station => {
@@ -102,60 +134,119 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
         // trackasia expects [lng, lat]
         const coords = [station.longitude, station.latitude];
 
-        // Create popup content with Book Now button
-        const popupContent = document.createElement('div');
-        popupContent.className = 'p-3';
-        popupContent.innerHTML = `
-          <div>
-            <h3 class="font-semibold text-gray-800">${station.name}</h3>
-            <p class="text-sm text-gray-600 mb-2">${station.address}</p>
-            <p class="text-sm mb-3">
-              <span class="font-medium text-green-600">${station.availableBatteries || 0}/${station.totalBatteries || 0}</span> 
-              batteries available
-            </p>
-            <button id="book-btn-${station.station_id}" class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Book Now</button>
-          </div>
+        // Create custom popup (React-like structure without using trackasia Popup)
+        const popupContainer = document.createElement('div');
+        popupContainer.className = 'station-popup-container';
+        popupContainer.style.cssText = `
+          position: absolute;
+          z-index: 1000;
+          pointer-events: auto;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+          border: 1px solid #e5e7eb;
+          width: 280px;
+          padding: 16px;
+          transform: translate(-50%, -100%);
+          margin-top: -12px;
+          display: none;
         `;
 
-        // Add click handler for the Book Now button with subscription check
-        const bookButton = popupContent.querySelector(`#book-btn-${station.station_id}`);
-        if (bookButton) {
-          bookButton.addEventListener('click', () => {
-            // Check if user has active subscription
-            // const subscriptions = localStorage.getItem('subscriptions');
-            // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
+        // Arrow pointing down to marker
+        const arrow = document.createElement('div');
+        arrow.style.cssText = `
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+          transform: translateX(-50%) rotate(45deg);
+        `;
 
-            // if (!hasSubscription) {
-            //   // Show custom modal alert
-            //   setShowSubscriptionAlert(true);
-            //   return;
-            // }
+        // Content
+        const content = document.createElement('div');
+        content.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="text-lg font-semibold text-gray-800 pr-4">${station.name}</h3>
+            <button class="close-popup text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">${station.address}</p>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-600">Available Batteries</span>
+            <span class="font-medium text-green-600">${station.availableBatteries || 0}/${station.totalBatteries || 0}</span>
+          </div>
+          <button class="book-now-btn w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+            Book Now
+          </button>
+        `;
 
-            // If has subscription, proceed to booking
-            const params = new URLSearchParams({
-              stationId: station.station_id ?? station.id,
-              name: station.name,
-              address: station.address,
-              availableBatteries: station.availableBatteries,
-              totalBatteries: station.totalBatteries,
-              status: station.status
-            });
-            navigateRef.current(`/driver/booking?${params.toString()}`);
+        popupContainer.appendChild(content);
+        popupContainer.appendChild(arrow);
+
+        // Event listeners
+        const closeBtn = popupContainer.querySelector('.close-popup');
+        const bookBtn = popupContainer.querySelector('.book-now-btn');
+
+        closeBtn.addEventListener('click', () => {
+          popupContainer.style.display = 'none';
+          activePopupRef.current = null;
+          activeMarkerRef.current = null;
+        });
+
+        bookBtn.addEventListener('click', () => {
+          const params = new URLSearchParams({
+            stationId: station.station_id ?? station.id,
+            name: station.name,
+            address: station.address,
+            availableBatteries: station.availableBatteries,
+            totalBatteries: station.totalBatteries,
+            status: station.status
           });
-        }
+          navigateRef.current(`/driver/booking?${params.toString()}`);
+        });
 
-        const popup = new trackasia.Popup({
-          offset: 25,
-          closeButton: true,
-          closeOnClick: false
-        }).setDOMContent(popupContent);
+        // Append to map container
+        mapInstanceRef.current.getContainer().appendChild(popupContainer);
 
         const marker = new trackasia.Marker({
           color: getMarkerColor(station.status)
         })
           .setLngLat(coords)
-          .setPopup(popup)
           .addTo(mapInstanceRef.current);
+
+        // Function to update popup position
+        const updatePopupPosition = () => {
+          if (activePopupRef.current === popupContainer && activeMarkerRef.current === marker) {
+            const markerEl = marker.getElement();
+            const rect = markerEl.getBoundingClientRect();
+            const mapRect = mapInstanceRef.current.getContainer().getBoundingClientRect();
+            
+            popupContainer.style.left = `${rect.left - mapRect.left}px`;
+            popupContainer.style.top = `${rect.top - mapRect.top}px`;
+          }
+        };
+
+        // Show custom popup on marker click
+        marker.getElement().addEventListener('click', () => {
+          // Hide all other popups first
+          const allPopups = mapInstanceRef.current.getContainer().querySelectorAll('.station-popup-container');
+          allPopups.forEach(p => p.style.display = 'none');
+
+          // Set active popup and marker
+          activePopupRef.current = popupContainer;
+          activeMarkerRef.current = marker;
+
+          // Position and show this popup
+          updatePopupPosition();
+          popupContainer.style.display = 'block';
+        });
+
+        // Store update function on marker for later use
+        marker._updatePopup = updatePopupPosition;
 
         markersRef.current.push(marker);
       });
@@ -165,16 +256,59 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
   // Add/update current user location marker
   useEffect(() => {
     if (!mapInstanceRef.current) return;
+
+    // Xóa marker cũ nếu có
     if (userMarkerRef.current) {
       userMarkerRef.current.remove();
       userMarkerRef.current = null;
     }
+
+    //nếu có tọa độ người dùng thì thêm marker 
     if (userLocation && userLocation.longitude != null && userLocation.latitude != null) {
-      userMarkerRef.current = new trackasia.Marker({ color: '#2563eb' })
+      // Tạo marker giống Google Maps (vòng tròn xanh nhấp nháy)
+      const el = document.createElement('div');
+      el.className = 'user-location-marker';
+
+      const style = document.createElement('style');
+      style.textContent = `
+      .user-location-marker {
+        position: relative;
+        width: 20px;
+        height: 20px;
+        background: #4285F4;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 0 rgba(66,133,244,0.4);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(66,133,244,0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(66,133,244,0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(66,133,244,0);
+        }
+      }
+    `;
+      document.head.appendChild(style);
+
+      userMarkerRef.current = new trackasia.Marker({ element: el })
         .setLngLat([userLocation.longitude, userLocation.latitude])
         .addTo(mapInstanceRef.current);
+
+      // Tự động zoom & di chuyển tới vị trí hiện tại
+      mapInstanceRef.current.flyTo({
+        center: [userLocation.longitude, userLocation.latitude],
+        zoom: 14,
+        speed: 1.2, // tốc độ di chuyển
+        curve: 1.5, // độ mượt
+        essential: true,
+      });
     }
-  }, [userLocation, mapInstanceRef.current]);
+  }, [userLocation]);
 
   // const handleGoToPlans = () => {
   //   setShowSubscriptionAlert(false);
