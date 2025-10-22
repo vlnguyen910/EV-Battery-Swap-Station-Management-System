@@ -18,12 +18,12 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  login(@Body() input: { emailOrPhone: string; password: string }) {
-    if (!input.emailOrPhone || !input.password) {
+  async login(@Body() input: { emailOrPhone: string; password: string }) {
+    if (!input || !input.emailOrPhone || !input.password) {
       throw new NotImplementedException('Email/Phone and password are required');
     }
 
-    return this.authService.signIn(input);
+    return await this.authService.signIn(input);
   }
 
   @Post('register')
