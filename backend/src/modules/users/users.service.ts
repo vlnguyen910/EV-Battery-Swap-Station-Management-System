@@ -1,21 +1,16 @@
-import { BadRequestException, ConflictException, Injectable, UseGuards } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
 import { hashPassword } from 'src/shared/utils/hash-password.util';
 import { emit } from 'process';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
 
-@UseGuards(AuthGuard, RolesGuard)
 @Injectable()
 export class UsersService {
   constructor(private readonly databaseService: DatabaseService) { }
 
-  @Roles($Enums.Role.admin)
   async create(createUserDto: CreateUserDto) {
     const { username, password, email, phone, role } = createUserDto;
 
