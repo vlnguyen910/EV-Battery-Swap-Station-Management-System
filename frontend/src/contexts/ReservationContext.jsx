@@ -1,9 +1,9 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState } from "react";
 import { reservationService } from "../services/reservationService";
 
 const { getAllReservations: getAllReservationsService,
     createReservation: createReservationService,
-    getReservationByUserId: getReservationByUserIdService
+    getReservationById: getReservationByIdService
 } = reservationService;
 
 export const ReservationContext = createContext();
@@ -20,8 +20,11 @@ export const ReservationProvider = ({ children }) => {
         try {
             const newReservation = await createReservationService(reservationData);
             setReservations((prev) => [...prev, newReservation]);
-        } catch (error) {
+            return newReservation;
+        } catch (err) {
+            console.error('createReservation error', err);
             setError("Failed to create reservation");
+            throw err;
         } finally {
             setLoading(false);
         }
@@ -34,30 +37,33 @@ export const ReservationProvider = ({ children }) => {
         try {
             const allReservations = await getAllReservationsService();
             setReservations(allReservations);
-        } catch (error) {
+        } catch (err) {
+            console.error('fetchAllReservations error', err);
             setError("Failed to fetch reservations");
         } finally {
             setLoading(false);
         }
     };
 
-    // Function to get reservation by user_id 
-    const getReservationByUserId = async (userId) => {
+    // Function to get reservation by ID 
+    const getReservationById = async (id) => {
         setLoading(true);
         setError(null);
         try {
-            const reservation = await getReservationByUserIdService(userId);
+            const reservation = await getReservationByIdService(id);
             return reservation;
-        } catch (error) {
+        } catch (err) {
+            console.error('getReservationById error', err);
             setError("Failed to fetch reservation");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchAllReservations();
-    }, []);
+    // Removed auto-fetch on mount - call fetchAllReservations manually when needed
+    // useEffect(() => {
+    //     fetchAllReservations();
+    // }, []);
 
     return (
         <ReservationContext.Provider
@@ -67,7 +73,7 @@ export const ReservationProvider = ({ children }) => {
                 error,
                 createReservation,
                 fetchAllReservations,
-                getReservationByUserId,
+                getReservationById,
             }}
         >
             {children}

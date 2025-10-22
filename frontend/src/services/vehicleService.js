@@ -1,38 +1,54 @@
-import api from './api';
-import { API_ENDPOINTS } from '../constants';
+import api from "./api";
+import { API_ENDPOINTS } from "../constants";
 
-//Function liên quan vehicle 
-//Lấy tất cả vehicle 
+// Get all vehicle function
 const getAllVehicles = async () => {
-    try {
-        const response = await api.get(API_ENDPOINTS.VEHICLE.GET_ALL_VEHICLES);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await api.get(API_ENDPOINTS.VEHICLE.GET_ALL_VEHICLES);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all vehicles:", error);
+    throw error;
+  }
 };
 
-//Function lấy vehicle 
+// Get vehicle by user ID function
+const getVehicleByUserId = async (userId) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLES(userId));
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vehicles by user ID:", error);
+    throw error;
+  }
+};
+
+// Get vehicle by ID function
 const getVehicleById = async (id) => {
-    try {
-        const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLE(id));
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLE(id));
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vehicle by ID:", error);
+    throw error;
+  }
 };
 
-//Function lấy vehicle by VIN
+// Get vehicle by VIN function
 const getVehicleByVin = async (vin) => {
-    try {
-        const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLE_BY_VIN(vin));
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await api.get(
+      API_ENDPOINTS.VEHICLE.GET_VEHICLE_BY_VIN(vin)
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vehicle by VIN:", error);
+    throw error;
+  }
 };
 
 export const vehicleService = {
-    getAllVehicles,
-    getVehicleById,
+  getAllVehicles,
+  getVehicleById,
+  getVehicleByVin,
 };

@@ -1,13 +1,11 @@
 import { createContext, useState, useEffect } from "react";
 import { stationService } from "../services/stationService";
-import { useNavigate } from "react-router-dom";
 
 const { getAllStations: getAllStationsService , getStationById: getStationByIdService } = stationService;
 
 export const StationContext = createContext();
 
 export const StationProvider = ({ children }) => {
-    const navigate = useNavigate();
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -30,7 +28,8 @@ export const StationProvider = ({ children }) => {
     // Function to fetch station by ID 
     const getStationById = async (id) => {
         try {
-            const station = await stationService.getStationByIdService(id);
+            // use the destructured service function
+            const station = await getStationByIdService(id);
             return station;
         } catch (error) {
             console.error("Error fetching station by ID:", error);
@@ -40,7 +39,19 @@ export const StationProvider = ({ children }) => {
 
     // Fetch all stations on mount
     useEffect(() => {
-        fetchAllStations();
+        (async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await getAllStationsService();
+                setStations(data);
+                console.log("Stations data fetched successfully", data);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        })();
     }, []);
 
     return (

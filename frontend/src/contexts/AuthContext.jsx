@@ -3,12 +3,15 @@ import { createContext, useState, useEffect } from "react";
 //import tùy theo dịch vụ
 import { authService } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { set } from "zod";
 
 const { login: loginService,
     logout: logoutService,
     register: registerService,
     createStaffAccount: createStaffAccountService,
-    getAllUsers: getAllUsersService } = authService;
+    getAllUsers: getAllUsersService,
+    getProfile: getProfileService
+} = authService;
 
 export const AuthContext = createContext();
 
@@ -114,6 +117,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    //Function to get user info profile 
+    const getProfile = async (userId) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await getProfileService(userId);
+            console.log('Get profile response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Function to create staff account
     const createStaffAccount = async (staffInfo) => {
         setLoading(true);
@@ -157,7 +177,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount, getAllUsers }}
+            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount, getAllUsers, getProfile }}
         >
             {children}
         </AuthContext.Provider>

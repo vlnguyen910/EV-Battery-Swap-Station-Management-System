@@ -3,10 +3,13 @@ import { createContext, useState, useEffect } from "react";
 import { vehicleService } from "../services/vehicleService";
 import { useNavigate } from "react-router-dom";
 
-const { getAllVehicles: getAllVehiclesService, 
-        getVehicleById: getVehicleByIdService   
- } = vehicleService;
+const { getAllVehicles: getAllVehiclesService,
+    getVehicleById: getVehicleByIdService,
+    getVehicleByVin: getVehicleByVinService
+} = vehicleService;
+
 export const VehicleContext = createContext();
+
 export const VehicleProvider = ({ children }) => {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -19,19 +22,21 @@ export const VehicleProvider = ({ children }) => {
         try {
             const response = await getAllVehiclesService();
             setVehicles(response.data);
-        }   catch (err) {
+        } catch (err) {
             setError(err.message);
-        }   finally {
+        } finally {
             setLoading(false);
         }
     };
 
-    //function to fetch vehicle by userId
-    const fetchVehicleByUserId = async (userId) => {
+    
+
+    //function to fetch vehicle by VIN
+    const fetchVehicleByVin = async (vin) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await getVehicleByIdService(userId);
+            const response = await getVehicleByVinService(vin);
             setVehicles([response.data]);
         } catch (err) {
             setError(err.message);
@@ -46,7 +51,7 @@ export const VehicleProvider = ({ children }) => {
     }, []);
 
     return (
-        <VehicleContext.Provider value={{ vehicles, loading, error }}>
+        <VehicleContext.Provider value={{ vehicles, loading, error, fetchAllVehicles, fetchVehicleByVin }}>
             {children}
         </VehicleContext.Provider>
     );

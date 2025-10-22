@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapPin, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import trackasia from 'trackasia-gl';
 import 'trackasia-gl/dist/trackasia-gl.css';
-import { Link } from 'react-router-dom';
+// Link not used in this file; popup uses plain DOM and programmatic navigation
 
-export default function MapContainer({ stations, onMapReady }) {
+export default function MapContainer({ stations, onMapReady, userLocation, onLocate }) {
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const navigate = useNavigate();
@@ -26,6 +26,8 @@ export default function MapContainer({ stations, onMapReady }) {
   };
 
   const mapInstanceRef = useRef(null);
+  const userMarkerRef = useRef(null);
+  const navigateRef = useRef(navigate);
 
   // Initialize map once
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function MapContainer({ stations, onMapReady }) {
             const data = new Uint8ClampedArray(width * height * 4); // all zeros => transparent
             const imageData = new ImageData(data, width, height);
             mapInstance.addImage(id, imageData, { pixelRatio: 1 });
-          } catch (err) {
+          } catch {
             // As a secondary fallback, try using a small canvas
             const canvas = document.createElement('canvas');
             canvas.width = 1;
@@ -111,41 +113,36 @@ export default function MapContainer({ stations, onMapReady }) {
               <span class="font-medium text-green-600">${station.availableBatteries || 0}/${station.totalBatteries || 0}</span> 
               batteries available
             </p>
-            <button 
-              id="book-btn-${station.station_id}" 
-            >
-              <Link to= "/booking/${station.station_id}">
-                <span class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"  >
-                Book Now
-              </Link>
-            </button>
+            <button id="book-btn-${station.station_id}" class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Book Now</button>
           </div>
         `;
 
         // Add click handler for the Book Now button with subscription check
         const bookButton = popupContent.querySelector(`#book-btn-${station.station_id}`);
-        bookButton.addEventListener('click', () => {
-          // Check if user has active subscription
-          // const subscriptions = localStorage.getItem('subscriptions');
-          // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
+        if (bookButton) {
+          bookButton.addEventListener('click', () => {
+            // Check if user has active subscription
+            // const subscriptions = localStorage.getItem('subscriptions');
+            // const hasSubscription = subscriptions && JSON.parse(subscriptions).length > 0;
 
-          // if (!hasSubscription) {
-          //   // Show custom modal alert
-          //   setShowSubscriptionAlert(true);
-          //   return;
-          // }
+            // if (!hasSubscription) {
+            //   // Show custom modal alert
+            //   setShowSubscriptionAlert(true);
+            //   return;
+            // }
 
-          // If has subscription, proceed to booking
-          const params = new URLSearchParams({
-            stationId: station.id,
-            name: station.name,
-            address: station.address,
-            availableBatteries: station.availableBatteries,
-            totalBatteries: station.totalBatteries,
-            status: station.status
+            // If has subscription, proceed to booking
+            const params = new URLSearchParams({
+              stationId: station.station_id ?? station.id,
+              name: station.name,
+              address: station.address,
+              availableBatteries: station.availableBatteries,
+              totalBatteries: station.totalBatteries,
+              status: station.status
+            });
+            navigateRef.current(`/driver/booking?${params.toString()}`);
           });
-          navigate(`/booking?${params.toString()}`);
-        });
+        }
 
         const popup = new trackasia.Popup({
           offset: 25,
@@ -164,6 +161,20 @@ export default function MapContainer({ stations, onMapReady }) {
       });
     }
   }, [stations]);
+
+  // Add/update current user location marker
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+    if (userLocation && userLocation.longitude != null && userLocation.latitude != null) {
+      userMarkerRef.current = new trackasia.Marker({ color: '#2563eb' })
+        .setLngLat([userLocation.longitude, userLocation.latitude])
+        .addTo(mapInstanceRef.current);
+    }
+  }, [userLocation, mapInstanceRef.current]);
 
   // const handleGoToPlans = () => {
   //   setShowSubscriptionAlert(false);
@@ -184,7 +195,10 @@ export default function MapContainer({ stations, onMapReady }) {
         />
 
         {/* Current Location Button */}
-        <button className="absolute top-6 right-6 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow z-10 border border-gray-200">
+        <button
+          onClick={onLocate}
+          className="absolute top-6 right-6 bg-white p-3 rounded-lg shadow-lg hover:shadow-xl transition-shadow z-10 border border-gray-200"
+        >
           <MapPin size={20} className="text-blue-600" />
         </button>
       </div>

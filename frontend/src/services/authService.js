@@ -83,7 +83,7 @@ const updateProfile = async (profileData) => {
 //get current user profile
 const getProfile = async (userId) => {
   try {
-    const response = await api.get(API_ENDPOINTS.USER.GET_PROFILE(userId));
+    const response = await api.get(API_ENDPOINTS.USER.GET_USER(userId));
     return response.data;
   } catch (error) {
     console.error("Get profile error:", error);
