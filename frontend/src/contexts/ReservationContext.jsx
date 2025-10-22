@@ -1,15 +1,19 @@
 import { createContext, useState } from "react";
 import { reservationService } from "../services/reservationService";
 
-const { getAllReservations: getAllReservationsService,
+const {
+    getAllReservations: getAllReservationsService,
     createReservation: createReservationService,
-    getReservationById: getReservationByIdService
+    getReservationById: getReservationByIdService,
+    updateReservationStatus: updateReservationStatusService,
+    getReservationsByUserId: getReservationsByUserIdService
 } = reservationService;
 
 export const ReservationContext = createContext();
 
 export const ReservationProvider = ({ children }) => {
     const [reservations, setReservations] = useState([]);
+    const [activeReservation, setActiveReservation] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -20,6 +24,10 @@ export const ReservationProvider = ({ children }) => {
         try {
             const newReservation = await createReservationService(reservationData);
             setReservations((prev) => [...prev, newReservation]);
+
+            // Set as active reservation (status will be 'scheduled' from backend)
+            setActiveReservation(newReservation);
+
             return newReservation;
         } catch (err) {
             console.error('createReservation error', err);
@@ -31,7 +39,7 @@ export const ReservationProvider = ({ children }) => {
     };
 
     // Function to get all reservations
-    const fetchAllReservations = async () => {
+    const getAllReservations = async () => {
         setLoading(true);
         setError(null);
         try {
@@ -60,6 +68,67 @@ export const ReservationProvider = ({ children }) => {
         }
     };
 
+    // Function to get reservations by user ID
+    const getReservationsByUserId = async (userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const userReservations = await getReservationsByUserIdService(userId);
+            setReservations(userReservations);
+
+            // Find active (scheduled) reservation
+            const activeRes = userReservations.find(r => r.status === 'scheduled');
+            if (activeRes) {
+                setActiveReservation(activeRes);
+            }
+
+            return userReservations;
+        } catch (err) {
+            console.error('getReservationsByUserId error', err);
+            setError("Failed to fetch user reservations");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to update reservation status
+    // Status flow: scheduled → completed | cancelled
+    const updateReservationStatus = async (reservationId, userId, status) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const updated = await updateReservationStatusService(reservationId, userId, status);
+
+            // Update in reservations list
+            setReservations(prev =>
+                prev.map(r => r.reservation_id === reservationId ? updated : r)
+            );
+
+            // Update active reservation if it's the one being updated
+            if (activeReservation?.reservation_id === reservationId) {
+                if (status === 'completed' || status === 'cancelled') {
+                    setActiveReservation(null);
+                } else {
+                    setActiveReservation(updated);
+                }
+            }
+
+            return updated;
+        } catch (err) {
+            console.error('updateReservationStatus error', err);
+            setError("Failed to update reservation status");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to clear active reservation
+    const clearActiveReservation = () => {
+        setActiveReservation(null);
+    };
+
     // Removed auto-fetch on mount - call fetchAllReservations manually when needed
     // useEffect(() => {
     //     fetchAllReservations();
@@ -69,11 +138,15 @@ export const ReservationProvider = ({ children }) => {
         <ReservationContext.Provider
             value={{
                 reservations,
+                activeReservation,
                 loading,
                 error,
                 createReservation,
-                fetchAllReservations,
+                getAllReservations,
                 getReservationById,
+                getReservationsByUserId,
+                updateReservationStatus,
+                clearActiveReservation,
             }}
         >
             {children}

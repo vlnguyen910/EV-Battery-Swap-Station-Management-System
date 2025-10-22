@@ -15,7 +15,9 @@ const getAllVehicles = async () => {
 // Get vehicle by user ID function
 const getVehicleByUserId = async (userId) => {
   try {
-    const response = await api.get(API_ENDPOINTS.VEHICLE.GET_VEHICLES(userId));
+    const response = await api.get(
+      API_ENDPOINTS.VEHICLE.GET_VEHICLES_BY_USER(userId)
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching vehicles by user ID:", error);
@@ -47,8 +49,24 @@ const getVehicleByVin = async (vin) => {
   }
 };
 
+// Update vehicle function
+const updateVehicle = async (vehicleId, updateData) => {
+  try {
+    const response = await api.patch(
+      API_ENDPOINTS.VEHICLE.UPDATE_VEHICLE(vehicleId),
+      updateData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating vehicle:", error);
+    throw error;
+  }
+};
+
 export const vehicleService = {
   getAllVehicles,
   getVehicleById,
   getVehicleByVin,
+  getVehicleByUserId,
+  updateVehicle,
 };

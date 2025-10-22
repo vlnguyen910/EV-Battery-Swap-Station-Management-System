@@ -28,8 +28,8 @@ const getBatteryById = async (id) => {
 // Function to update battery by id
 const updateBatteryById = async (id, batteryData) => {
   try {
-    const response = await api.put(
-      `${API_ENDPOINTS.BATTERY.UPDATE_BATTERY}/${id}`,
+    const response = await api.patch(
+      API_ENDPOINTS.BATTERY.UPDATE_BATTERY(id),
       batteryData
     );
     return response.data;

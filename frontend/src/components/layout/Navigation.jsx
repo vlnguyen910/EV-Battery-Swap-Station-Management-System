@@ -122,11 +122,27 @@ export default function Navigation({ type = "main" }) {
             </Link>
 
             <Link
+              to="/staff/manual-swap"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-search-line mr-2 text-blue-500"></i>
+              Manual Swap
+            </Link>
+
+            <Link
               to="/staff/inventory"
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-archive-line mr-2 text-blue-500"></i>
               Kho pin
+            </Link>
+
+            <Link
+              to="/staff/swap-requests"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-swap-line mr-2 text-orange-500"></i>
+              Yêu cầu đổi pin
             </Link>
 
             {/* Dropdown Status */}

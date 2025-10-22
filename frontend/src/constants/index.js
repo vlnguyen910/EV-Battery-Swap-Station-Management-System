@@ -5,14 +5,14 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout", // backend chưa log route này, cẩn thận
+    LOGOUT: "/auth/logout", // backend chưa có
     REFRESH: "/auth/refresh",
   },
 
   USER: {
-    CREATE_USER: "/users", // POST
-    GET_ALL_USERS: "/users", // GET
-    GET_USER: (id) => `/users/${id}`, // GET / PATCH / DELETE
+    CREATE_USER: "/users",
+    GET_ALL_USERS: "/users",
+    GET_USER: (id) => `/users/${id}`,
     UPDATE_USER: (id) => `/users/${id}`,
     DELETE_USER: (id) => `/users/${id}`,
   },
@@ -42,7 +42,6 @@ export const API_ENDPOINTS = {
     GET_ALL_BATTERIES: "/batteries",
     GET_BEST_BATTERIES: "/batteries/best",
     GET_BATTERY: (id) => `/batteries/${id}`,
-    UPDATE_BATTERY: (id) => `/batteries/${id}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
   },
 
@@ -62,7 +61,7 @@ export const API_ENDPOINTS = {
 
   RESERVATION: {
     CREATE_RESERVATION: "/reservations",
-    GET_ALL_RESERVATIONS: "/reservations",
+    GET_BY_USER: (userId) => `/reservations/user/${userId}`,
     GET_RESERVATION: (id) => `/reservations/${id}`,
     UPDATE_RESERVATION: (id) => `/reservations/${id}`,
     DELETE_RESERVATION: (id) => `/reservations/${id}`,
@@ -96,6 +95,14 @@ export const API_ENDPOINTS = {
     VNPAY_IPN: "/payments/vnpay-ipn",
     GET_PAYMENT: (id) => `/payments/${id}`,
     GET_BY_TXN_REF: (txnRef) => `/payments/txn/${txnRef}`,
+    GET_BY_USER: (userId) => `/payments/user/${userId}`,
+    GET_ALL_PAYMENTS: "/payments",
+    MOCK_PAYMENT: "/payments/mock-payment",
+  },
+
+  SWAPPING: {
+    AUTOMATIC_SWAP: "/swapping/automatic-swap",
+    INITIALIZE_BATTERY: "/swapping/initialize-battery",
   },
 };
 
@@ -105,15 +112,11 @@ export const ROUTES = {
   REGISTER: "/register",
   USER_PROFILE: "/user/profile",
 
-  // Main role-based pages
   USER: "/user",
   ADMIN: "/admin",
   GUEST: "/guest",
   STAFF: "/staff",
 
-  // Error / State pages
   NOT_FOUND: "/404",
   UNAUTHORIZED: "/unauthorized",
 };
-
-//final commit
