@@ -12,6 +12,7 @@ model Station {
     longitude  Decimal       @db.Decimal(11, 8) // 11 digits total, 8 after decimal
     status     StationStatus
 
+    staff             User[]
     batteries         Battery[]
     Reservation       Reservation[]
     swap_transactions SwapTransaction[]

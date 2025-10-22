@@ -11,9 +11,11 @@ model User {
     phone      String   @unique
     email      String   @unique
     role       Role
+    station_id Int?     // Quản lý staff/manager ở station nào
     created_at DateTime @default(now())
 
     // Relationships
+    station         Station?          @relation(fields: [station_id], references: [station_id])
     vehicles        Vehicle[]
     Reservation     Reservation[]
     subscriptions   Subscription[]
