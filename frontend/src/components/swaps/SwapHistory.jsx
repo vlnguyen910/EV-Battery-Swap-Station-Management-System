@@ -1,34 +1,55 @@
-// SwapHistory component
+import reservations from "../../data/mockReservationData";
+// import SwapRequest from "./SwapRequest";
+
+const statusClassMap = {
+  scheduled: { text: "text-yellow-700", bg: "bg-yellow-100" },
+  cancelled: { text: "text-red-700", bg: "bg-red-100" },
+  completed: { text: "text-green-700", bg: "bg-green-100" },
+};
+
 export default function SwapHistory({ type = "swap" }) {
   const RecentTransactions = () => (
     <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200 mb-6">
-      <h3 className="text-lg font-bold text-gray-800 mb-4">Giao dịch Đổi Pin Gần đây</h3>
+      {/* <SwapRequest /> */}
+      <h3 className="text-lg font-bold text-gray-800 mb-4">
+        Giao dịch Đổi Pin Gần đây
+      </h3>
 
-      {[
-        { id: "TXN009", name: "John Smith", model: "Model X", from: "BAT015", status: "Hoàn thành", color: "green" },
-        { id: "TXN010", name: "Emma Wilson", model: "Model Y", from: "BAT022", status: "Thanh toán", color: "yellow" },
-        { id: "TXN011", name: "Nguyễn Văn A", model: "Model X", from: "BAT040", status: "Đang xử lý", color: "blue" },
-      ].map((txn) => (
-        <div key={txn.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
-          <div>
-            <p className="font-semibold">{txn.id} - {txn.name}</p>
-            <p className="text-sm text-gray-500">{txn.model} | Từ {txn.from}</p>
+      {reservations.map((reservation) => {
+        const cls = statusClassMap[reservation.status] || {
+          text: "text-gray-700",
+          bg: "bg-gray-100",
+        };
+
+        return (
+          <div
+            key={reservation.reservation_id}
+            className="flex justify-between items-center py-2 border-b last:border-b-0"
+          >
+            <div>
+              <p className="font-semibold">
+                Giao dịch số {reservation.reservation_id} - {reservation.user_name}
+              </p>
+              <p className="text-sm text-gray-500">
+                Pin #{reservation.battery_id} | Trạm {reservation.station_id}
+              </p>
+            </div>
+            <div className="text-right">
+              <span
+                className={`text-sm font-medium ${cls.text} ${cls.bg} px-3 py-1 rounded-full`}
+              >
+                {reservation.status}
+              </span>
+              <p className="text-xs text-gray-400 mt-1">
+                {new Date(reservation.scheduled_time).toLocaleTimeString()}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <span className={`text-sm font-medium text-${txn.color}-700 bg-${txn.color}-100 px-3 py-1 rounded-full`}>
-              {txn.status}
-            </span>
-            <p className="text-xs text-gray-400 mt-1">10:45</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
-  if (type === "swap") {
-    return <RecentTransactions />;
-  }
-
-
+  if (type === "swap") return <RecentTransactions />;
+  return null;
 }
-

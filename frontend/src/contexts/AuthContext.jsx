@@ -1,12 +1,22 @@
 // Auth context
 import { createContext, useState, useEffect } from "react";
+//import tùy theo dịch vụ
 import { authService } from "../services/authService";
+import { useNavigate } from "react-router-dom";
+import { set } from "zod";
 
-const { login: loginService, logout: logoutService, register: registerService } = authService;
+const { login: loginService,
+    logout: logoutService,
+    register: registerService,
+    createStaffAccount: createStaffAccountService,
+    getAllUsers: getAllUsersService,
+    getProfile: getProfileService
+} = authService;
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -61,7 +71,9 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
+        navigate("/", { replace: true });
     };
 
     // Function to handle register
@@ -105,6 +117,56 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    //Function to get user info profile 
+    const getProfile = async (userId) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await getProfileService(userId);
+            console.log('Get profile response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to create staff account
+    const createStaffAccount = async (staffInfo) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await createStaffAccountService(staffInfo);
+            console.log('Create staff account response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to get all users (for admin and staff)
+    const getAllUsers = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllUsersService();
+            console.log('Get all users response:', response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Check user if reload page
     useEffect(() => {
         const saveUser = localStorage.getItem("user");
@@ -115,7 +177,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, error, isAuthenticated, login, logout, register }}
+            value={{ user, token, loading, error, isAuthenticated, login, logout, register, createStaffAccount, getAllUsers, getProfile }}
         >
             {children}
         </AuthContext.Provider>

@@ -1,106 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React from 'react';
 import BookingHeader from '../components/booking/BookingHeader';
 import StationInfoPanel from '../components/booking/StationInfoPanel';
-import TimeSlotGrid from '../components/booking/TimeSlotGrid';
+import BookingSuccessView from '../components/booking/BookingSuccessView';
 
-export default function Booking() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+export default function Booking({
+  // State props
+  stationInfo,
+  bookingState,
+  timeRemaining,
+  showCancelDialog,
+  bookingTime,
+  subscriptionLoading,
+  activeSubscription,
   
-  // Get station info from URL parameters
-  const stationId = searchParams.get('stationId');
-  const stationName = searchParams.get('name') || 'Station name';
-  const stationAddress = searchParams.get('address') || 'address';
-  const availableBatteries = parseInt(searchParams.get('availableBatteries')) || 0;
-  const totalBatteries = parseInt(searchParams.get('totalBatteries')) || 0;
-  const stationStatus = searchParams.get('status') || 'Unknown';
-
-  // Generate battery data based on station information
-  const generateBatteryData = (available, total) => {
-    const batteries = [];
-    for (let i = 1; i <= total; i++) {
-      const isAvailable = i <= available;
-      batteries.push({
-        id: i,
-        level: isAvailable ? Math.floor(Math.random() * 20) + 80 : Math.floor(Math.random() * 60) + 20, // Available: 80-100%, Charging: 20-80%
-        status: isAvailable ? 'charged' : 'charging',
-        isAvailable: isAvailable
-      });
-    }
-    return batteries;
-  };
-
-  // Station information based on URL parameters and generated data
-  const [stationInfo, setStationInfo] = useState({
-    totalSlots: totalBatteries,
-    availableSlots: availableBatteries,
-    batteries: generateBatteryData(availableBatteries, totalBatteries)
-  });
-
-  // Update station info when URL parameters change
-  useEffect(() => {
-    setStationInfo({
-      totalSlots: totalBatteries,
-      availableSlots: availableBatteries,
-      batteries: generateBatteryData(availableBatteries, totalBatteries)
-    });
-  }, [availableBatteries, totalBatteries]);
-
-  // Time slots for booking
-  const timeSlots = [
-    '08:00', '09:00', '10:00',
-    '11:00', '12:00', '13:00', 
-    '14:00', '15:00', '16:00',
-    '17:00', '18:00', '19:00'
-  ];
-
-  const handleTimeSlotSelect = (timeSlot) => {
-    setSelectedTimeSlot(timeSlot);
-  };
-
-  const handleContinueToConfirmation = () => {
-    if (selectedTimeSlot) {
-      // Navigate to confirmation page or show confirmation modal
-      console.log('Booking confirmed for:', {
-        station: stationName,
-        timeSlot: selectedTimeSlot,
-        date: new Date().toLocaleDateString()
-      });
-      // You can navigate to a confirmation page or show success message
-      alert(`Booking confirmed for ${stationName} at ${selectedTimeSlot}`);
-    }
-  };
-
-  const handleBackToMap = () => {
-    navigate('/map');
-  };
+  // Handler props
+  onConfirmBooking,
+  onCancelClick,
+  onConfirmCancel,
+  onCancelDialogClose,
+  onBackToMap,
+  onNavigateToPlans
+}) {
+  if (bookingState === 'booked') {
+    return (
+      <BookingSuccessView
+        stationName={stationInfo.name}
+        stationAddress={stationInfo.address}
+        availableSlots={stationInfo.availableSlots}
+        totalSlots={stationInfo.totalSlots}
+        timeRemaining={timeRemaining}
+        bookingTime={bookingTime}
+        onCancelBooking={onCancelClick}
+        showCancelDialog={showCancelDialog}
+        onConfirmCancel={onConfirmCancel}
+        onCancelDialogClose={onCancelDialogClose}
+      />
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Panel - Station Information */}
-      <div className="w-1/2 bg-white border-r border-gray-200 flex flex-col">
-        <BookingHeader 
-          stationName={stationName}
-          stationAddress={stationAddress}
-          onBackToMap={handleBackToMap}
-        />
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <BookingHeader stationName={stationInfo.name} stationAddress={stationInfo.address} onBackToMap={onBackToMap} />
 
-        <StationInfoPanel
-          stationInfo={stationInfo}
-          selectedTimeSlot={selectedTimeSlot}
-          onContinueToConfirmation={handleContinueToConfirmation}
-        />
-      </div>
+          <div className="relative px-6 pb-6">
+            <div className="relative overflow-hidden rounded-xl shadow-lg">
+              <img src={stationInfo.image || 'https://selex.vn/wp-content/uploads/2024/11/Group-1000002977-1.png'} alt={stationInfo.name || 'Station'} className="w-full h-72 object-cover transform hover:scale-105 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+            </div>
+          </div>
 
-      {/* Right Panel - Time Slot Selection */}
-      <div className="w-1/2 p-8 bg-gray-50">
-        <TimeSlotGrid
-          timeSlots={timeSlots}
-          selectedTimeSlot={selectedTimeSlot}
-          onTimeSlotSelect={handleTimeSlotSelect}
-        />
+          {/* Subscription Status Banner */}
+          {subscriptionLoading ? (
+            <div className="px-6 pb-4">
+              <div className="bg-gray-100 rounded-lg p-4 text-center">
+                <p className="text-gray-600">Checking subscription status...</p>
+              </div>
+            </div>
+          ) : !activeSubscription ? (
+            <div className="px-6 pb-4">
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700 font-medium">
+                      No active subscription found
+                    </p>
+                    <p className="text-sm text-yellow-600 mt-1">
+                      You need to subscribe to a plan before booking a battery swap.
+                    </p>
+                    <button
+                      onClick={onNavigateToPlans}
+                      className="mt-2 text-sm font-medium text-yellow-700 hover:text-yellow-800 underline"
+                    >
+                      View Plans →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="px-6 pb-4">
+              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-700 font-medium">
+                      Active Subscription: {activeSubscription?.package?.package_name || 'Premium Plan'}
+                    </p>
+                    <p className="text-sm text-green-600 mt-1">
+                      Swaps remaining: {activeSubscription?.remaining_swap_count ?? 'Unlimited'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <StationInfoPanel
+            stationInfo={stationInfo}
+            bookingState={bookingState}
+            timeRemaining={timeRemaining}
+            onConfirmBooking={onConfirmBooking}
+            onCancelBooking={onCancelClick}
+            showCancelDialog={showCancelDialog}
+            onConfirmCancel={onConfirmCancel}
+            onCancelDialogClose={onCancelDialogClose}
+          />
+        </div>
       </div>
     </div>
   );

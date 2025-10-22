@@ -4,15 +4,18 @@ import DriverStats from './DriverStats'
 import NearbyStations from './NearbyStations'
 import RecentActivity from './RecentActivity'
 import NeedHelp from './NeedHelp'
+import { useAuth } from '../../hooks/useContext';
 
 export default function DriverDashboard() {
+    const { user } = useAuth();
+
     return (
-        <div className="max-w-7xl pt-4 mx-auto">
+        <div className="max-w-7xl mx-auto">
             {/* Main 2-Column Layout */}
-            <div className="flex flex-rows-2 mb-6 p-12 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-2 lg:grid-cols-2 gap-6 mb-6 pt-2">
                 {/* Left Column - Welcome Header + Vehicle Status + Recent Activity */}
                 <div className="space-y-6">
-                    <WelcomeHeader userName="Người dùng pro vip" />
+                    <WelcomeHeader userName={user?.name} />
                     <VehicleStatus />
                     <RecentActivity />
                 </div>

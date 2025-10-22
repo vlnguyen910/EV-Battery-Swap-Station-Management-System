@@ -15,9 +15,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
 import { SwappingModule } from './modules/swapping/swapping.module';
 import { SupportsModule } from './modules/supports/supports.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     DatabaseModule,
     UsersModule,

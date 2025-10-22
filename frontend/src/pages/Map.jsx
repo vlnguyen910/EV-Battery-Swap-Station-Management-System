@@ -1,64 +1,57 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import 'trackasia-gl/dist/trackasia-gl.css';
 import MapHeader from '../components/map/MapHeader';
 import MapSearchBar from '../components/map/MapSearchBar';
 import MapContainer from '../components/map/MapContainer';
 import StationsList from '../components/map/StationsList';
+import { useStation } from '../hooks/useContext';
 
-// Mock data for nearby stations
-const mockStations = [
-  {
-    id: 1,
-    name: "EV Station 01",
-    address: "123 Main Street, Downtown",
-    distance: "0.8 km • 3 min drive",
-    status: "Available",
-    availableBatteries: 12,
-    totalBatteries: 16,
-    coordinates: [106.6297, 10.8231] // Ho Chi Minh City coordinates
-  },
-  {
-    id: 2,
-    name: "Power Station B",
-    address: "456 Shopping Center Blvd",
-    distance: "1.2 km • 5 min drive",
-    status: "Limited",
-    availableBatteries: 3,
-    totalBatteries: 12,
-    coordinates: [106.6397, 10.8331]
-  },
-  {
-    id: 3,
-    name: "Quick Charge Hub",
-    address: "789 Airport Terminal Road",
-    distance: "2.1 km • 8 min drive",
-    status: "No Slots",
-    availableBatteries: 0,
-    totalBatteries: 8,
-    coordinates: [106.6197, 10.8131]
-  },
-  {
-    id: 4,
-    name: "Express Station",
-    address: "321 Campus Drive",
-    distance: "1.8 km • 6 min drive",
-    status: "Available",
-    availableBatteries: 8,
-    totalBatteries: 10,
-    coordinates: [106.6497, 10.8431]
-  }
-];
+// Take real station data from StationContext
 
 export default function MapPage() {
+  const { stations } = useStation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredStations, setFilteredStations] = useState(mockStations);
+  const [filteredStations, setFilteredStations] = useState(stations);
   const [map, setMap] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [geoError, setGeoError] = useState(null);
+
+  // Compute Haversine distance in meters
+  const distanceMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371000; // meters
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Enrich stations with distance fields and sort
+  const computeWithDistance = (list, loc) => {
+    if (!Array.isArray(list)) return [];
+    const enriched = list.map((s) => {
+      if (loc && s?.latitude != null && s?.longitude != null) {
+        const meters = distanceMeters(loc.latitude, loc.longitude, s.latitude, s.longitude);
+        return {
+          ...s,
+          distanceValue: meters,
+          distance: `${(meters / 1000).toFixed(1)} km`,
+        };
+      }
+      return { ...s, distanceValue: Number.POSITIVE_INFINITY, distance: undefined };
+    });
+    enriched.sort((a, b) => (a.distanceValue || Infinity) - (b.distanceValue || Infinity));
+    return enriched;
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    const filtered = mockStations.filter(station =>
-      station.name.toLowerCase().includes(query.toLowerCase()) ||
-      station.address.toLowerCase().includes(query.toLowerCase())
+    const base = computeWithDistance(stations || [], userLocation);
+    const q = (query || '').toLowerCase();
+    const filtered = base.filter((station) =>
+      station.name?.toLowerCase().includes(q) || station.address?.toLowerCase().includes(q)
     );
     setFilteredStations(filtered);
   };
@@ -66,15 +59,54 @@ export default function MapPage() {
   const handleStationClick = (station) => {
     if (map) {
       map.flyTo({
-        center: station.coordinates,
+        center: [station.longitude, station.latitude],
         zoom: 15
       });
     }
   };
 
   const handleMapReady = useCallback((mapInstance) => {
-    setMap(mapInstance);
-  }, []);
+  setMap(mapInstance);
+  // Tự động định vị người dùng khi map load xong
+  locateUser();
+}, []);
+
+  // Keep filteredStations in sync when stations change (async fetch)
+  useEffect(() => {
+    const base = computeWithDistance(stations || [], userLocation);
+    if (!searchQuery) {
+      setFilteredStations(base);
+    } else {
+      const q = searchQuery.toLowerCase();
+      setFilteredStations(
+        base.filter((station) =>
+          station.name?.toLowerCase().includes(q) || station.address?.toLowerCase().includes(q)
+        )
+      );
+    }
+  }, [stations, userLocation, searchQuery]);
+
+  // Locate user using browser geolocation
+  const locateUser = () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setUserLocation(loc);
+        setGeoError(null);
+        if (map && typeof map.flyTo === 'function') {
+          map.flyTo({ center: [loc.longitude, loc.latitude], zoom: 14 });
+        }
+      },
+      (err) => {
+        setGeoError(err?.message || 'Unable to retrieve your location.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -90,8 +122,10 @@ export default function MapPage() {
         {/* Left side - Map */}
         <div className="flex-1 h-full">
           <MapContainer
-            stations={mockStations}
+            stations={stations}
             onMapReady={handleMapReady}
+            userLocation={userLocation}
+            onLocate={locateUser}
           />
         </div>
 
@@ -100,6 +134,7 @@ export default function MapPage() {
           <StationsList
             stations={filteredStations}
             onStationClick={handleStationClick}
+            userLocation={userLocation}
           />
         </div>
       </div>

@@ -1,66 +1,78 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import batteryService from '../services/batteryService';
+import { createContext, useState, useEffect } from "react";
+import { batteryService } from "../services/batteryService";
 
-const BatteryContext = createContext();
+const { getAllBatteries: getAllBatteriesService } = batteryService;
+
+export const BatteryContext = createContext();
 
 export const BatteryProvider = ({ children }) => {
     const [batteries, setBatteries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Real-time battery updates every 5 seconds
-    useEffect(() => {
-        const updateBatteries = async () => {
-            try {
-                const response = await batteryService.getAllBatteries();
-                setBatteries(response.data);
-            } catch (err) {
-                setError(err.message);
+    // Function to fetch all batteries
+    const fetchAllBatteries = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllBatteriesService();
+
+            // 1. Define a robust way to extract the array, checking common nested structures
+            let batteryPayload = response;
+
+            if (typeof response === 'object' && response !== null) {
+                // Check for { data: [...] } or { data: { data: [...] } }
+                if (Array.isArray(response.data)) {
+                    batteryPayload = response.data;
+                } else if (Array.isArray(response.data?.data)) {
+                    batteryPayload = response.data.data;
+                }
+                // If it's a plain array, it was already assigned to batteryPayload
             }
-        };
 
-        // Initial load
-        updateBatteries();
-
-        // Update every 5 seconds for real-time charging simulation
-        const interval = setInterval(updateBatteries, 5000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const value = {
-        batteries,
-        loading,
-        error,
-        setBatteries,
-        setLoading,
-        setError,
-        refreshBatteries: async () => {
-            setLoading(true);
-            try {
-                const response = await batteryService.getAllBatteries();
-                setBatteries(response.data);
-                setError(null);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+            // 2. Ensure the final result is an array, logging a warning if not
+            if (!Array.isArray(batteryPayload)) {
+                console.warn('BatteryService returned unexpected shape for batteries:', response);
+                batteryPayload = [];
             }
+
+            setBatteries(batteryPayload);
+        } catch (err) {
+            // Use err.message if it exists, otherwise use the error object itself
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setLoading(false);
         }
     };
 
+    // Function to count available batteries with status "full" by station ID
+    const countAvailableBatteriesByStation = (stationId) => {
+        if (!stationId || !Array.isArray(batteries)) return 0;
+
+        return batteries.reduce((count, b) => {
+            if (!b) return count;
+            // dùng đúng trường station_id từ DB
+            if (String(b.station_id) === String(stationId) && String((b.status || '')).toLowerCase() === 'full') {
+                return count + 1;
+            }
+            return count;
+        }, 0);
+    };
+
+    // Fetch all batteries on mount
+    // Fetch mà không được thì ra chuỗi rỗng
+    useEffect(() => {
+        fetchAllBatteries();
+    }, []);
+
     return (
-        <BatteryContext.Provider value={value}>
+        <BatteryContext.Provider value={{ batteries, loading, error, countAvailableBatteriesByStation }}>
             {children}
         </BatteryContext.Provider>
     );
 };
 
-// Custom hook
-export const useBattery = () => {
-    const context = useContext(BatteryContext);
-    if (!context) {
-        throw new Error('useBattery must be used within BatteryProvider');
-    }
-    return context;
-};
+
+
+
+

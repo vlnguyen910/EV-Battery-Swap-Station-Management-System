@@ -1,51 +1,101 @@
 // Constants
-export const API_BASE_URL = "http://localhost:8080/api/v1";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout",
+    LOGOUT: "/auth/logout", // backend chưa log route này, cẩn thận
     REFRESH: "/auth/refresh",
   },
+
   USER: {
-    GET_PROFILE: (id) => `/users/${id}`,
-    UPDATE_PROFILE: (id) => `/users/${id}`,
-    // Admin and Staff only
-    GET_ALL_USERS: "/users",
+    CREATE_USER: "/users", // POST
+    GET_ALL_USERS: "/users", // GET
+    GET_USER: (id) => `/users/${id}`, // GET / PATCH / DELETE
+    UPDATE_USER: (id) => `/users/${id}`,
     DELETE_USER: (id) => `/users/${id}`,
   },
+
   VEHICLE: {
     CREATE_VEHICLE: "/vehicles",
     GET_ALL_VEHICLES: "/vehicles",
-    GET_VEHICLE_BY_VIN: (vin) => `/vehicles/${vin}`,
+    GET_VEHICLE_BY_VIN: (vin) => `/vehicles/vin/${vin}`,
     GET_VEHICLE: (id) => `/vehicles/${id}`,
     UPDATE_VEHICLE: (id) => `/vehicles/${id}`,
     DELETE_VEHICLE: (id) => `/vehicles/${id}`,
   },
+
   STATION: {
     CREATE_STATION: "/stations",
     GET_ALL_STATIONS: "/stations",
-    GET_ACTIVE_STATION: `/stations/active`, // available stations có giống v kh ???
-    GET_SEARCH_STATION: `/stations/search`,
+    GET_ACTIVE_STATIONS: "/stations/active",
+    GET_AVAILABLE_STATIONS: "/stations/available",
+    GET_SEARCH_STATIONS: "/stations/search",
     GET_STATION: (id) => `/stations/${id}`,
     UPDATE_STATION: (id) => `/stations/${id}`,
     DELETE_STATION: (id) => `/stations/${id}`,
   },
+
   BATTERY: {
     CREATE_BATTERY: "/batteries",
     GET_ALL_BATTERIES: "/batteries",
-    GET_BEST_BATTERIES: `/batteries/best`,
-    GET_BATTERY_BY_ID: (id) => `/batteries/${id}`,
+    GET_BEST_BATTERIES: "/batteries/best",
+    GET_BATTERY: (id) => `/batteries/${id}`,
     UPDATE_BATTERY: (id) => `/batteries/${id}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
   },
+
+  BATTERY_SERVICE_PACKAGE: {
+    CREATE_PACKAGE: "/battery-service-packages",
+    GET_ALL_PACKAGES: "/battery-service-packages",
+    GET_ACTIVE_PACKAGES: "/battery-service-packages/active",
+    GET_BY_PRICE_RANGE: "/battery-service-packages/price-range",
+    GET_BY_DURATION: (days) => `/battery-service-packages/duration/${days}`,
+    GET_BY_NAME: (name) => `/battery-service-packages/name/${name}`,
+    GET_PACKAGE: (id) => `/battery-service-packages/${id}`,
+    UPDATE_PACKAGE: (id) => `/battery-service-packages/${id}`,
+    ACTIVATE_PACKAGE: (id) => `/battery-service-packages/${id}/activate`,
+    DEACTIVATE_PACKAGE: (id) => `/battery-service-packages/${id}/deactivate`,
+    DELETE_PACKAGE: (id) => `/battery-service-packages/${id}`,
+  },
+
   RESERVATION: {
     CREATE_RESERVATION: "/reservations",
     GET_ALL_RESERVATIONS: "/reservations",
-    GET_RESERVATIONS: (id) => `/reservations/user/${id}`,
+    GET_RESERVATION: (id) => `/reservations/${id}`,
     UPDATE_RESERVATION: (id) => `/reservations/${id}`,
     DELETE_RESERVATION: (id) => `/reservations/${id}`,
+  },
+
+  SUBSCRIPTION: {
+    CREATE_SUBSCRIPTION: "/subscriptions",
+    GET_ALL_SUBSCRIPTIONS: "/subscriptions",
+    GET_SUBSCRIPTION: (id) => `/subscriptions/${id}`,
+    GET_BY_USER: (userId) => `/subscriptions/user/${userId}`,
+    GET_ACTIVE_BY_USER: (userId) => `/subscriptions/user/${userId}/active`,
+    CHECK_EXPIRED: "/subscriptions/check-expired",
+    UPDATE_SUBSCRIPTION: (id) => `/subscriptions/${id}`,
+    CANCEL_SUBSCRIPTION: (id) => `/subscriptions/${id}/cancel`,
+    INCREMENT_SWAP: (id) => `/subscriptions/${id}/increment-swap`,
+    DELETE_SUBSCRIPTION: (id) => `/subscriptions/${id}`,
+  },
+
+  SWAP_TRANSACTION: {
+    CREATE_TRANSACTION: "/swap-transactions",
+    GET_ALL_TRANSACTIONS: "/swap-transactions",
+    GET_BY_USER: (userId) => `/swap-transactions/user/${userId}`,
+    GET_TRANSACTION: (id) => `/swap-transactions/transaction/${id}`,
+    UPDATE_TRANSACTION: (id) => `/swap-transactions/${id}`,
+    DELETE_TRANSACTION: (id) => `/swap-transactions/${id}`,
+  },
+
+  PAYMENT: {
+    CREATE_VNPAY_URL: "/payments/create-vnpay-url",
+    VNPAY_RETURN: "/payments/vnpay-return",
+    VNPAY_IPN: "/payments/vnpay-ipn",
+    GET_PAYMENT: (id) => `/payments/${id}`,
+    GET_BY_TXN_REF: (txnRef) => `/payments/txn/${txnRef}`,
   },
 };
 

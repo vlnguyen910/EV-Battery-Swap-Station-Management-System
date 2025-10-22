@@ -1,27 +1,28 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
-import { 
-  LayoutDashboard, 
-  MapPin, 
-  CreditCard, 
-  User, 
-  MessageCircle, 
-  Sun, 
-  Moon, 
-  LogOut 
+import {
+  LayoutDashboard,
+  MapPin,
+  CreditCard,
+  User,
+  MessageCircle,
+  Sun,
+  Moon,
+  LogOut
 } from 'lucide-react'
+import { useAuth } from '../../hooks/useContext'
 
 // Sidebar component
 export default function Sidebar() {
   const location = useLocation()
   const [darkMode, setDarkMode] = useState(false)
-
+  const { logout } = useAuth()
   const menuItems = [
     { name: 'Dashboard', path: '/driver', icon: LayoutDashboard },
-    { name: 'Stations', path: '/map', icon: MapPin },
-    { name: 'Plans', path: '/plans', icon: CreditCard },
-    { name: 'Profile', path: '/profile', icon: User },
-    { name: 'Support', path: '/support', icon: MessageCircle }
+    { name: 'Stations', path: '/driver/map', icon: MapPin },
+    { name: 'Plans', path: '/driver/plans', icon: CreditCard },
+    { name: 'Profile', path: '/driver/profile', icon: User },
+    { name: 'Support', path: '/driver/support', icon: MessageCircle }
   ]
 
   const handleLogout = () => {
@@ -55,11 +56,10 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+                }`}
             >
               <IconComponent className="w-5 h-5" />
               <span className="font-medium">{item.name}</span>
@@ -83,18 +83,16 @@ export default function Sidebar() {
             )}
             <span className="font-medium text-gray-700">Dark Mode</span>
           </div>
-          <div className={`w-12 h-6 rounded-full transition-colors duration-200 ${
-            darkMode ? 'bg-blue-600' : 'bg-gray-300'
-          } relative`}>
-            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
-              darkMode ? 'transform translate-x-6' : ''
-            }`}></div>
+          <div className={`w-12 h-6 rounded-full transition-colors duration-200 ${darkMode ? 'bg-blue-600' : 'bg-gray-300'
+            } relative`}>
+            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${darkMode ? 'transform translate-x-6' : ''
+              }`}></div>
           </div>
         </button>
 
         {/* Logout Button */}
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors duration-200 font-medium"
         >
           <LogOut className="w-5 h-5" />
