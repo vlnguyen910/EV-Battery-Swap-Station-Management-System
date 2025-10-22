@@ -17,10 +17,16 @@ export class ReservationsController {
     return this.reservationsService.create(createReservationDto);
   }
 
-
+  @Roles($Enums.Role.driver)
   @Get('/user/:id')
   findAllByUserId(@Param('id', ParseIntPipe) userId: number) {
     return this.reservationsService.findManyByUserId(userId);
+  }
+
+  @Roles($Enums.Role.station_staff)
+  @Get('/station/:id')
+  findAllByStationId(@Param('id', ParseIntPipe) stationId: number) {
+    return this.reservationsService.findManyScheduledByStationId(stationId);
   }
 
   @Get(':id')
