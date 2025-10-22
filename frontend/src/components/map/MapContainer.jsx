@@ -10,7 +10,7 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
   const markersRef = useRef([]);
   const navigate = useNavigate();
   // const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-  const TRACKASIA_API_KEY = '090ec4d01e17603677119843fa3c839c69';
+  const TRACKASIA_API_KEY = import.meta.env.VITE_TRACKASIA_API_KEY
 
   const getMarkerColor = (status) => {
     switch (status) {
@@ -165,16 +165,59 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
   // Add/update current user location marker
   useEffect(() => {
     if (!mapInstanceRef.current) return;
+
+    // Xóa marker cũ nếu có
     if (userMarkerRef.current) {
       userMarkerRef.current.remove();
       userMarkerRef.current = null;
     }
+
+    //nếu có tọa độ người dùng thì thêm marker 
     if (userLocation && userLocation.longitude != null && userLocation.latitude != null) {
-      userMarkerRef.current = new trackasia.Marker({ color: '#2563eb' })
+      // Tạo marker giống Google Maps (vòng tròn xanh nhấp nháy)
+      const el = document.createElement('div');
+      el.className = 'user-location-marker';
+
+      const style = document.createElement('style');
+      style.textContent = `
+      .user-location-marker {
+        position: relative;
+        width: 20px;
+        height: 20px;
+        background: #4285F4;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 0 rgba(66,133,244,0.4);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(66,133,244,0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(66,133,244,0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(66,133,244,0);
+        }
+      }
+    `;
+      document.head.appendChild(style);
+
+      userMarkerRef.current = new trackasia.Marker({ element: el })
         .setLngLat([userLocation.longitude, userLocation.latitude])
         .addTo(mapInstanceRef.current);
+
+      // Tự động zoom & di chuyển tới vị trí hiện tại
+      mapInstanceRef.current.flyTo({
+        center: [userLocation.longitude, userLocation.latitude],
+        zoom: 14,
+        speed: 1.2, // tốc độ di chuyển
+        curve: 1.5, // độ mượt
+        essential: true,
+      });
     }
-  }, [userLocation, mapInstanceRef.current]);
+  }, [userLocation]);
 
   // const handleGoToPlans = () => {
   //   setShowSubscriptionAlert(false);
