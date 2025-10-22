@@ -5,14 +5,15 @@ enum Role {
 }
 
 model User {
-    user_id    Int      @id @default(autoincrement())
-    username   String
-    password   String
-    phone      String   @unique
-    email      String   @unique
-    role       Role
-    station_id Int?     // Quản lý staff/manager ở station nào
-    created_at DateTime @default(now())
+    user_id       Int      @id @default(autoincrement())
+    username      String
+    password      String
+    phone         String   @unique
+    email         String   @unique
+    role          Role
+    station_id    Int?     // Quản lý staff/manager ở station nào
+    refresh_token String?
+    created_at    DateTime @default(now())
 
     // Relationships
     station         Station?          @relation(fields: [station_id], references: [station_id])

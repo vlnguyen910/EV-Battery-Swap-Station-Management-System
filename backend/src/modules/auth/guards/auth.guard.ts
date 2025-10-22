@@ -1,4 +1,3 @@
-
 import {
     CanActivate,
     ExecutionContext,
@@ -14,21 +13,23 @@ export class AuthGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-        const token = this.extractTokenFromHeader(request);
+        const authorization = request.headers.authorization;
+        const token = authorization?.split(' ')[1];
         if (!token) {
             throw new UnauthorizedException('Access token is required');
         }
         try {
             const payload = await this.jwtService.verifyAsync(token);
-            request['user'] = payload;
-        } catch {
+            request.user = {
+                user_id: payload.sub,
+                name: payload.username,
+                email: payload.email,
+                phone: payload.phone,
+                role: payload.role
+            }
+            return true;
+        } catch (error) {
             throw new UnauthorizedException();
         }
-        return true;
-    }
-
-    private extractTokenFromHeader(request: Request): string | undefined {
-        const [type, token] = request.headers.authorization?.split(' ') ?? [];
-        return type === 'Bearer' ? token : undefined;
     }
 }
