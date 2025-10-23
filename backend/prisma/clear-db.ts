@@ -5,11 +5,11 @@
 
 // async function clearDatabase() {
 //     console.log('🗑️  Starting database cleanup...');
-    
+
 //     try {
 //         // Delete in correct order to respect foreign key constraints
 //         // (child tables first, then parent tables)
-        
+
 //         console.log('📋 Deleting subscriptions...');
 //         const deletedSubscriptions = await prisma.subscription.deleteMany();
 //         console.log(`   ✓ Deleted ${deletedSubscriptions.count} subscriptions`);
@@ -21,6 +21,14 @@
 //         console.log('📅 Deleting reservations...');
 //         const deletedReservations = await prisma.reservation.deleteMany();
 //         console.log(`   ✓ Deleted ${deletedReservations.count} reservations`);
+
+//         console.log('💰 Deleting payments...');
+//         const deletedPayments = await prisma.payment.deleteMany();
+//         console.log(`   ✓ Deleted ${deletedPayments.count} payments`);
+
+//         console.log('🆘 Deleting support tickets...');
+//         const deletedSupports = await prisma.support.deleteMany();
+//         console.log(`   ✓ Deleted ${deletedSupports.count} support tickets`);
 
 //         console.log('🚗 Deleting vehicles...');
 //         const deletedVehicles = await prisma.vehicle.deleteMany();
@@ -61,7 +69,7 @@
 
 //         // Check if database is truly empty
 //         const totalRecords = Object.values(finalCounts).reduce((sum, count) => sum + count, 0);
-        
+
 //         if (totalRecords === 0) {
 //             console.log('🎉 Database is completely empty!');
 //         } else {
@@ -70,15 +78,6 @@
 
 //     } catch (error) {
 //         console.error('❌ Error clearing database:', error);
-        
-//         // Show detailed error information
-//         if (error.code) {
-//             console.error(`Error code: ${error.code}`);
-//         }
-//         if (error.meta) {
-//             console.error(`Error meta:`, error.meta);
-//         }
-        
 //         throw error;
 //     } finally {
 //         await prisma.$disconnect();
@@ -86,20 +85,6 @@
 //     }
 // }
 
-// // Handle process termination gracefully
-// process.on('SIGINT', async () => {
-//     console.log('\n🛑 Process interrupted. Cleaning up...');
-//     await prisma.$disconnect();
-//     process.exit(0);
-// });
-
-// process.on('SIGTERM', async () => {
-//     console.log('\n🛑 Process terminated. Cleaning up...');
-//     await prisma.$disconnect();
-//     process.exit(0);
-// });
-
-// // Run the clear function
 // clearDatabase()
 //     .then(() => {
 //         console.log('🏁 Clear database script completed successfully');

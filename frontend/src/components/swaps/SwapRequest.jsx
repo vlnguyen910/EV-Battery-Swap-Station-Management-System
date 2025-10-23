@@ -4,70 +4,14 @@
 // import { zodResolver } from "@hookform/resolvers/zod";
 // import { useAsyncHandler } from "../../hooks/useAsyncHandler";
 
-// const schema = z.object({
-//     user_id: z.number().min(1).optional(),
-//     vehicle_id: z.number().min(1).optional(),
-//     station_id: z.number().min(1).optional(),
-//     battery_taken_id: z.number().min(1).optional(),
-//     battery_returned_id: z.number().min(1).optional(),
-//     subscription_id: z.number().min(1).optional(),
+// // Validation schema using Zod
+// const swapRequestSchema = z.object({
+//     vehicleId: z.string().nonempty("Vui lòng chọn xe"),
+//     stationId: z.string().nonempty("Vui lòng chọn trạm"),
+//     batteryTakenId: z.string().nonempty("Vui lòng chọn pin lấy"),
+//     batteryReturnedId: z.string().nonempty("Vui lòng chọn pin trả"),
 // });
 
-
-// export default function SwapRequest() {
-//     const {
-//         register,
-//         handleSubmit,
-//         formState: { errors },
-//     } = useForm({
-//         resolver: zodResolver(schema),
-//     });
-
-//     const { execute: createSwap, isLoading } = useAsyncHandler(createSwapTransaction);
-
-//     const onSubmit = async (data) => {
-//         const result = await createSwap(data);
-//         console.log("Swap transaction created:", result);
-//     };
-
-//     return (
-//         <form onSubmit={handleSubmit(onSubmit)}>
-//             <div>
-//                 <label>User ID</label>
-//                 <input type="number" {...register("user_id")} />
-//                 {errors.user_id && <p>{errors.user_id.message}</p>}
-//             </div>
-//             <div>
-//                 <label>Vehicle ID</label>
-//                 <input type="number" {...register("vehicle_id")} />
-//                 {errors.vehicle_id && <p>{errors.vehicle_id.message}</p>}
-//             </div>
-//             <div>
-//                 <label>Station ID</label>
-//                 <input type="number" {...register("station_id")} />
-//                 {errors.station_id && <p>{errors.station_id.message}</p>}
-//             </div>
-//             <div>
-//                 <label>Battery Taken ID</label>
-//                 <input type="number" {...register("battery_taken_id")} />
-//                 {errors.battery_taken_id && <p>{errors.battery_taken_id.message}</p>}
-//             </div>
-//             <div>
-//                 <label>Battery Returned ID</label>
-//                 <input type="number" {...register("battery_returned_id")} />
-//                 {errors.battery_returned_id && <p>{errors.battery_returned_id.message}</p>}
-//             </div>
-//             <div>
-//                 <label>Subscription ID</label>
-//                 <input type="number" {...register("subscription_id")} />
-//                 {errors.subscription_id && <p>{errors.subscription_id.message}</p>}
-//             </div>
-//             <button type="submit" disabled={isLoading}>
-//                 {isLoading ? "Creating..." : "Create Swap Transaction"}
-//             </button>
-//         </form>
-//     );
-// }
 
 
 // // Table swap_transactions {

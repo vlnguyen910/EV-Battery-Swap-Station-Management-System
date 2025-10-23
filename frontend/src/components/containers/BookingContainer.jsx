@@ -65,7 +65,7 @@ export default function BookingContainer() {
         setSubscriptionLoading(false);
         return;
       }
-      
+
       try {
         await getActiveSubscription(user.id);
         setSubscriptionLoading(false);
@@ -74,7 +74,7 @@ export default function BookingContainer() {
         setSubscriptionLoading(false);
       }
     };
-    
+
     checkSubscription();
   }, [user?.id, getActiveSubscription]);
 
@@ -132,7 +132,8 @@ export default function BookingContainer() {
 
       const created = await createReservation(payload);
       console.log('Reservation created successfully:', created);
-      
+      console.log('Reservation status should be: scheduled');
+
       if (created) {
         setBookingState('booked');
         setTimeRemaining(3600);
@@ -143,21 +144,28 @@ export default function BookingContainer() {
     } catch (err) {
       console.error('Failed to create reservation', err);
       console.error('Error response:', err.response?.data);
-      alert('Failed to create reservation: ' + (err.response?.data?.message || err.message || 'Unknown error'));
+
+      // Check if reservation already exists
+      if (err.response?.data?.message?.includes('already have a reservation')) {
+        alert('You already have an active reservation. Please complete or cancel it first.');
+        // Optionally navigate to show existing reservation
+      } else {
+        alert('Failed to create reservation: ' + (err.response?.data?.message || err.message || 'Unknown error'));
+      }
     }
   };
 
   const handleCancelClick = () => setShowCancelDialog(true);
-  
-  const handleConfirmCancel = () => { 
-    setBookingState('idle'); 
-    setTimeRemaining(3600); 
-    setShowCancelDialog(false); 
-    setBookingTime(''); 
+
+  const handleConfirmCancel = () => {
+    setBookingState('idle');
+    setTimeRemaining(3600);
+    setShowCancelDialog(false);
+    setBookingTime('');
   };
-  
+
   const handleCancelDialogClose = () => setShowCancelDialog(false);
-  
+
   const handleBackToMap = () => navigate('/driver/map');
 
   const handleNavigateToPlans = () => navigate('/driver/plans');
@@ -172,7 +180,7 @@ export default function BookingContainer() {
       bookingTime={bookingTime}
       subscriptionLoading={subscriptionLoading}
       activeSubscription={activeSubscription}
-      
+
       // Handlers
       onConfirmBooking={handleConfirmBooking}
       onCancelClick={handleCancelClick}

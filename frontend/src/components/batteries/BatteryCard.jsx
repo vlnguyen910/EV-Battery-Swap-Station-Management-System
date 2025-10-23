@@ -1,4 +1,4 @@
-import { getChargePercentage, getBatteryStatusInfo } from '../../data/mockBatteryData';
+import { getChargePercentage, getBatteryStatusInfo } from '../../hooks/useBatteryHandler';
 
 export default function BatteryCard({ battery }) {
   if (!battery) return null;
@@ -10,7 +10,7 @@ export default function BatteryCard({ battery }) {
     const colors = {
       charging: 'bg-yellow-500 text-black',
       full: 'bg-green-500 text-white',
-      taken: 'bg-blue-500 text-white',
+      in_use: 'bg-blue-500 text-white',
       booked: 'bg-orange-500 text-white',
       defective: 'bg-red-500 text-white'
     };

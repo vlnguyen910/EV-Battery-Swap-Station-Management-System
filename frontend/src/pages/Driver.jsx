@@ -1,7 +1,25 @@
 import Sidebar from '../components/layout/Sidebar'
+import ReservationCountdownWidget from '../components/reservation/ReservationCountdownWidget'
 import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useAuth, useReservation } from '../hooks/useContext'
 
 export default function Driver() {
+  const { user } = useAuth();
+  const { getReservationsByUserId } = useReservation();
+
+  // Fetch existing reservations on mount
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (!user?.id) return;
+      try {
+        await getReservationsByUserId(user.id);
+      } catch (error) {
+        console.error('Failed to fetch user reservations:', error);
+      }
+    };
+    fetchReservations();
+  }, [user?.id, getReservationsByUserId]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
@@ -32,6 +50,9 @@ export default function Driver() {
           </div>
         </main>
       </div>
+
+      {/* Reservation Countdown Widget - shows globally when active */}
+      <ReservationCountdownWidget />
     </div>
   )
 }

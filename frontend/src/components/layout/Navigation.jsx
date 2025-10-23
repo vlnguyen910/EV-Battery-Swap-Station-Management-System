@@ -92,7 +92,7 @@ export default function Navigation({ type = "main" }) {
   // --- NAVBAR CHO STAFF ---
   const StaffNavigation = () => (
     <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <h1
@@ -122,11 +122,27 @@ export default function Navigation({ type = "main" }) {
             </Link>
 
             <Link
+              to="/staff/manual-swap"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-search-line mr-2 text-blue-500"></i>
+              Manual Swap
+            </Link>
+
+            <Link
               to="/staff/inventory"
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-archive-line mr-2 text-blue-500"></i>
               Kho pin
+            </Link>
+
+            <Link
+              to="/staff/swap-requests"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-swap-line mr-2 text-orange-500"></i>
+              Yêu cầu đổi pin
             </Link>
 
             {/* Dropdown Status */}
