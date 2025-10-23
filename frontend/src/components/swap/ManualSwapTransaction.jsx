@@ -57,9 +57,12 @@ export default function ManualSwapTransaction() {
             try {
                 setLoading(true);
                 const userId = parseInt(formData.user_id);
+                console.log('🔍 Luồng 2: Fetching user data for userId:', userId);
 
                 // Get active subscription for user
                 const subscription = await getActiveSubscription(userId);
+                console.log('🔍 getActiveSubscription response:', subscription);
+
                 if (subscription) {
                     setFormData(prev => ({
                         ...prev,
@@ -76,9 +79,11 @@ export default function ManualSwapTransaction() {
                         }));
                         setVehicleData(vehicle);
                     }
+                } else {
+                    console.warn('⚠️ No active subscription found for userId:', userId);
                 }
             } catch (error) {
-                console.error('Error fetching user data for manual entry:', error);
+                console.error('❌ Error fetching user data for manual entry:', error);
             } finally {
                 setLoading(false);
             }
@@ -87,7 +92,7 @@ export default function ManualSwapTransaction() {
         fetchUserData();
     }, [formData.user_id, reservationId, getActiveSubscription]);
 
-    // Luồng 1: Fetch vehicle data from URL params
+    // Luồng 1: Fetch vehicle data from URL params AND subscription if missing
     useEffect(() => {
         if (!reservationId || !urlVehicleId) {
             return; // Luồng 2 - no initial loading needed
@@ -106,6 +111,22 @@ export default function ManualSwapTransaction() {
                         battery_returned_id: vehicle.battery_id.toString()
                     }));
                 }
+
+                // If subscription_id is missing from URL, fetch it manually
+                if (!urlSubscriptionId && urlUserId) {
+                    console.log('🔍 Luồng 1: subscription_id missing from URL, fetching for userId:', urlUserId);
+                    const subscription = await getActiveSubscription(parseInt(urlUserId));
+                    console.log('🔍 Luồng 1: getActiveSubscription response:', subscription);
+
+                    if (subscription) {
+                        setFormData(prev => ({
+                            ...prev,
+                            subscription_id: subscription.subscription_id.toString(),
+                        }));
+                        console.log('✅ Luồng 1: Updated subscription_id to:', subscription.subscription_id);
+                    }
+                }
+
             } catch (error) {
                 console.error('Error fetching vehicle data:', error);
                 alert('Failed to fetch vehicle data');
@@ -115,7 +136,7 @@ export default function ManualSwapTransaction() {
         };
 
         fetchVehicleData();
-    }, [reservationId, urlVehicleId]);
+    }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription]);
 
     // Filter batteries: only show batteries that are 'full' and at staff's station
     const availableBatteries = batteries.filter(
