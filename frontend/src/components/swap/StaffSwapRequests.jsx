@@ -78,6 +78,8 @@ export default function StaffSwapRequests() {
                 batteryReturnedId: vehicle.battery_id || '',
                 subscriptionId: subscription?.subscription_id || '',
                 subscriptionName: subscription?.package?.package_name || 'No active subscription',
+                // Prefill batteryId from reservation
+                batteryId: reservation.battery_id || '',
             });
 
             console.log('URL Params being sent:', params.toString());

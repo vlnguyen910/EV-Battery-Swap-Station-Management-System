@@ -1,4 +1,3 @@
-import React from 'react';
 import BookingHeader from '../components/booking/BookingHeader';
 import StationInfoPanel from '../components/booking/StationInfoPanel';
 import BookingSuccessView from '../components/booking/BookingSuccessView';
@@ -12,7 +11,7 @@ export default function Booking({
   bookingTime,
   subscriptionLoading,
   activeSubscription,
-  
+
   // Handler props
   onConfirmBooking,
   onCancelClick,
