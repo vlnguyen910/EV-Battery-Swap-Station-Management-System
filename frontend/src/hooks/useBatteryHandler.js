@@ -100,6 +100,7 @@ export const useBatteryFilter = (batteries) => {
     model: "all",
     soc: "all",
     soh: "all",
+    search: "",
   });
 
   const filteredBatteries = useMemo(() => {
@@ -109,6 +110,29 @@ export const useBatteryFilter = (batteries) => {
 
     return batteries.filter((battery) => {
       if (!battery) return false;
+
+      // Search filter: match by battery id (supports 'BAT009', '009', '9') or model/name substring
+      if (filters.search && filters.search.trim() !== "") {
+        const q = filters.search.trim().toLowerCase();
+
+        // Normalize battery id: allow 'BAT' prefix or plain number
+        const numericId = String(battery.battery_id || "");
+        const paddedId = numericId.padStart(3, "0");
+        const batIdWithPrefix = `bat${paddedId}`;
+
+        // Model and name
+        const model = String(battery.model || "").toLowerCase();
+        const name = String(battery.name || "").toLowerCase();
+
+        const matchesId =
+          batIdWithPrefix.includes(q) || numericId === q || paddedId === q;
+        const matchesModel = model.includes(q);
+        const matchesName = name.includes(q);
+
+        if (!matchesId && !matchesModel && !matchesName) {
+          return false;
+        }
+      }
 
       // Filter by model
       if (filters.model !== "all" && battery.model !== filters.model) {
