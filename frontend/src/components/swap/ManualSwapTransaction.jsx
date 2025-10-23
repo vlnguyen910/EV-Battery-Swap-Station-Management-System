@@ -12,7 +12,8 @@ export default function ManualSwapTransaction() {
     const { batteries, refreshBatteries } = useBattery();
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
-    const [loading, setLoading] = useState(false); // Start as false for Luồng 2
+    // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
+    const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
 
     // Get data from URL params (passed from staff request list in Luồng 1)
@@ -52,9 +53,11 @@ export default function ManualSwapTransaction() {
         vehicle_id: urlVehicleId || '',
         station_id: staffStationId || '', // Always set from staff login
         subscription_id: urlSubscriptionId && urlSubscriptionId !== 'null' && urlSubscriptionId !== 'undefined' ? urlSubscriptionId : '',
-        battery_taken_id: '',
+        // Prefill battery_taken_id from URL if available (Luồng 1)
+        battery_taken_id: searchParams.get('batteryId') || '',
         battery_returned_id: urlBatteryReturnedId || '',
     });
+    const [reservationDetails, setReservationDetails] = useState(null);
 
     // Update station_id when user changes (but don't trigger loading)
     useEffect(() => {
@@ -117,7 +120,6 @@ export default function ManualSwapTransaction() {
 
         const fetchVehicleData = async () => {
             try {
-                setLoading(true);
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
 
@@ -155,6 +157,35 @@ export default function ManualSwapTransaction() {
         fetchVehicleData();
     }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription]);
 
+    // If we have a reservationId (Luồng 1), fetch reservation details and prefill battery_taken_id
+    useEffect(() => {
+        if (!reservationId) return;
+
+        // Prefill battery_taken_id from URL if available (Luồng 1)
+        const batteryIdFromUrl = searchParams.get('batteryId');
+        if (batteryIdFromUrl) {
+            setFormData(prev => ({
+                ...prev,
+                battery_taken_id: batteryIdFromUrl
+            }));
+        }
+
+        // Optionally still fetch reservation for other info
+        const fetchReservation = async () => {
+            try {
+                let res = await reservationService.getReservationById(parseInt(reservationId));
+                // ...existing code...
+                setReservationDetails(res);
+            } catch (err) {
+                console.error('Failed to fetch reservation details:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReservation();
+    }, [reservationId]);
+
     // Filter batteries: only show batteries that are 'full' and at staff's station
     const availableBatteries = batteries.filter(
         b => b.status === 'full' && staffStationId && b.station_id === staffStationId
@@ -178,22 +209,82 @@ export default function ManualSwapTransaction() {
 
         try {
             // Prepare swap transaction data for API
+            const takenBatteryId = reservationDetails?.battery_id ? parseInt(reservationDetails.battery_id) : parseInt(formData.battery_taken_id);
+
             const swapData = {
                 user_id: parseInt(formData.user_id),
                 vehicle_id: parseInt(formData.vehicle_id),
                 station_id: parseInt(formData.station_id),
-                battery_taken_id: parseInt(formData.battery_taken_id),
+                battery_taken_id: takenBatteryId,
                 battery_returned_id: formData.battery_returned_id ? parseInt(formData.battery_returned_id) : null,
                 subscription_id: parseInt(formData.subscription_id),
+                // Attach reservation reference so backend can validate and consume it atomically when possible
+                reservation_id: reservationId ? parseInt(reservationId) : null,
                 status: 'completed',
             };
 
             console.log('Creating swap transaction:', swapData);
             console.log('Request payload (stringified):', JSON.stringify(swapData, null, 2));
 
+            // If this is Luồng 1 and the reserved battery is not currently 'full', require staff confirmation
+            // to force process. This avoids silently turning multiple 'booked' batteries into 'full' which
+            // would allow overbooking when many reservations contend for limited full batteries.
+            let originalTakenBatteryStatus = null;
+            const reservedId = reservationDetails?.battery_id || formData.battery_taken_id;
+            if (reservationDetails && reservedId) {
+                try {
+                    let reservedBattery = batteries.find(b => String(b.battery_id) === String(reservedId));
+                    if (!reservedBattery) {
+                        reservedBattery = await batteryService.getBatteryById(reservedId);
+                        if (reservedBattery && reservedBattery.data) reservedBattery = reservedBattery.data;
+                    }
+
+                    originalTakenBatteryStatus = reservedBattery?.status;
+                    console.log('Reserved battery current status:', originalTakenBatteryStatus, 'for battery', reservedId);
+
+                    if (originalTakenBatteryStatus !== 'full') {
+                        const confirmMsg = `Battery ${reservedId} is currently '${originalTakenBatteryStatus}'.\n` +
+                            `Proceeding will temporarily mark it 'full' to complete this swap.\n` +
+                            `Only confirm if you verified the physical battery is available.\n\nDo you want to proceed?`;
+
+                        const force = window.confirm(confirmMsg);
+                        if (!force) {
+                            alert('Swap cancelled. Choose a different full battery or resolve the reservation first.');
+                            return; // abort submit
+                        }
+
+                        try {
+                            console.log('Staff confirmed force processing reserved battery', reservedId);
+                            await batteryService.updateBatteryById(reservedId, { status: 'full' });
+                        } catch (prepErr) {
+                            console.error('Failed to prepare reserved battery for swap after confirmation:', prepErr);
+                            throw new Error('Failed to prepare reserved battery for swap');
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error checking reserved battery status:', err);
+                    throw err;
+                }
+            }
+
             // Call real API to create swap transaction
-            const transaction = await swapService.createSwapTransaction(swapData);
-            console.log('Swap transaction created via API:', transaction);
+            let transaction;
+            try {
+                transaction = await swapService.createSwapTransaction(swapData);
+                console.log('Swap transaction created via API:', transaction);
+            } catch (createErr) {
+                console.error('Swap creation failed:', createErr);
+                // revert reserved battery status if we changed it
+                if (originalTakenBatteryStatus === 'booked' && reservedId) {
+                    try {
+                        await batteryService.updateBatteryById(reservedId, { status: 'booked' });
+                        console.log('Reverted reserved battery', reservedId, 'to booked after failed transaction');
+                    } catch (revertErr) {
+                        console.error('Failed to revert reserved battery status after failed transaction:', revertErr);
+                    }
+                }
+                throw createErr;
+            }
 
             // Immediately mark reservation as completed (swap attempt has been made)
             // Only update reservation if this is Luồng 1 (reservationId exists)
@@ -213,19 +304,23 @@ export default function ManualSwapTransaction() {
 
             // Continue with battery and vehicle updates; failures here do not affect reservation status
             try {
-                // Update battery_returned status from 'in_use' to 'charging'
-                await batteryService.updateBatteryById(formData.battery_returned_id, {
-                    status: 'charging',
-                    station_id: parseInt(formData.station_id)
-                });
-                console.log(`Battery ${formData.battery_returned_id} status updated to 'charging'`);
+                // Update returned battery: set status to 'charging', station_id to current station, and clear vehicle_id
+                if (formData.battery_returned_id) {
+                    await batteryService.updateBatteryById(formData.battery_returned_id, {
+                        status: 'charging',
+                        station_id: parseInt(formData.station_id),
+                        vehicle_id: null
+                    });
+                    console.log(`Battery ${formData.battery_returned_id} updated: status=charging, station_id=${formData.station_id}, vehicle_id=null`);
+                }
 
-                // Update battery_taken status from 'full' to 'in_use'
+                // Update taken battery: set status to 'in_use' and set vehicle_id to the vehicle
                 await batteryService.updateBatteryById(formData.battery_taken_id, {
                     status: 'in_use',
-                    station_id: null // Battery is now with vehicle
+                    station_id: null,
+                    vehicle_id: parseInt(formData.vehicle_id)
                 });
-                console.log(`Battery ${formData.battery_taken_id} status updated to 'in_use'`);
+                console.log(`Battery ${formData.battery_taken_id} updated: status=in_use, vehicle_id=${formData.vehicle_id}`);
 
                 // Update vehicle's current battery_id to the new battery
                 await vehicleService.updateVehicle(formData.vehicle_id, {
@@ -384,21 +479,42 @@ export default function ManualSwapTransaction() {
                             </label>
                             <div className="relative">
                                 <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-green-500 text-xl">battery_charging_full</span>
-                                <select
-                                    id="battery_taken_id"
-                                    name="battery_taken_id"
-                                    value={formData.battery_taken_id}
-                                    onChange={handleChange}
-                                    className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
-                                    required
-                                >
-                                    <option value="">Select a full battery...</option>
-                                    {availableBatteries.map(battery => (
-                                        <option key={battery.battery_id} value={battery.battery_id}>
-                                            BAT{String(battery.battery_id).padStart(3, '0')} - {battery.model} ({battery.current_charge || battery.capacity}kWh)
-                                        </option>
-                                    ))}
-                                </select>
+
+                                {/* Debug: Log current state */}
+                                {console.log('🔍 Render Debug - reservationDetails:', reservationDetails)}
+                                {console.log('🔍 Render Debug - reservationDetails.battery_id:', reservationDetails?.battery_id)}
+                                {console.log('🔍 Render Debug - formData.battery_taken_id:', formData.battery_taken_id)}
+                                {console.log('🔍 Render Debug - Should show input?:', !!(reservationDetails && reservationDetails.battery_id))}
+
+                                {/* Always bind to formData.battery_taken_id so prefill from reservation shows up reliably.
+                                    If we have reservationId and battery_taken_id is prefilled, show readonly input.
+                                    Otherwise show dropdown for manual selection. */}
+                                {reservationId && formData.battery_taken_id ? (
+                                    <input
+                                        type="text"
+                                        id="battery_taken_id"
+                                        name="battery_taken_id"
+                                        value={formData.battery_taken_id}
+                                        readOnly
+                                        className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900"
+                                    />
+                                ) : (
+                                    <select
+                                        id="battery_taken_id"
+                                        name="battery_taken_id"
+                                        value={formData.battery_taken_id}
+                                        onChange={handleChange}
+                                        className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                        required
+                                    >
+                                        <option value="">Select a full battery...</option>
+                                        {availableBatteries.map(battery => (
+                                            <option key={battery.battery_id} value={battery.battery_id}>
+                                                BAT{String(battery.battery_id).padStart(3, '0')} - {battery.model} ({battery.current_charge || battery.capacity}kWh)
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
                             <p className="text-xs text-green-600 mt-1">
                                 {availableBatteries.length} full batteries available
