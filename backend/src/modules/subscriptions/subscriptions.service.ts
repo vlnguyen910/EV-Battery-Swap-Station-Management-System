@@ -236,6 +236,41 @@ export class SubscriptionsService {
     });
   }
 
+  async updateDistanceTraveled(id: number, distance: number, tx?: any) {
+    const db = tx ?? this.prisma;
+    const subscription = await this.findOne(id);
+    // Check if subscription is active
+    if (subscription.status !== SubscriptionStatus.active) {
+      throw new BadRequestException('Subscription is not active');
+    }
+
+    // Đảm bảo distance là số hợp lệ
+    if (typeof distance !== 'number' || isNaN(distance) || distance < 0) {
+      throw new BadRequestException('Invalid distance value');
+    }
+
+    return db.subscription.update({
+      where: { subscription_id: id },
+      data: {
+        distance_traveled: {
+          increment: distance,
+        },
+      },
+      include: {
+        package: true,
+        user: {
+          select: {
+            user_id: true,
+            username: true,
+            email: true,
+            phone: true,
+          },
+        },
+        vehicle: true,
+      },
+    });
+  }
+
   async checkExpiredSubscriptions() {
     const now = new Date();
 

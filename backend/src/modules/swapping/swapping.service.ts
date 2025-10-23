@@ -25,6 +25,9 @@ export class SwappingService {
 
     async swapBatteries(swapDto: SwappingDto) {
         const { user_id, station_id } = swapDto;
+        const kmPerPercent: number = 5; // Example: 5 km per 1% battery
+        const fullBatteryPercent = 100;
+
 
         try {
             // Check user is exist
@@ -73,6 +76,7 @@ export class SwappingService {
 
             taken_battery_id = (await this.batteriesService.findBestBatteryForVehicle(vehicle_id, station_id)).battery_id;
 
+            // If no return battery, it means it's the first swap, so just assign the taken battery to the vehicle
             if (!return_battery_id) {
                 const firstSwapDto: FirstSwapDto = {
                     user_id,
@@ -92,6 +96,17 @@ export class SwappingService {
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
                 await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
+
+                const returnBattery = await this.batteriesService.findOne(return_battery_id);
+                const batteryUsedPercent = fullBatteryPercent - returnBattery.current_charge;
+                const distanceTraveled = batteryUsedPercent * kmPerPercent;
+
+                // Update distance traveled in subscription
+                await this.subscriptionsService.updateDistanceTraveled(
+                    subscription.subscription_id,
+                    distanceTraveled,
+                    prisma
+                );
 
                 //Create swap transaction 
                 const swapRecord = await this.swapTransactionsService.create({
@@ -113,6 +128,9 @@ export class SwappingService {
                 return {
                     message: 'Battery swap successful',
                     swap_used: subscription.swap_used,
+                    batteryUsedPercent: batteryUsedPercent,
+                    distance_used: distanceTraveled,
+                    distance_traveled: subscription.distance_traveled + distanceTraveled,
                     swapTransaction: swapRecord,
                     reservation_status: reservation ? ReservationStatus.completed : null
                 }
