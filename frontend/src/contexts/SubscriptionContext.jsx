@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useCallback } from "react";
 import { subscriptionService } from "../services/subscriptionService";
 
 const {
@@ -72,7 +72,7 @@ export const SubscriptionProvider = ({ children }) => {
   };
 
   // Get active subscription by user ID
-  const getActiveSubscription = async (userId) => {
+  const getActiveSubscription = useCallback(async (userId) => {
     setLoading(true);
     setError(null);
     try {
@@ -87,7 +87,7 @@ export const SubscriptionProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Create subscription
   const createSubscription = async (subscriptionData) => {

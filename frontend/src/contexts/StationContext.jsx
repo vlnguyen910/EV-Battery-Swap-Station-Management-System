@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { stationService } from "../services/stationService";
 
-const { getAllStations: getAllStationsService , getStationById: getStationByIdService } = stationService;
+const { getAllStations: getAllStationsService, getStationById: getStationByIdService } = stationService;
 
 export const StationContext = createContext();
 
@@ -37,8 +37,15 @@ export const StationProvider = ({ children }) => {
         }
     };
 
-    // Fetch all stations on mount
+    // Fetch all stations on mount - ONLY if user is logged in
     useEffect(() => {
+        // Check if user has token before fetching
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found - skipping station fetch on mount');
+            return;
+        }
+
         (async () => {
             setLoading(true);
             setError(null);
@@ -47,6 +54,7 @@ export const StationProvider = ({ children }) => {
                 setStations(data);
                 console.log("Stations data fetched successfully", data);
             } catch (err) {
+                console.error("Error fetching stations on mount:", err);
                 setError(err);
             } finally {
                 setLoading(false);
@@ -55,7 +63,7 @@ export const StationProvider = ({ children }) => {
     }, []);
 
     return (
-        <StationContext.Provider value={{ stations, loading, error, fetchAllStations , getStationById }}>
+        <StationContext.Provider value={{ stations, loading, error, fetchAllStations, getStationById }}>
             {children}
         </StationContext.Provider>
     );

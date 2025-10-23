@@ -1,11 +1,11 @@
 import api from "./api";
 import { API_ENDPOINTS } from "../constants";
 
-//Function to get all reservations
-const getAllReservations = async () => {
+//Function to get all reservations by station ID
+const getReservationsByStationId = async (stationId) => {
   try {
     const response = await api.get(
-      API_ENDPOINTS.RESERVATION.GET_ALL_RESERVATIONS
+      API_ENDPOINTS.RESERVATION.GET_RESERVATION_BY_STATION_ID(stationId)
     );
     return response.data;
   } catch (error) {
@@ -41,9 +41,52 @@ const getReservationById = async (id) => {
   }
 };
 
+// Function to update reservation status
+const updateReservationStatus = async (reservationId, userId, status) => {
+  try {
+    const response = await api.patch(
+      API_ENDPOINTS.RESERVATION.UPDATE_RESERVATION(reservationId),
+      { user_id: userId, status }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating reservation status:", error);
+    throw error;
+  }
+};
+
+// Function to get reservations by user ID
+const getReservationsByUserId = async (userId) => {
+  try {
+    const response = await api.get(`/reservations/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user reservations:", error);
+    throw error;
+  }
+};
+
+// Function to get scheduled reservations (status = "scheduled")
+const getScheduledReservations = async () => {
+  try {
+    const response = await api.get(
+      API_ENDPOINTS.RESERVATION.GET_ALL_RESERVATIONS
+    );
+    const allReservations = response.data;
+    // Filter only scheduled reservations
+    return allReservations.filter((res) => res.status === "scheduled");
+  } catch (error) {
+    console.error("Error fetching scheduled reservations:", error);
+    throw error;
+  }
+};
+
 //Export các hàm dịch vụ
 export const reservationService = {
-  getAllReservations,
+  getReservationsByStationId,
   createReservation,
   getReservationById,
+  updateReservationStatus,
+  getReservationsByUserId,
+  getScheduledReservations,
 };

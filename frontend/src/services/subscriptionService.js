@@ -46,7 +46,12 @@ const getActiveSubscriptionByUserId = async (userId) => {
     const response = await api.get(
       API_ENDPOINTS.SUBSCRIPTION.GET_ACTIVE_BY_USER(userId)
     );
-    return response.data;
+    // Backend returns array, get first active subscription
+    const subscriptions = response.data;
+    if (Array.isArray(subscriptions) && subscriptions.length > 0) {
+      return subscriptions[0];
+    }
+    return null;
   } catch (error) {
     console.error("Error fetching active subscription by user ID:", error);
     throw error;

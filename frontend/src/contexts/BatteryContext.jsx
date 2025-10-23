@@ -1,7 +1,10 @@
 import { createContext, useState, useEffect } from "react";
 import { batteryService } from "../services/batteryService";
 
-const { getAllBatteries: getAllBatteriesService } = batteryService;
+const { getAllBatteries: getAllBatteriesService,
+    getBatteryById: getBatteryByIdService,
+    updateBatteryById: updateBatteryByIdService
+} = batteryService;
 
 export const BatteryContext = createContext();
 
@@ -11,7 +14,7 @@ export const BatteryProvider = ({ children }) => {
     const [error, setError] = useState(null);
 
     // Function to fetch all batteries
-    const fetchAllBatteries = async () => {
+    const getAllBatteries = async () => {
         setLoading(true);
         setError(null);
         try {
@@ -45,6 +48,19 @@ export const BatteryProvider = ({ children }) => {
         }
     };
 
+    const getBatteryById = async (id) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const battery = await getBatteryByIdService(id);
+            return battery;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Function to count available batteries with status "full" by station ID
     const countAvailableBatteriesByStation = (stationId) => {
         if (!stationId || !Array.isArray(batteries)) return 0;
@@ -59,14 +75,18 @@ export const BatteryProvider = ({ children }) => {
         }, 0);
     };
 
-    // Fetch all batteries on mount
-    // Fetch mà không được thì ra chuỗi rỗng
+    // Fetch all batteries on mount - ONLY if user is logged in
     useEffect(() => {
-        fetchAllBatteries();
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found - skipping battery fetch on mount');
+            return;
+        }
+        getAllBatteries();
     }, []);
 
     return (
-        <BatteryContext.Provider value={{ batteries, loading, error, countAvailableBatteriesByStation }}>
+        <BatteryContext.Provider value={{ batteries, loading, error, countAvailableBatteriesByStation, getAllBatteries, getBatteryById }}>
             {children}
         </BatteryContext.Provider>
     );

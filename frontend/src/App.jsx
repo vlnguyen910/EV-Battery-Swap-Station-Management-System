@@ -15,10 +15,12 @@ import Profile from './pages/Profile'
 import Support from './pages/Support'
 import User from './pages/User'
 import StaffDashboard from './components/dashboard/StaffDashboard'
-// import StaffInventory from './components/dashboard/StaffInventory'
+import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
 import DriverDashboard from './components/dashboard/DriverDashboard'
-//import ProtectedRoute from './components/auth/ProtectedRoute'
+import StaffSwapRequests from './components/swap/StaffSwapRequests'
+import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
+// import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
@@ -30,7 +32,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<AuthContainer mode="login" />} />
         <Route path="/register" element={<AuthContainer mode="register" />} />
-        
+
         <Route path="/admin" element={<AdminPage />} />
 
 
@@ -38,8 +40,10 @@ function App() {
         <Route path="/staff" element={<StaffPage />}>
           {/* Route con   */}
           <Route index element={<StaffDashboard />} />
-          {/* <Route path="inventory" element={<StaffInventory />} /> */}
+          <Route path="inventory" element={<StaffInventory />} />
           <Route path="inspection" element={<StaffInspection />} />
+          <Route path="swap-requests" element={<StaffSwapRequests />} />
+          <Route path="manual-swap" element={<ManualSwapTransaction />} />
         </Route>
 
         {/* Driver Routes with Nested Routing */}
