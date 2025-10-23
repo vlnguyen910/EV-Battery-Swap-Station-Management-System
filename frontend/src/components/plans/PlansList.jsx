@@ -1,6 +1,6 @@
 import PlanCard from './PlanCard'
 
-export default function PlansList({ plans, subscriptions, onSubscribe }) {
+export default function PlansList({ plans, subscriptions, onSubscribe, loading }) {
   if (!plans || plans.length === 0) {
     return (
       <div className="bg-white border border-dashed border-gray-200 rounded-lg p-8 text-center">
@@ -20,6 +20,7 @@ export default function PlansList({ plans, subscriptions, onSubscribe }) {
           plan={plan}
           subscribed={subscribedIds.has(String(plan.rawData?.package_id || plan.id))}
           onSubscribe={onSubscribe}
+          loading={loading}
         />
       ))}
     </div>

@@ -4,6 +4,7 @@ import DriverStats from './DriverStats'
 import NearbyStations from './NearbyStations'
 import RecentActivity from './RecentActivity'
 import NeedHelp from './NeedHelp'
+import SwapSuccessDialog from './SwapSuccessDialog'
 import { useAuth, useSubscription } from '../../hooks/useContext';
 import { useState, useEffect } from 'react';
 import { vehicleService } from '../../services/vehicleService';
@@ -57,59 +58,17 @@ export default function DriverDashboard() {
         }
     }, [activeSubscription, user?.id]);
 
-    const handleManualSwap = async () => {
-        // Debug: Log current state
-        console.log('=== Manual Swap Button Clicked ===');
-        console.log('user:', user);
-        console.log('activeSubscription:', activeSubscription);
-        console.log('vehicleData:', vehicleData);
+    const [showSwapSuccess, setShowSwapSuccess] = useState(false);
 
-        // Validate user is logged in
-        if (!user) {
-            alert('Please login to request manual swap');
-            return;
-        }
+    const handleAutoSwap = () => {
+        // TODO: integrate real auto-swap flow; for now, show success dialog
+        setShowSwapSuccess(true);
+    };
 
-        // Validate subscription exists
-        if (!activeSubscription) {
-            alert('You need an active subscription to swap batteries');
-            console.error('No active subscription found for user:', user.id);
-            return;
-        }
-
-        // Get vehicle_id from subscription (no need to fetch vehicle separately!)
-        const vehicleId = activeSubscription.vehicle_id;
-        if (!vehicleId) {
-            alert('No vehicle associated with your subscription');
-            return;
-        }
-
-        try {
-            // Create reservation with status="scheduled"
-            // Use vehicle data from subscription and fetch if available
-            const batteryId = vehicleData?.battery_id || null;
-
-            const reservationData = {
-                user_id: user.id,
-                vehicle_id: vehicleId, // From subscription
-                battery_id: batteryId, // From vehicle data if fetched
-                station_id: 1, // Default station (or let user choose)
-                scheduled_time: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
-                // status will be 'scheduled' by default from backend
-            };
-
-            console.log('Creating reservation:', reservationData);
-            const reservation = await reservationService.createReservation(reservationData);
-            console.log('Reservation created:', reservation);
-
-            alert('Manual swap request sent to station staff! Reservation ID: ' + reservation.reservation_id);
-        } catch (error) {
-            console.error('Error creating reservation:', error);
-            alert('Failed to create swap request: ' + (error.response?.data?.message || error.message));
-        }
-    }; const handleAutoSwap = () => {
-        // Auto swap functionality - to be implemented
-        alert('Auto swap feature coming soon!');
+    const handleManualSwap = () => {
+        // Placeholder: navigate to booking/map or open manual flow
+        // e.g., navigate('/driver/map') if navigation available here
+        console.log('Manual swap clicked');
     };
 
     return (
@@ -134,6 +93,17 @@ export default function DriverDashboard() {
                     <NeedHelp />
                 </div>
             </div>
+
+            <SwapSuccessDialog
+                open={showSwapSuccess}
+                onOpenChange={setShowSwapSuccess}
+                summary={{
+                    user: user?.name || 'Unknown',
+                    station: 'Central Charging Hub', // TODO: bind real selected station if available
+                    vehicle: vehicleData?.model ? `${vehicleData.model}` : (vehicleData?.vin || 'Unknown vehicle'),
+                    plan: activeSubscription?.package_name || 'Active Subscription',
+                }}
+            />
         </div>
     )
 }
