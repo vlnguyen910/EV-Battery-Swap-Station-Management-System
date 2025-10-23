@@ -27,6 +27,16 @@ export default function ManualSwapTransaction() {
     // Staff's station_id from logged-in user
     const staffStationId = user?.station_id ? parseInt(user.station_id) : null;
 
+    // Debug user data
+    console.log('🔍 Debug User Object:', {
+        full_user: user,
+        station_id: user?.station_id,
+        role: user?.role,
+        id: user?.id,
+        name: user?.name
+    });
+    console.log('📍 Staff station_id resolved:', staffStationId);
+
     // Debug: Log URL params
     console.log('URL Params:', {
         reservationId,
@@ -40,11 +50,21 @@ export default function ManualSwapTransaction() {
     const [formData, setFormData] = useState({
         user_id: urlUserId || '', // If Luồng 1, pre-filled; if Luồng 2, staff types
         vehicle_id: urlVehicleId || '',
-        station_id: staffStationId || '',
+        station_id: staffStationId || '', // Always set from staff login
         subscription_id: urlSubscriptionId && urlSubscriptionId !== 'null' && urlSubscriptionId !== 'undefined' ? urlSubscriptionId : '',
         battery_taken_id: '',
         battery_returned_id: urlBatteryReturnedId || '',
     });
+
+    // Update station_id when user changes (but don't trigger loading)
+    useEffect(() => {
+        if (staffStationId && formData.station_id !== staffStationId.toString()) {
+            setFormData(prev => ({
+                ...prev,
+                station_id: staffStationId.toString()
+            }));
+        }
+    }, [staffStationId, formData.station_id]);
 
     // Luồng 2: When staff manually enters user_id, auto-fill vehicle, subscription, returned_battery
     useEffect(() => {
@@ -55,7 +75,7 @@ export default function ManualSwapTransaction() {
 
         const fetchUserData = async () => {
             try {
-                setLoading(true);
+                // No setLoading(true) here to avoid page reload effect
                 const userId = parseInt(formData.user_id);
                 console.log('🔍 Luồng 2: Fetching user data for userId:', userId);
 
@@ -84,15 +104,12 @@ export default function ManualSwapTransaction() {
                 }
             } catch (error) {
                 console.error('❌ Error fetching user data for manual entry:', error);
-            } finally {
-                setLoading(false);
             }
+            // No setLoading(false) here since we didn't set loading to true
         };
 
         fetchUserData();
-    }, [formData.user_id, reservationId, getActiveSubscription]);
-
-    // Luồng 1: Fetch vehicle data from URL params AND subscription if missing
+    }, [formData.user_id, reservationId, getActiveSubscription]);    // Luồng 1: Fetch vehicle data from URL params AND subscription if missing
     useEffect(() => {
         if (!reservationId || !urlVehicleId) {
             return; // Luồng 2 - no initial loading needed
