@@ -7,8 +7,8 @@ export default function WelcomeHeader({ userName = "Alex", onManualSwap, onAutoS
   const GreetingIcon = currentHour < 12 ? Sun : currentHour < 18 ? Cloud : Moon
 
   return (
-    <div className="bg-blue-800 rounded-lg p-6 text-white mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-blue-800 rounded-lg p-4 text-white ">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <GreetingIcon className="w-8 h-8" />
           <div>
@@ -18,7 +18,7 @@ export default function WelcomeHeader({ userName = "Alex", onManualSwap, onAutoS
         </div>
 
         {/* Swap Buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={onAutoSwap}
             className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold transition-colors"
@@ -26,13 +26,13 @@ export default function WelcomeHeader({ userName = "Alex", onManualSwap, onAutoS
             <Zap className="w-5 h-5" />
             Auto Swap
           </button>
-          <button
+          {/* <button
             onClick={onManualSwap}
             className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg font-semibold transition-colors"
           >
             <UserCog className="w-5 h-5" />
             Manual Swap
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

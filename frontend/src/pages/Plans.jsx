@@ -165,8 +165,8 @@ export default function Plans() {
       // Call backend API to create subscription
       await subscriptionService.createSubscription(user.id, plan.rawData.package_id)
       
-      // Refresh subscriptions after successful subscription
-      await fetchUserSubscriptions()
+      // Refresh all data (packages + enriched subscriptions) after successful subscription
+      await fetchAllData()
       
       alert(`Successfully subscribed to ${plan.name}!`)
     } catch (err) {
