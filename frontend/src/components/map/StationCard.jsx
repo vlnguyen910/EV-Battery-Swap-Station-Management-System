@@ -18,24 +18,9 @@ export default function StationCard({ station, onClick }) {
   // };
 
   const handleBookNow = (e) => {
-    e.stopPropagation(); // Prevent triggering onClick
-
-    // Check if user has subscription
-    // if (!checkSubscription()) {
-    //   setShowSubscriptionAlert(true);
-    //   return;
-    // }
-
-    // Proceed with booking if user has subscription
-    const params = new URLSearchParams({
-      stationId: station?.station_id ?? station?.id,
-      name: station?.name,
-      address: station?.address,
-      availableBatteries: station?.batteries ? station.batteries.filter(b => String(b.status || '').toLowerCase() === 'full').length : station?.availableBatteries,
-      totalBatteries: station?.batteries ? station.batteries.length : station?.totalBatteries,
-      status: station?.status
-    });
-    navigate(`/driver/booking?${params.toString()}`);
+    e.stopPropagation();
+    const stationId = station?.station_id ?? station?.id;
+    navigate(`/driver/booking/${stationId}`);
   };
 
   // const handleGoToPlans = () => {

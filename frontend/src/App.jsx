@@ -51,6 +51,7 @@ function App() {
           {/* Route con */}
           <Route index element={<DriverDashboard />} />
           <Route path="booking" element={<BookingContainer />} />
+          <Route path="booking/:stationId" element={<BookingContainer />} />
           <Route path="swap-history" element={<SwapHistory />} />
           <Route path="plans" element={<Plans />} />
           <Route path="map" element={<MapPage />} />
