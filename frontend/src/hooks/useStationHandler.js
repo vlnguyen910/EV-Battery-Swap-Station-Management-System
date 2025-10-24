@@ -3,7 +3,7 @@ import useAsyncHandler from "./useAsyncHandler";
 import { useNavigate } from "react-router-dom";
 
 export function useStationHandler() {
-  const { getAllStations } = useStation();
+  const { getAllStations, getStationById } = useStation();
   const navigate = useNavigate();
 
   const { run: runGetAllStations, loading: getAllStationsLoading } =
@@ -15,8 +15,19 @@ export function useStationHandler() {
       { onError: (e) => console.error("Get all stations error:", e) }
     );
 
+  const { run: runGetStationById, loading: getStationByIdLoading } =
+    useAsyncHandler(
+      async (id) => {
+        const station = await getStationById(id);
+        return station;
+      },
+      { onError: (e) => console.error("Get station by ID error:", e) }
+    );
+
   return {
     runGetAllStations,
     getAllStationsLoading,
+    runGetStationById,
+    getStationByIdLoading,
   };
 }

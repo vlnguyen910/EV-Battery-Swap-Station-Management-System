@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import Booking from '../../pages/Booking';
 import { useAuth, useStation, useReservation, useSubscription } from '../../hooks/useContext';
 
 export default function BookingContainer() {
+  const { stationId } = useParams();
   const { user } = useAuth();
   const { getStationById } = useStation();
   const { createReservation } = useReservation();
@@ -17,7 +18,6 @@ export default function BookingContainer() {
   const [bookingTime, setBookingTime] = useState('');
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
-  const stationId = searchParams.get('stationId');
 
   const [stationInfo, setStationInfo] = useState({
     station_id: stationId ? Number(stationId) : null,

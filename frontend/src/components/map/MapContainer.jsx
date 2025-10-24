@@ -123,7 +123,7 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
       // Clear existing markers and popups
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
-      
+
       // Remove all existing popups
       const existingPopups = mapInstanceRef.current.getContainer().querySelectorAll('.station-popup-container');
       existingPopups.forEach(p => p.remove());
@@ -198,15 +198,20 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
         });
 
         bookBtn.addEventListener('click', () => {
-          const params = new URLSearchParams({
-            stationId: station.station_id ?? station.id,
-            name: station.name,
-            address: station.address,
-            availableBatteries: station.availableBatteries,
-            totalBatteries: station.totalBatteries,
-            status: station.status
+          const stationId = station.station_id ?? station.id;
+          // Pass full station info via location.state
+          navigateRef.current(`/driver/booking/${stationId}`, {
+            state: {
+              station: {
+                station_id: stationId,
+                name: station.name,
+                address: station.address,
+                availableBatteries: station.availableBatteries,
+                totalBatteries: station.totalBatteries,
+                status: station.status
+              }
+            }
           });
-          navigateRef.current(`/driver/booking?${params.toString()}`);
         });
 
         // Append to map container
@@ -224,7 +229,7 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
             const markerEl = marker.getElement();
             const rect = markerEl.getBoundingClientRect();
             const mapRect = mapInstanceRef.current.getContainer().getBoundingClientRect();
-            
+
             popupContainer.style.left = `${rect.left - mapRect.left}px`;
             popupContainer.style.top = `${rect.top - mapRect.top}px`;
           }
