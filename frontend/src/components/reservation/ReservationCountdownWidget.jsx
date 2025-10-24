@@ -71,7 +71,7 @@ export default function ReservationCountdownWidget() {
         }
     };
 
-    const handleAutoSwap = async () => {
+    const handleCancelBooking = async () => {
         if (!activeReservation) return;
 
         try {
@@ -116,9 +116,9 @@ export default function ReservationCountdownWidget() {
 
     return (
         <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${isMinimized ? 'w-72' : 'w-96'}`}>
-            <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl shadow-2xl overflow-hidden">
+            <div className="bg-slate-700 rounded-xl shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="bg-green-700/50 px-4 py-3 flex items-center justify-between border-b border-green-500/30">
+                <div className="bg-zinc-900 px-4 py-3 flex items-center justify-between border-b border-gray-500/30">
                     <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-white" />
                         <span className="text-white font-semibold">Active Reservation</span>
@@ -171,21 +171,15 @@ export default function ReservationCountdownWidget() {
                         </div>
 
                         {/* Swap Buttons */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid p-4">
                             <button
-                                onClick={handleAutoSwap}
-                                className="bg-white/20 hover:bg-white/30 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                onClick={handleCancelBooking}
+                                className="bg-white/20 hover:bg-red-500/50 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                             >
-                                <Zap className="w-4 h-4" />
-                                <span>Auto Swap</span>
+                                <X className="w-4 h-4" />
+                                <span>Cancel Booking</span>
                             </button>
-                            <button
-                                onClick={handleManualSwap}
-                                className="bg-white text-green-700 hover:bg-white/90 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                            >
-                                <UserCog className="w-4 h-4" />
-                                <span>Manual Swap</span>
-                            </button>
+
                         </div>
                     </div>
                 )}
@@ -198,18 +192,11 @@ export default function ReservationCountdownWidget() {
                         </div>
                         <div className="flex gap-2">
                             <button
-                                onClick={handleAutoSwap}
-                                className="bg-white/20 hover:bg-white/30 text-white p-2 rounded transition-colors"
-                                title="Auto Swap"
+                                onClick={handleCancelBooking}
+                                className="bg-white/20 hover:bg-red-500 text-white p-2 rounded transition-colors"
+                                title="Cancel Booking"
                             >
-                                <Zap className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={handleManualSwap}
-                                className="bg-white text-green-700 hover:bg-white/90 p-2 rounded transition-colors"
-                                title="Manual Swap"
-                            >
-                                <UserCog className="w-4 h-4" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

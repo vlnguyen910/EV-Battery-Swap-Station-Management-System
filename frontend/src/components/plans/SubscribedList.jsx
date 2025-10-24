@@ -14,7 +14,6 @@ export default function SubscribedList({ subscriptions }) {
           <div>
             <div className="text-lg font-semibold text-gray-800">{s.name}</div>
             <div className="text-sm text-gray-500">{s.description}</div>
-            <div className="text-sm text-gray-600 mt-1">{s.details}</div>
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-gray-900">{s.price}</div>
