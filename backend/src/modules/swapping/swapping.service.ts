@@ -7,7 +7,7 @@ import { StationsService } from '../stations/stations.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { DatabaseService } from '../database/database.service';
 import { SwapTransactionsService } from '../swap-transactions/swap-transactions.service';
-import { ReservationStatus, SwapTransactionStatus } from '@prisma/client';
+import { BatteryStatus, ReservationStatus, SwapTransactionStatus } from '@prisma/client';
 import { FirstSwapDto } from './dto/first-swap.dto';
 import { ReservationsService } from '../reservations/reservations.service';
 @Injectable()
@@ -64,6 +64,8 @@ export class SwappingService {
             let taken_battery_id: number;
             if (reservation) {
                 taken_battery_id = reservation.battery_id;
+                //update battery status to full
+                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full);
 
                 if (reservation.station_id !== station_id) {
                     throw new BadRequestException(`Reservation station does not match the swapping station`);
