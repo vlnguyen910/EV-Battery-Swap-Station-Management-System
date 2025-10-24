@@ -64,6 +64,7 @@ export class SwappingService {
             let taken_battery_id: number;
             if (reservation) {
                 taken_battery_id = reservation.battery_id;
+
                 //update battery status to full
                 await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full);
 
