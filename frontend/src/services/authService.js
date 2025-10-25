@@ -70,7 +70,7 @@ const createStaffAccount = async (staffInfo) => {
 const updateProfile = async (profileData) => {
   try {
     const response = await api.patch(
-      API_ENDPOINTS.USER.UPDATE_PROFILE,
+      API_ENDPOINTS.USER.UPDATE_USER,
       profileData
     );
     return response.data;

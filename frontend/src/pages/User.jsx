@@ -1,26 +1,66 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
-import { useStation } from '../hooks/useContext';
+import { useStation, useAuth, useSubscription } from '../hooks/useContext';
+import { vehicleService } from '../services/vehicleService';
 import DashboardHeader from '../components/user/DashboardHeader';
 import VehicleStatusCard from '../components/user/VehicleStatusCard';
 import RecentActivityCard from '../components/user/RecentActivityCard';
 import MonthSummaryCard from '../components/user/MonthSummaryCard';
 import NearbyStationsCard from '../components/user/NearbyStationsCard';
 import HelpLinksCard from '../components/user/HelpLinksCard';
+import SwapSuccessDialog from '../components/dashboard/SwapSuccessDialog';
 
 export default function User() {
   const navigate = useNavigate();
   const { stations } = useStation();
+  const { user } = useAuth();
+  const { activeSubscription, getActiveSubscription } = useSubscription();
+  const [vehicleData, setVehicleData] = useState(null);
+  const [showSwapSuccess, setShowSwapSuccess] = useState(false);
 
-  const user = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
+  // Fetch user's active subscription on component mount
+  useEffect(() => {
+    const fetchActiveSubscription = async () => {
+      if (!user?.id) return;
+
+      try {
+        await getActiveSubscription(user.id);
+      } catch (error) {
+        console.error('Error fetching active subscription:', error);
+      }
+    };
+
+    fetchActiveSubscription();
+  }, [user?.id, getActiveSubscription]);
+
+  // Fetch vehicle data when subscription is loaded
+  useEffect(() => {
+    const fetchVehicleData = async () => {
+      if (!activeSubscription?.vehicle_id) return;
+
+      try {
+        console.log('Fetching vehicle with ID:', activeSubscription.vehicle_id);
+        const vehicle = await vehicleService.getVehicleById(activeSubscription.vehicle_id);
+        console.log('Vehicle data fetched:', vehicle);
+        setVehicleData(vehicle);
+      } catch (error) {
+        console.error('Error fetching vehicle data:', error);
+        // If fetch fails, create minimal vehicle data from subscription
+        console.warn('Using vehicle_id from subscription instead');
+        setVehicleData({
+          vehicle_id: activeSubscription.vehicle_id,
+          user_id: user.id,
+          battery_id: null,
+          vin: 'N/A',
+        });
+      }
+    };
+
+    if (activeSubscription) {
+      fetchVehicleData();
     }
-  }, []);
+  }, [activeSubscription, user?.id]);
 
   const headerName = user?.name || 'Driver';
 
@@ -36,11 +76,16 @@ export default function User() {
     }));
   }, [stations]);
 
+  const handleAutoSwap = () => {
+    // TODO: integrate real auto-swap flow; for now, show success dialog
+    setShowSwapSuccess(true);
+  };
+
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Background to match Driver.jsx style */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 hidden"
         style={{
           background: `
             radial-gradient(ellipse 80% 60% at 5% 40%, #ffffffdc, transparent 67%),
@@ -54,20 +99,23 @@ export default function User() {
 
       <div className="min-h-screen relative z-10">
         <Sidebar />
-        <main className="ml-64 px-6 py-6">
+        <main className="px-16 py-5 overflow-auto">
           <div className="max-w-7xl mx-auto">
-            <DashboardHeader name={headerName} />
+            <div className="mb-6">
+              <DashboardHeader name={headerName} onAutoSwap={handleAutoSwap} />
+            </div>
 
             {/* Grid */}
-            <div className="flex grid-cols-2 lg:flex-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+
               {/* Left column */}
-              <div className="lg:col-span-2 flex flex-col gap-6">
+              <div className="lg:col-span-1 flex flex-col gap-6">
                 <VehicleStatusCard onFindStations={() => navigate('/driver/map')} />
                 <RecentActivityCard onViewAll={() => navigate('/driver/reports')} />
               </div>
 
               {/* Right column */}
-              <div className="lg:col-span-1 flex flex-col gap-6">
+              <div className="lg:col-span-1 flex flex-col gap-6 ml-6">
                 <MonthSummaryCard />
 
                 <NearbyStationsCard stations={nearbyStations} onViewAll={() => navigate('/driver/map')} />
@@ -82,6 +130,18 @@ export default function User() {
           </div>
         </main>
       </div>
+
+      {/* Swap Success Dialog */}
+      <SwapSuccessDialog
+        open={showSwapSuccess}
+        onOpenChange={setShowSwapSuccess}
+        summary={{
+          user: user?.name || 'Unknown',
+          station: 'Central Charging Hub', // TODO: bind real selected station if available
+          vehicle: vehicleData?.model ? `${vehicleData.model}` : (vehicleData?.vin || 'Unknown vehicle'),
+          plan: activeSubscription?.package_name || 'Active Subscription',
+        }}
+      />
     </div>
   );
 }

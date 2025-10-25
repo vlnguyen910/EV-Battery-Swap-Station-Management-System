@@ -13,11 +13,10 @@ import SwapHistory from './pages/SwapHistory'
 import Plans from './pages/Plans'
 import Profile from './pages/Profile'
 import Support from './pages/Support'
-import User from './pages/User'
 import StaffDashboard from './components/dashboard/StaffDashboard'
 import StaffInventory from './components/dashboard/StaffInventory'
 import StaffInspection from './components/dashboard/StaffInspection'
-import DriverDashboard from './components/dashboard/DriverDashboard'
+import User from './pages/User'
 import StaffSwapRequests from './components/swap/StaffSwapRequests'
 import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -49,7 +48,7 @@ function App() {
         {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
           {/* Route con */}
-          <Route index element={<DriverDashboard />} />
+          <Route index element={<User />} />
           <Route path="booking" element={<BookingContainer />} />
           <Route path="booking/:stationId" element={<BookingContainer />} />
           <Route path="swap-history" element={<SwapHistory />} />
@@ -57,7 +56,6 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
-          <Route path="user" element={<User />} />
         </Route>
       </Routes>
     </div>

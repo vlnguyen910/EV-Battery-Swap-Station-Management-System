@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useCallback, useMemo } from "react";
 import { reservationService } from "../services/reservationService";
 
 const {
@@ -17,17 +17,13 @@ export const ReservationProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Function to create a new reservation
-    const createReservation = async (reservationData) => {
+    const createReservation = useCallback(async (reservationData) => {
         setLoading(true);
         setError(null);
         try {
             const newReservation = await createReservationService(reservationData);
             setReservations((prev) => [...prev, newReservation]);
-
-            // Set as active reservation (status will be 'scheduled' from backend)
             setActiveReservation(newReservation);
-
             return newReservation;
         } catch (err) {
             console.error('createReservation error', err);
@@ -36,25 +32,25 @@ export const ReservationProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Function to get all reservations by station ID
-    const getAllReservationsByStationId = async (stationId) => {
+    const getAllReservationsByStationId = useCallback(async (stationId) => {
         setLoading(true);
         setError(null);
         try {
             const allReservations = await getReservationsByStationIdService(stationId);
             setReservations(allReservations);
+            return allReservations;
         } catch (err) {
             console.error('fetchAllReservations error', err);
             setError("Failed to fetch reservations");
+            throw err;
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Function to get reservation by ID 
-    const getReservationById = async (id) => {
+    const getReservationById = useCallback(async (id) => {
         setLoading(true);
         setError(null);
         try {
@@ -63,49 +59,44 @@ export const ReservationProvider = ({ children }) => {
         } catch (err) {
             console.error('getReservationById error', err);
             setError("Failed to fetch reservation");
+            throw err;
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Function to get reservations by user ID
-    const getReservationsByUserId = async (userId) => {
+    // NOTE: accepts optional { signal } so caller can abort
+    const getReservationsByUserId = useCallback(async (userId, options = {}) => {
+        const { signal } = options;
         setLoading(true);
         setError(null);
         try {
-            const userReservations = await getReservationsByUserIdService(userId);
+            const userReservations = await getReservationsByUserIdService(userId, { signal });
             setReservations(userReservations);
 
-            // Find active (scheduled) reservation
             const activeRes = userReservations.find(r => r.status === 'scheduled');
-            if (activeRes) {
-                setActiveReservation(activeRes);
-            }
-
+            if (activeRes) setActiveReservation(activeRes);
             return userReservations;
         } catch (err) {
+            // ignore abort/cancel errors
+            const isCanceled = err?.name === 'CanceledError' || err?.message === 'canceled' || err?.code === 'ERR_CANCELED';
+            if (isCanceled) return;
             console.error('getReservationsByUserId error', err);
             setError("Failed to fetch user reservations");
             throw err;
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Function to update reservation status
-    // Status flow: scheduled → completed | cancelled
-    const updateReservationStatus = async (reservationId, userId, status) => {
+    const updateReservationStatus = useCallback(async (reservationId, userId, status) => {
         setLoading(true);
         setError(null);
         try {
             const updated = await updateReservationStatusService(reservationId, userId, status);
-
-            // Update in reservations list
             setReservations(prev =>
                 prev.map(r => r.reservation_id === reservationId ? updated : r)
             );
-
-            // Update active reservation if it's the one being updated
             if (activeReservation?.reservation_id === reservationId) {
                 if (status === 'completed' || status === 'cancelled') {
                     setActiveReservation(null);
@@ -113,7 +104,6 @@ export const ReservationProvider = ({ children }) => {
                     setActiveReservation(updated);
                 }
             }
-
             return updated;
         } catch (err) {
             console.error('updateReservationStatus error', err);
@@ -122,33 +112,39 @@ export const ReservationProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeReservation]);
 
-    // Function to clear active reservation
-    const clearActiveReservation = () => {
+    const clearActiveReservation = useCallback(() => {
         setActiveReservation(null);
-    };
+    }, []);
 
-    // Removed auto-fetch on mount - call fetchAllReservations manually when needed
-    // useEffect(() => {
-    //     fetchAllReservations();
-    // }, []);
+    // stable context value to avoid re-renders in consumers
+    const contextValue = useMemo(() => ({
+        reservations,
+        activeReservation,
+        loading,
+        error,
+        createReservation,
+        getAllReservationsByStationId,
+        getReservationById,
+        getReservationsByUserId,
+        updateReservationStatus,
+        clearActiveReservation,
+    }), [
+        reservations,
+        activeReservation,
+        loading,
+        error,
+        createReservation,
+        getAllReservationsByStationId,
+        getReservationById,
+        getReservationsByUserId,
+        updateReservationStatus,
+        clearActiveReservation
+    ]);
 
     return (
-        <ReservationContext.Provider
-            value={{
-                reservations,
-                activeReservation,
-                loading,
-                error,
-                createReservation,
-                getAllReservationsByStationId,
-                getReservationById,
-                getReservationsByUserId,
-                updateReservationStatus,
-                clearActiveReservation,
-            }}
-        >
+        <ReservationContext.Provider value={contextValue}>
             {children}
         </ReservationContext.Provider>
     );
