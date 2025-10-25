@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useBattery, useAuth, useSubscription } from '../../hooks/useContext';
+import { useBattery, useAuth, useSubscription, usePackage } from '../../hooks/useContext';
 import { swapService } from '../../services/swapService';
 import { vehicleService } from '../../services/vehicleService';
 import { batteryService } from '../../services/batteryService';
@@ -12,6 +12,7 @@ export default function ManualSwapTransaction() {
     const { batteries, refreshBatteries } = useBattery();
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
+    const { packages, getPackageById } = usePackage();
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
@@ -49,11 +50,11 @@ export default function ManualSwapTransaction() {
     });
 
     const [formData, setFormData] = useState({
-        user_id: urlUserId || '', // If Luồng 1, pre-filled; if Luồng 2, staff types
+        user_id: urlUserId || '',
         vehicle_id: urlVehicleId || '',
-        station_id: staffStationId || '', // Always set from staff login
-        subscription_id: urlSubscriptionId && urlSubscriptionId !== 'null' && urlSubscriptionId !== 'undefined' ? urlSubscriptionId : '',
-        // Prefill battery_taken_id from URL if available (Luồng 1)
+        station_id: staffStationId || '',
+        subscription_id: urlSubscriptionId && urlSubscriptionId !== 'null' && urlSubscriptionId !== 'undefined' ? urlSubscriptionId : '', // Keep ID for API
+        subscription_name: _subscriptionName || '', // Add name for display
         battery_taken_id: searchParams.get('batteryId') || '',
         battery_returned_id: urlBatteryReturnedId || '',
     });
@@ -70,30 +71,43 @@ export default function ManualSwapTransaction() {
     }, [staffStationId, formData.station_id]);
 
     // Luồng 2: When staff manually enters user_id, auto-fill vehicle, subscription, returned_battery
+
     useEffect(() => {
-        // Only auto-fill if we DON'T have a reservationId (Luồng 2) AND user_id is filled
         if (reservationId || !formData.user_id) {
-            return; // Don't set loading here - let Luồng 1 handle it
+            return;
         }
 
         const fetchUserData = async () => {
             try {
-                // No setLoading(true) here to avoid page reload effect
                 const userId = parseInt(formData.user_id);
                 console.log('🔍 Luồng 2: Fetching user data for userId:', userId);
 
-                // Get active subscription for user
                 const subscription = await getActiveSubscription(userId);
                 console.log('🔍 getActiveSubscription response:', subscription);
 
                 if (subscription) {
+                    // Resolve package name: prefer backend-provided nested package, otherwise look up from packages list
+                    let packageName = subscription.package?.package_name || subscription.package?.name
+                        || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
+                        || null;
+
+                    // If still not found, try fetching single package by id
+                    if (!packageName && subscription.package_id && typeof getPackageById === 'function') {
+                        try {
+                            const pkg = await getPackageById(subscription.package_id);
+                            packageName = pkg?.package_name || pkg?.name || null;
+                        } catch (pkgErr) {
+                            console.warn('Failed to fetch package by id for subscription:', subscription.package_id, pkgErr);
+                        }
+                    }
+
                     setFormData(prev => ({
                         ...prev,
                         subscription_id: subscription.subscription_id.toString(),
+                        subscription_name: packageName || 'N/A',
                         vehicle_id: subscription.vehicle_id?.toString() || prev.vehicle_id,
                     }));
 
-                    // Get vehicle to fetch battery_returned_id
                     if (subscription.vehicle_id) {
                         const vehicle = await vehicleService.getVehicleById(subscription.vehicle_id);
                         setFormData(prev => ({
@@ -108,14 +122,15 @@ export default function ManualSwapTransaction() {
             } catch (error) {
                 console.error('❌ Error fetching user data for manual entry:', error);
             }
-            // No setLoading(false) here since we didn't set loading to true
         };
 
         fetchUserData();
-    }, [formData.user_id, reservationId, getActiveSubscription]);    // Luồng 1: Fetch vehicle data from URL params AND subscription if missing
+    }, [formData.user_id, reservationId, getActiveSubscription, packages, getPackageById]);
+
+    // 3. Update trong Luồng 1 useEffect (khi có reservationId)
     useEffect(() => {
         if (!reservationId || !urlVehicleId) {
-            return; // Luồng 2 - no initial loading needed
+            return;
         }
 
         const fetchVehicleData = async () => {
@@ -123,7 +138,6 @@ export default function ManualSwapTransaction() {
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
 
-                // Auto-fill battery_returned_id with vehicle's current battery
                 if (vehicle.battery_id) {
                     setFormData(prev => ({
                         ...prev,
@@ -131,16 +145,20 @@ export default function ManualSwapTransaction() {
                     }));
                 }
 
-                // If subscription_id is missing from URL, fetch it manually
                 if (!urlSubscriptionId && urlUserId) {
                     console.log('🔍 Luồng 1: subscription_id missing from URL, fetching for userId:', urlUserId);
                     const subscription = await getActiveSubscription(parseInt(urlUserId));
                     console.log('🔍 Luồng 1: getActiveSubscription response:', subscription);
 
                     if (subscription) {
+                        const packageName = subscription.package?.package_name || subscription.package?.name
+                            || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
+                            || 'N/A';
+
                         setFormData(prev => ({
                             ...prev,
                             subscription_id: subscription.subscription_id.toString(),
+                            subscription_name: packageName,
                         }));
                         console.log('✅ Luồng 1: Updated subscription_id to:', subscription.subscription_id);
                     }
@@ -155,7 +173,7 @@ export default function ManualSwapTransaction() {
         };
 
         fetchVehicleData();
-    }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription]);
+    }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription, packages, getPackageById]);
 
     // If we have a reservationId (Luồng 1), fetch reservation details and prefill battery_taken_id
     useEffect(() => {
@@ -184,7 +202,7 @@ export default function ManualSwapTransaction() {
         };
 
         fetchReservation();
-    }, [reservationId]);
+    }, [reservationId, searchParams]);
 
     // Filter batteries: only show batteries that are 'full' and at staff's station
     const availableBatteries = batteries.filter(
@@ -441,28 +459,28 @@ export default function ManualSwapTransaction() {
                             </div>
                         </div>
 
-                        {/* Subscription ID */}
+                        {/* Subscription name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="subscription_id">
-                                Subscription ID
+                            <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="subscription_name">
+                                Package Name
                             </label>
                             <div className="relative">
                                 <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">card_membership</span>
                                 <input
                                     type="text"
-                                    id="subscription_id"
-                                    name="subscription_id"
-                                    value={formData.subscription_id || 'N/A'}
+                                    id="subscription_name"
+                                    name="subscription_name"
+                                    value={formData.subscription_name || 'N/A'}
                                     onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-2 border rounded-md ${formData.subscription_id
+                                    className={`w-full pl-12 pr-4 py-2 border rounded-md ${formData.subscription_name && formData.subscription_name !== 'N/A'
                                         ? 'bg-gray-50 border-gray-300 text-gray-900'
                                         : 'bg-red-50 border-red-300 text-red-600'
                                         } focus:ring-green-500 focus:border-green-500`}
-                                    placeholder="Enter Subscription ID (Optional)"
+                                    placeholder="Subscription Name"
                                     readOnly
                                 />
                             </div>
-                            {!formData.subscription_id && (
+                            {(!formData.subscription_name || formData.subscription_name === 'N/A') && (
                                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                                     <span className="material-icons text-sm">warning</span>
                                     User must have an active subscription
