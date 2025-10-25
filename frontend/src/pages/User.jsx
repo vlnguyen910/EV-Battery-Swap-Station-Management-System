@@ -85,7 +85,7 @@ export default function User() {
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Background to match Driver.jsx style */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 hidden"
         style={{
           background: `
             radial-gradient(ellipse 80% 60% at 5% 40%, #ffffffdc, transparent 67%),

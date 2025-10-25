@@ -40,8 +40,8 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto p-6 lg:p-10">
+    <div className="max-w-5xl mx-auto p-6">
+      <div className="max-w-5xl ml-8 p-6">
         <ProfileHeader />
         <ProfileStats stats={stats} />
         <PersonalInfoCard user={user} />
