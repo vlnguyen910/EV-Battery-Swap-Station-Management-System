@@ -13,8 +13,8 @@ export default function BookingSuccessView({
   
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8">
         <BookingSuccessHeader />
         
         {/* Station Info & Instructions in 2 columns */}
@@ -26,7 +26,6 @@ export default function BookingSuccessView({
             totalSlots={totalSlots}
             bookingTime={bookingTime}
           />
-          
           <InstructionsCard />
         </div>
 
