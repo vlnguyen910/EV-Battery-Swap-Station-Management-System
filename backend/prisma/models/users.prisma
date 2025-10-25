@@ -1,20 +1,23 @@
 model User {
-  user_id         Int               @id @default(autoincrement())
-  username        String
-  password        String
-  phone           String            @unique
-  email           String            @unique
-  role            Role
-  created_at      DateTime          @default(now())
-  station_id      Int?
-  refresh_token   String?
-  payments        Payment[]
-  Reservation     Reservation[]
-  subscriptions   Subscription[]
-  supports        Support[]
-  SwapTransaction SwapTransaction[]
-  station         Station?          @relation(fields: [station_id], references: [station_id])
-  vehicles        Vehicle[]
+  user_id       Int      @id @default(autoincrement())
+  username      String
+  password      String
+  phone         String   @unique
+  email         String   @unique
+  role          Role
+  created_at    DateTime @default(now())
+  station_id    Int?
+  refresh_token String?
+
+  // Relations
+  payments               Payment[]
+  reservations           Reservation[]
+  subscriptions          Subscription[]
+  supports               Support[]
+  swapTransactions       SwapTransaction[]
+  station                Station?                @relation(fields: [station_id], references: [station_id])
+  vehicles               Vehicle[]
+  batteryTransferTickets BatteryTransferTicket[]
 
   @@map("users")
 }
