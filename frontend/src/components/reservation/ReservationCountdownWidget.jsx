@@ -23,7 +23,7 @@ export default function ReservationCountdownWidget() {
 
         try {
             // Auto-cancel when time expires (scheduled → cancelled)
-            await updateReservationStatus(activeReservation.reservation_id, user.id, 'cancelled');
+            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
             clearActiveReservation();
             alert('Your reservation has expired and been cancelled');
         } catch (error) {
@@ -61,7 +61,7 @@ export default function ReservationCountdownWidget() {
         try {
             // Mark reservation as completed (scheduled → completed)
             // This reservation is already the "swap request" in the new system
-            await updateReservationStatus(activeReservation.reservation_id, user.id, 'completed');
+            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'completed');
 
             clearActiveReservation();
             alert('Reservation completed! Manual swap request is now visible to staff.');
@@ -74,14 +74,16 @@ export default function ReservationCountdownWidget() {
     const handleCancelBooking = async () => {
         if (!activeReservation) return;
 
+        const confirm = window.confirm('Are you sure you want to cancel this reservation?');
+        if (!confirm) return;
+
         try {
-            // Mark reservation as completed (scheduled → completed)
-            await updateReservationStatus(activeReservation.reservation_id, user.id, 'completed');
+            // Cancel reservation (scheduled → cancelled)
+            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
             clearActiveReservation();
-            alert('Reservation completed! Auto swap feature coming soon.');
         } catch (error) {
-            console.error('Failed to process auto swap:', error);
-            alert('Failed to process swap request');
+            console.error('Failed to cancel reservation:', error);
+            alert('Failed to cancel reservation');
         }
     };
 
@@ -93,7 +95,7 @@ export default function ReservationCountdownWidget() {
 
         try {
             // Cancel reservation (scheduled → cancelled)
-            await updateReservationStatus(activeReservation.reservation_id, user.id, 'cancelled');
+            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
             clearActiveReservation();
         } catch (error) {
             console.error('Failed to cancel reservation:', error);
