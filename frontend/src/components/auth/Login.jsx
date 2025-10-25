@@ -2,15 +2,41 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "../../hooks/useContext";
+import { useState, useEffect } from "react";
 import Navigation from "../layout/Navigation";
 
 // Validation schema using Zod
 const loginSchema = z.object({
-  emailOrPhone: z.string().min(1, "Hãy nhập email hoặc số điện thoại"),
+  emailOrPhone: z
+    .string()
+    .min(1, "Vui lòng nhập email hoặc số điện thoại")
+    .refine(
+      (value) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^(?:\+84|0)(?:3[2-9]|5[25689]|7[06-9]|8[1-9]|9[0-46-9])[0-9]{7}$/;
+        return emailRegex.test(value) || phoneRegex.test(value);
+      },
+      { message: "Vui lòng nhập email hoặc số điện thoại hợp lệ" }
+    ),
   password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
 });
 
-export default function Login({ onSubmit, loading, error, success }) {
+export default function Login() {
+  const { login, loading, error, clearError } = useAuth();
+  const [success, setSuccess] = useState(false);
+  const [localError, setLocalError] = useState(null);
+
+  // Clear error khi component mount
+  useEffect(() => {
+    clearError();
+    setLocalError(null);
+    // Ensure the login page is scrolled to top when opened (fixes redirect landing at bottom)
+    if (typeof window !== "undefined" && window.scrollTo) {
+      window.scrollTo(0, 0);
+    }
+  }, [clearError]);
+
   const {
     register,
     handleSubmit,
@@ -19,8 +45,18 @@ export default function Login({ onSubmit, loading, error, success }) {
     resolver: zodResolver(loginSchema),
   });
 
-  const handleLogin = (data) => {
-    onSubmit(data);
+  const handleLogin = async (data) => {
+    clearError(); // Clear error trước khi submit
+    setSuccess(false);
+
+    try {
+      const user = await login(data);
+      if (user) {
+        setSuccess(true);
+      }
+    } catch {
+      // Errors are set in AuthContext (error state). No need to log here.
+    }
   };
 
   return (
@@ -29,7 +65,7 @@ export default function Login({ onSubmit, loading, error, success }) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">hman Power</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Human Power</h2>
             <p className="text-sm text-gray-600 mb-8">
               Đăng nhập vào tài khoản của bạn
             </p>
@@ -40,9 +76,9 @@ export default function Login({ onSubmit, loading, error, success }) {
               Đăng Nhập
             </h3>
 
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{String(error)}</p>
+            {success && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">Đăng nhập thành công!</p>
               </div>
             )}
 
@@ -57,7 +93,7 @@ export default function Login({ onSubmit, loading, error, success }) {
                   {...register("emailOrPhone")}
                   disabled={loading}
                   placeholder="Nhập Email hoặc số điện thoại"
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
                 />
                 {errors.emailOrPhone && (
                   <p className="text-red-500 text-sm mt-1">
@@ -76,7 +112,7 @@ export default function Login({ onSubmit, loading, error, success }) {
                   {...register("password")}
                   disabled={loading}
                   placeholder="Nhập mật khẩu"
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
                 />
                 {errors.password && (
                   <p className="text-red-500 text-sm mt-1">
@@ -84,6 +120,12 @@ export default function Login({ onSubmit, loading, error, success }) {
                   </p>
                 )}
               </div>
+
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -112,9 +154,7 @@ export default function Login({ onSubmit, loading, error, success }) {
                       <path
                         className="opacity-75"
                         fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 
-          5.291A7.962 7.962 0 014 12H0
-          c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
                     Đang đăng nhập...
@@ -140,7 +180,6 @@ export default function Login({ onSubmit, loading, error, success }) {
                   "🔑 Đăng nhập"
                 )}
               </button>
-
             </form>
 
             <div className="text-center mt-6">

@@ -4,13 +4,9 @@ import { API_ENDPOINTS } from "../constants";
 
 //Login function
 const login = async (credentials) => {
-  try {
-    const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
-    return response.data;
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
-  }
+  // Let callers handle errors (they can format and display messages as needed).
+  const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
+  return response.data;
 };
 
 //Logout function
@@ -31,13 +27,9 @@ const logout = async () => {
 
 //Register function
 const register = async (userInfo) => {
-  try {
-    const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userInfo);
-    return response.data;
-  } catch (error) {
-    console.error("Registration error:", error);
-    throw error;
-  }
+  // Let callers handle errors and decide what to display; avoid noisy logs here.
+  const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userInfo);
+  return response.data;
 };
 
 //Create account for staff
