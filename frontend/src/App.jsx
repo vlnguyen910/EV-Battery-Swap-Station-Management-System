@@ -1,8 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
-import Navigation from './components/layout/Navigation'
-import Sidebar from './components/layout/Sidebar'
 import GuestPage from './pages/GuestPage'
-import AuthContainer from './components/containers/AuthContainer'
+import Login from './components/auth/Login'
+import Register from './components/auth/Register'
 import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
 import NotFound from './pages/NotFound'
@@ -29,8 +28,8 @@ function App() {
         <Route path="/driver" element={<Driver />} />
         <Route path="/" element={<GuestPage />} />
         <Route path="*" element={<NotFound />} />
-        <Route path="/login" element={<AuthContainer mode="login" />} />
-        <Route path="/register" element={<AuthContainer mode="register" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         <Route path="/admin" element={<AdminPage />} />
 
