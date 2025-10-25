@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Zap, CheckCircle } from 'lucide-react';
@@ -11,12 +12,25 @@ export default function RecentActivityCard({ items = [], onViewAll }) {
 
   return (
     <Card className="bg-white border-gray-200">
-      <CardHeader className="pb-2 flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-[22px]">Recent Activity</CardTitle>
-          <CardDescription>Latest swap/charge events</CardDescription>
+      <CardHeader className="pb-2">
+        <div className="w-full flex items-start justify-between">
+          <div>
+            <CardTitle className="text-[22px]">Recent Activity</CardTitle>
+            <CardDescription>Latest swap/charge events</CardDescription>
+          </div>
+          <Link
+            to="/driver/reports"
+            onClick={(e) => {
+              if (onViewAll) {
+                e.preventDefault();
+                onViewAll();
+              }
+            }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            View All
+          </Link>
         </div>
-        <Button variant="link" className="px-0" onClick={onViewAll}>View All</Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {recent.map((item, idx) => (

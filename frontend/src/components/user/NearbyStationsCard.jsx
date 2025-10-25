@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { MapPin } from 'lucide-react';
@@ -6,9 +7,23 @@ import { MapPin } from 'lucide-react';
 export default function NearbyStationsCard({ stations = [], onViewAll }) {
   return (
     <Card className="bg-white border-gray-200">
-      <CardHeader className="pb-2 flex-row items-center justify-between">
-        <CardTitle>Nearby Stations</CardTitle>
-        <Button variant="link" className="px-0" onClick={onViewAll}>View All</Button>
+      <CardHeader className="pb-2">
+        <div className="w-full flex items-start justify-between">
+          <CardTitle>Nearby Stations</CardTitle>
+          {/* View All aligned top-right; if onViewAll provided, call it on click */}
+          <Link
+            to="/driver/map"
+            onClick={(e) => {
+              if (onViewAll) {
+                e.preventDefault();
+                onViewAll();
+              }
+            }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            View All
+          </Link>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {stations.map((st) => (
