@@ -21,7 +21,8 @@ const createReservation = async (reservationData) => {
       API_ENDPOINTS.RESERVATION.CREATE_RESERVATION,
       reservationData
     );
-    return response.data;
+    // Backend returns { reservation, battery } – normalize to reservation entity for consumers
+    return response.data?.reservation || response.data;
   } catch (error) {
     console.error("Error creating reservation:", error);
     throw error;
@@ -46,19 +47,21 @@ const updateReservationStatus = async (reservationId, userId, status) => {
   try {
     const response = await api.patch(
       API_ENDPOINTS.RESERVATION.UPDATE_RESERVATION(reservationId),
-      { user_id: userId, status }
+      { user_id: Number(userId), status }
     );
     return response.data;
   } catch (error) {
-    console.error("Error updating reservation status:", error);
+    const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+    console.error("Error updating reservation status:", msg, error?.response?.data || '');
     throw error;
   }
 };
 
 // Function to get reservations by user ID
-const getReservationsByUserId = async (userId) => {
+const getReservationsByUserId = async (userId, options = {}) => {
   try {
-    const response = await api.get(`/reservations/user/${userId}`);
+    const { signal } = options;
+    const response = await api.get(`/reservations/user/${userId}`,{ signal });
     return response.data;
   } catch (error) {
     console.error("Error fetching user reservations:", error);

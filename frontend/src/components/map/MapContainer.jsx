@@ -325,8 +325,8 @@ export default function MapContainer({ stations, onMapReady, userLocation, onLoc
   // };
 
   return (
-    <div className="w-full h-full p-4">
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full relative overflow-hidden">
+    <div className="w-full h-full p-4 bg-hidden rounded-lg">
+      <div className="bg-transparent rounded-lg h-full relative overflow-hidden">
         <div
           ref={mapRef}
           className="w-full h-full rounded-lg"

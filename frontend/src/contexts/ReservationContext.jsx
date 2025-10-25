@@ -21,10 +21,12 @@ export const ReservationProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const newReservation = await createReservationService(reservationData);
-            setReservations((prev) => [...prev, newReservation]);
-            setActiveReservation(newReservation);
-            return newReservation;
+            const created = await createReservationService(reservationData);
+            // created is the reservation entity (normalized in service). If backend shape changes, fallback
+            const reservationEntity = created?.reservation_id ? created : (created?.reservation ?? created);
+            setReservations((prev) => [...prev, reservationEntity]);
+            setActiveReservation(reservationEntity);
+            return reservationEntity;
         } catch (err) {
             console.error('createReservation error', err);
             setError("Failed to create reservation");

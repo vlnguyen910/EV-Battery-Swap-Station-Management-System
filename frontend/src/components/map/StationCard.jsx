@@ -6,31 +6,12 @@ import { useBattery } from '../../hooks/useContext';
 export default function StationCard({ station, onClick }) {
   const navigate = useNavigate();
   const { countAvailableBatteriesByStation } = useBattery();
-  // const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-
-  // Check if user has active subscription
-  // const checkSubscription = () => {
-  //   const subscriptions = localStorage.getItem('subscriptions');
-  //   if (!subscriptions || JSON.parse(subscriptions).length === 0) {
-  //     return false;
-  //   }
-  //   return true;
-  // };
 
   const handleBookNow = (e) => {
     e.stopPropagation();
     const stationId = station?.station_id ?? station?.id;
     navigate(`/driver/booking/${stationId}`);
   };
-
-  // const handleGoToPlans = () => {
-  //   setShowSubscriptionAlert(false);
-  //   navigate('/driver/plans');
-  // };
-
-  // const handleCloseAlert = () => {
-  //   setShowSubscriptionAlert(false);
-  // };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -93,43 +74,6 @@ export default function StationCard({ station, onClick }) {
           </div>
         </div>
       </div>
-
-      {/* Subscription Required Alert Modal */}
-      {/* {showSubscriptionAlert && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <div className="flex items-start mb-4">
-              <div className="flex-shrink-0">
-                <AlertCircle className="w-6 h-6 text-yellow-500" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  Chưa có gói đăng ký
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Bạn cần đăng ký một gói dịch vụ trước khi có thể đặt lịch thay pin.
-                  Vui lòng chọn gói phù hợp với nhu cầu của bạn.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleCloseAlert}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Đóng
-              </button>
-              <button
-                onClick={handleGoToPlans}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Xem gói đăng ký
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
-    </>
+      </>
   );
 }
