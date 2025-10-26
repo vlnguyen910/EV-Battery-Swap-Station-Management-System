@@ -15,9 +15,10 @@ const getAllVehicles = async () => {
 // Get vehicle by user ID function
 const getVehicleByUserId = async (userId) => {
   try {
-    // Backend does not expose a named constant for this route in API_ENDPOINTS,
-    // so call the user-vehicles path directly. The endpoint is /vehicles/user/:userId
-    const response = await api.get(`/vehicles/user/${userId}`);
+    // Backend expects a query parameter on /vehicles: /vehicles?userId=5
+    const response = await api.get(
+      `${API_ENDPOINTS.VEHICLE.GET_ALL_VEHICLES}?userId=${userId}`
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching vehicles by user ID:", error);

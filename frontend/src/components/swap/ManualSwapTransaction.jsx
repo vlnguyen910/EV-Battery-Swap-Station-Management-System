@@ -16,6 +16,7 @@ export default function ManualSwapTransaction() {
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
+    const [userVehicles, setUserVehicles] = useState([]);
 
     // Get data from URL params (passed from staff request list in Luồng 1)
     const reservationId = searchParams.get('reservationId');
@@ -60,6 +61,40 @@ export default function ManualSwapTransaction() {
     });
     const [reservationDetails, setReservationDetails] = useState(null);
     const [apiErrors, setApiErrors] = useState([]);
+
+    // Map backend error responses to friendly UI messages
+    const mapServerErrorToMessage = (resp) => {
+        // Try to normalize message(s) into an array
+        const msgs = [];
+        const raw = resp?.message ?? resp?.error ?? null;
+
+        if (Array.isArray(raw)) {
+            raw.forEach(r => msgs.push(String(r)));
+        } else if (typeof raw === 'string' && raw) {
+            msgs.push(raw);
+        } else if (resp && typeof resp === 'string') {
+            msgs.push(resp);
+        }
+
+        // If there's a specific subscription/vehicle mismatch, return the localized friendly message
+        const subscriptionMismatch = msgs.find(m => typeof m === 'string' && /Subscription with ID/i.test(m));
+        if (subscriptionMismatch) {
+            // Try to get VIN for the selected vehicle
+            const selectedVehicleId = formData.vehicle_id || urlVehicleId;
+            let vin = _vehicleData?.vin || null;
+            if (!vin && selectedVehicleId && Array.isArray(userVehicles)) {
+                const found = userVehicles.find(v => String(v.vehicle_id) === String(selectedVehicleId));
+                vin = found?.vin || found?.plate || null;
+            }
+
+            const idOrVin = vin ? String(vin) : `ID ${selectedVehicleId}`;
+            return [`Xe (${idOrVin}) của người dùng chưa đăng ký gói đổi pin, vui lòng đăng ký gói`];
+        }
+
+        // Fallback: return original messages if any, otherwise a generic message
+        if (msgs.length > 0) return msgs;
+        return ['Đã xảy ra lỗi, vui lòng thử lại hoặc liên hệ bộ phận hỗ trợ.'];
+    };
 
     // Update station_id when user changes (but don't trigger loading)
     useEffect(() => {
@@ -119,6 +154,23 @@ export default function ManualSwapTransaction() {
                     }
                 } else {
                     console.warn('⚠️ No active subscription found for userId:', userId);
+                }
+
+                // Also fetch all vehicles belonging to this user so staff can choose if multiple
+                try {
+                    const vehiclesResp = await vehicleService.getVehicleByUserId(userId);
+                    const vehArr = Array.isArray(vehiclesResp) ? vehiclesResp : (vehiclesResp ? [vehiclesResp] : []);
+                    setUserVehicles(vehArr);
+                    // If we don't have vehicle_id set yet, default to first vehicle (if exists)
+                    if (!formData.vehicle_id && vehArr.length > 0) {
+                        setFormData(prev => ({ ...prev, vehicle_id: String(vehArr[0].vehicle_id) }));
+                        setVehicleData(vehArr[0]);
+                        if (vehArr[0].battery_id) {
+                            setFormData(prev => ({ ...prev, battery_returned_id: String(vehArr[0].battery_id) }));
+                        }
+                    }
+                } catch (vehErr) {
+                    console.warn('Failed to fetch vehicles for user:', vehErr);
                 }
             } catch (error) {
                 console.error('❌ Error fetching user data for manual entry:', error);
@@ -184,6 +236,29 @@ export default function ManualSwapTransaction() {
         fetchVehicleData();
     }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription, packages, getPackageById]);
 
+    // When vehicle_id changes (manual selection), fetch its details so we can set battery_returned_id and vehicleData
+    useEffect(() => {
+        if (!formData.vehicle_id) return;
+        // avoid refetch during reservation flow where we already fetched
+        if (reservationId && urlVehicleId) return;
+
+        const fetchVehicle = async () => {
+            try {
+                const vid = parseInt(formData.vehicle_id);
+                if (isNaN(vid)) return;
+                const vehicle = await vehicleService.getVehicleById(vid);
+                setVehicleData(vehicle);
+                if (vehicle?.battery_id) {
+                    setFormData(prev => ({ ...prev, battery_returned_id: String(vehicle.battery_id) }));
+                }
+            } catch (err) {
+                console.warn('Failed to fetch vehicle on vehicle_id change:', err);
+            }
+        };
+
+        fetchVehicle();
+    }, [formData.vehicle_id, reservationId, urlVehicleId]);
+
     // If we have a reservationId (Luồng 1), fetch reservation details and prefill battery_taken_id
     useEffect(() => {
         if (!reservationId) return;
@@ -222,14 +297,25 @@ export default function ManualSwapTransaction() {
     }, [reservationId, searchParams]);
 
     // Filter batteries: only show batteries that are 'full' and at staff's station
-    const availableBatteries = batteries.filter(
-        b => b.status === 'full' && staffStationId && b.station_id === staffStationId
-    );
+    const availableBatteries = batteries.filter(b => {
+        if (!b || b.status !== 'full' || !staffStationId || b.station_id !== staffStationId) return false;
+        // If we have vehicle data, ensure battery model/type match vehicle's required model/type
+        if (_vehicleData && (_vehicleData.battery_model || _vehicleData.battery_type)) {
+            return b.model === _vehicleData.battery_model && b.type === _vehicleData.battery_type;
+        }
+        return true;
+    });
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+        // Clear server-side API errors when the staff changes critical fields
+        if (name === 'vehicle_id' || name === 'user_id' || name === 'battery_taken_id') {
+            setApiErrors([]);
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
     };
 
@@ -251,114 +337,64 @@ export default function ManualSwapTransaction() {
 
             const swapPayload = { user_id: Number(userIdPayload), station_id: Number(stationIdPayload) };
 
-            // For reservation flow we also call the automatic swapping endpoint and let server handle details.
+            // If staff explicitly selected a vehicle (manual flow), use the direct create endpoint
+            // so the chosen vehicle is used. Otherwise use automatic swap which resolves vehicle server-side.
+            console.log('Determining swap method. reservationId:', reservationId, 'vehicle selected:', formData.vehicle_id);
 
-            console.log('Creating swap transaction payload:', swapPayload);
-            console.log('Request payload (stringified):', JSON.stringify(swapPayload, null, 2));
-
-            // Call real API to create swap transaction
             let created = false;
             let createdResp = null;
-            try {
-                // Use SwapContext.swapBatteries which calls the automatic-swap endpoint
-                const resp = await swapBatteries(swapPayload);
-                console.log('Swap transaction created via swapping endpoint:', resp);
-                created = true;
-                createdResp = resp;
 
-                // If this swap was created to satisfy an existing reservation (Luồng 1),
-                // mark the reservation as completed in the reservation context so UI lists update.
-                if (reservationId) {
-                    try {
-                        const resId = parseInt(reservationId);
-                        // Determine user id to send to reservation update: prefer URL param or form, fallback to logged-in user
-                        const userIdForUpdate = parseInt(urlUserId || formData.user_id || user?.id);
-                        if (!isNaN(resId) && !isNaN(userIdForUpdate)) {
-                            console.log(`Updating reservation ${resId} status -> completed (user ${userIdForUpdate})`);
-                            await updateReservationStatus(resId, userIdForUpdate, 'completed');
-                        } else {
-                            console.warn('Cannot update reservation status - missing reservationId or userId', { reservationId, userIdForUpdate });
-                        }
-                    } catch (resUpdateErr) {
-                        // Don't block the success flow if reservation update fails; show a non-blocking error
-                        console.warn('Failed to update reservation status after creating swap:', resUpdateErr);
-                        // Surface message to user but continue navigation
-                        setApiErrors(prev => [...prev, 'Swap created but failed to update reservation status. Please refresh the requests list.']);
-                    }
+            if (!reservationId && formData.vehicle_id) {
+                // Manual flow with staff-selected vehicle: build full payload for createSwapTransaction
+                const swapData = {
+                    user_id: Number(formData.user_id) || Number(urlUserId) || Number(user?.id),
+                    vehicle_id: Number(formData.vehicle_id),
+                    station_id: Number(formData.station_id) || Number(staffStationId),
+                    subscription_id: formData.subscription_id ? Number(formData.subscription_id) : undefined,
+                    battery_taken_id: formData.battery_taken_id ? Number(formData.battery_taken_id) : undefined,
+                    battery_returned_id: formData.battery_returned_id ? Number(formData.battery_returned_id) : undefined,
+                    status: 'completed',
+                };
+
+                console.log('Creating swap transaction via direct create endpoint with payload:', swapData);
+
+                try {
+                    const resp = await createSwapTransaction(swapData);
+                    console.log('Swap transaction created via createSwapTransaction:', resp);
+                    created = true;
+                    createdResp = resp;
+                } catch (createErr) {
+                    console.error('Swap creation failed (createSwapTransaction):', createErr);
+                    const resp = createErr?.response?.data;
+                    setApiErrors(mapServerErrorToMessage(resp));
+                    throw createErr;
                 }
-            } catch (createErr) {
-                console.error('Swap creation failed (swapping endpoint):', createErr);
-                // Try to extract validation messages from backend and show inline
-                const resp = createErr?.response?.data;
-                const messages = resp?.message;
-                if (Array.isArray(messages)) {
-                    setApiErrors(messages);
-                } else if (typeof messages === 'string' && messages.length > 0) {
-                    setApiErrors([messages]);
-                } else if (resp?.error) {
-                    setApiErrors([String(resp.error)]);
-                } else if (createErr?.message) {
-                    setApiErrors([String(createErr.message)]);
-                }
+            } else {
+                // Reservation flow or no vehicle selected: call automatic swap endpoint
+                console.log('Creating swap transaction via automatic swap with payload:', swapPayload);
+                try {
+                    const resp = await swapBatteries(swapPayload);
+                    console.log('Swap transaction created via swapping endpoint:', resp);
+                    created = true;
+                    createdResp = resp;
 
-                // If backend complains about missing fields, attempt to resolve them and retry once
-                const needVehicle = messages && messages.some && messages.some(m => /vehicle_id/i.test(m));
-                const needBatteryTaken = messages && messages.some && messages.some(m => /battery_taken_id/i.test(m));
-                const needSubscription = messages && messages.some && messages.some(m => /subscription_id/i.test(m));
-                const needStatus = messages && messages.some && messages.some(m => /status/i.test(m));
-
-                if (needVehicle || needBatteryTaken || needSubscription || needStatus) {
-                    try {
-                        const retryData = { ...swapPayload };
-                        const userId = parseInt(formData.user_id) || parseInt(urlUserId) || user?.id;
-
-                        // Try to fetch active subscription
+                    if (reservationId) {
                         try {
-                            const sub = await getActiveSubscription(userId);
-                            if (sub) retryData.subscription_id = parseInt(sub.subscription_id || sub.id || sub.subscriptionId);
-                        } catch (sErr) {
-                            console.warn('Retry: failed to fetch subscription:', sErr);
-                        }
-
-                        // Try to fetch user's vehicles
-                        try {
-                            const vehicles = await vehicleService.getVehicleByUserId(userId);
-                            // vehicleService may return array or single - normalize
-                            const vehArr = Array.isArray(vehicles) ? vehicles : (vehicles ? [vehicles] : []);
-                            if (vehArr.length > 0) {
-                                retryData.vehicle_id = parseInt(vehArr[0].vehicle_id || vehArr[0].id || vehArr[0].vehicleId);
-                                // if vehicle has battery, use it as returned battery
-                                if (vehArr[0].battery_id) retryData.battery_returned_id = parseInt(vehArr[0].battery_id);
+                            const resId = parseInt(reservationId);
+                            const userIdForUpdate = parseInt(urlUserId || formData.user_id || user?.id);
+                            if (!isNaN(resId) && !isNaN(userIdForUpdate)) {
+                                console.log(`Updating reservation ${resId} status -> completed (user ${userIdForUpdate})`);
+                                await updateReservationStatus(resId, userIdForUpdate, 'completed');
                             }
-                        } catch (vErr) {
-                            console.warn('Retry: failed to fetch vehicles for user:', vErr);
+                        } catch (resUpdateErr) {
+                            console.warn('Failed to update reservation status after creating swap:', resUpdateErr);
+                            setApiErrors(prev => [...prev, 'Swap created but failed to update reservation status. Please refresh the requests list.']);
                         }
-
-                        // Ensure we have a battery_taken_id: prefer formData, otherwise pick first available full battery
-                        if (!retryData.battery_taken_id) {
-                            if (formData.battery_taken_id) retryData.battery_taken_id = parseInt(formData.battery_taken_id);
-                            else if (availableBatteries.length > 0) retryData.battery_taken_id = Number(availableBatteries[0].battery_id);
-                        }
-
-                        // Keep retryData.battery_returned_id if resolved; backend will store it or return validation error.
-
-                        // Ensure status
-                        retryData.status = 'completed';
-
-                        console.log('Retrying swap creation with resolved fields:', retryData);
-                        const retryResp = await createSwapTransaction(retryData);
-                        console.log('Retry successful:', retryResp);
-                        created = true;
-                        createdResp = retryResp;
-
-                        // On retry success, proceed to post-success steps (refresh and reservation update below)
-                    } catch (retryErr) {
-                        console.error('Retry attempt failed:', retryErr);
-                        // leave apiErrors as set above and fall through to outer catch
-                        throw createErr;
                     }
-                } else {
-                    // rethrow so outer catch also logs
+                } catch (createErr) {
+                    console.error('Swap creation failed (swapping endpoint):', createErr);
+                    const resp = createErr?.response?.data;
+                    setApiErrors(mapServerErrorToMessage(resp));
                     throw createErr;
                 }
             }
@@ -396,19 +432,8 @@ export default function ManualSwapTransaction() {
             console.error('Error response data:', error.response?.data);
             console.error('Error response message:', error.response?.data?.message);
 
-            if (error.response?.data?.message) {
-                // If backend returned array of messages, set them for rendering
-                const m = error.response.data.message;
-                if (Array.isArray(m)) {
-                    setApiErrors(m);
-                } else {
-                    setApiErrors([String(m)]);
-                }
-            } else if (error.response?.data?.error) {
-                setApiErrors([String(error.response.data.error)]);
-            } else if (error.message) {
-                setApiErrors([String(error.message)]);
-            }
+            // Map server response to friendly messages
+            setApiErrors(mapServerErrorToMessage(error.response?.data));
 
             console.error('Final error message(s):', apiErrors.length ? apiErrors : error.message);
         }
@@ -554,15 +579,36 @@ export default function ManualSwapTransaction() {
                                     </label>
                                     <div className="relative">
                                         <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">electric_scooter</span>
-                                        <input
-                                            type="text"
-                                            id="vehicle_id"
-                                            name="vehicle_id"
-                                            value={formData.vehicle_id}
-                                            onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
-                                            readOnly
-                                        />
+                                        {reservationId ? (
+                                            <input
+                                                type="text"
+                                                id="vehicle_id"
+                                                name="vehicle_id"
+                                                value={formData.vehicle_id}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                                readOnly
+                                            />
+                                        ) : (
+                                            <select
+                                                id="vehicle_id"
+                                                name="vehicle_id"
+                                                value={formData.vehicle_id}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                            >
+                                                <option value="">Select vehicle...</option>
+                                                {userVehicles && userVehicles.length > 0 ? (
+                                                    userVehicles.map(v => (
+                                                        <option key={v.vehicle_id} value={v.vehicle_id}>
+                                                            {`VEH${String(v.vehicle_id).padStart(3, '0')} ${v.vin ? `- ${v.vin}` : v.plate ? `- ${v.plate}` : ''}`}
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option value="">No vehicles found for this user</option>
+                                                )}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
@@ -706,16 +752,21 @@ export default function ManualSwapTransaction() {
                                 >
                                     Cancel
                                 </button>
-                                <button
-                                    type="submit"
-                                    disabled={!formData.user_id || !formData.station_id}
-                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.user_id && formData.station_id
-                                        ? 'bg-green-600 text-white hover:bg-green-700'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        }`}>
-                                    <span className="material-icons">add_circle_outline</span>
-                                    Create Transaction
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    {!reservationId && availableBatteries.length === 0 && (
+                                        <p className="text-sm text-red-600 mr-2">No compatible full batteries available at this station for the selected vehicle.</p>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={!formData.user_id || !formData.station_id || (!reservationId && availableBatteries.length === 0)}
+                                        className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.user_id && formData.station_id && (reservationId || availableBatteries.length > 0)
+                                            ? 'bg-green-600 text-white hover:bg-green-700'
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            }`}>
+                                        <span className="material-icons">add_circle_outline</span>
+                                        Create Transaction
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
