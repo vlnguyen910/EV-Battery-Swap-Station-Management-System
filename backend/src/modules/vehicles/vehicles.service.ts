@@ -1,13 +1,18 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
 import { VehicleStatus } from '@prisma/client';
-import { stat } from 'fs';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly databaseService: DatabaseService) { }
+  private readonly logger = new Logger(VehiclesService.name);
+
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly userService: UsersService
+  ) { }
 
   async create(createVehicleDto: CreateVehicleDto) {
     try {
@@ -138,6 +143,23 @@ export class VehiclesService {
       return await tx.vehicle.update({
         where: { vehicle_id },
         data: { battery_id: null },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async assignVehicleToUser(
+    assignVehicleDto: { vin: string; user_id: number },
+  ) {
+    try {
+      await this.userService.findOneById(assignVehicleDto.user_id); // Check if user exists
+      await this.findByVin(assignVehicleDto.vin); // Check if vehicle exists
+
+      this.logger.log(`Assigned Vehicle with VIN ${assignVehicleDto.vin} to User with ID ${assignVehicleDto.user_id}`);
+      return await this.databaseService.vehicle.update({
+        where: { vin: assignVehicleDto.vin },
+        data: { user_id: assignVehicleDto.user_id },
       });
     } catch (error) {
       throw error;
