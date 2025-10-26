@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
     GET_BY_PRICE_RANGE: "/battery-service-packages/price-range",
     GET_BY_DURATION: (days) => `/battery-service-packages/duration/${days}`,
     GET_BY_NAME: (name) => `/battery-service-packages/name/${name}`,
-    GET_PACKAGE: (id) => `/battery-service-packages/${id}`,
+    GET_PACKAGE_BY_ID: (id) => `/battery-service-packages/${id}`,
     UPDATE_PACKAGE: (id) => `/battery-service-packages/${id}`,
     ACTIVATE_PACKAGE: (id) => `/battery-service-packages/${id}/activate`,
     DEACTIVATE_PACKAGE: (id) => `/battery-service-packages/${id}/deactivate`,

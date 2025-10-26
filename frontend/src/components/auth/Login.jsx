@@ -76,12 +76,6 @@ export default function Login() {
               Đăng Nhập
             </h3>
 
-            {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">Đăng nhập thành công!</p>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit(handleLogin)} className="space-y-6">
               {/* Email Input */}
               <div>
@@ -120,6 +114,12 @@ export default function Login() {
                   </p>
                 )}
               </div>
+
+              {success && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-600">Đăng nhập thành công!</p>
+                </div>
+              )}
 
               {error && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">

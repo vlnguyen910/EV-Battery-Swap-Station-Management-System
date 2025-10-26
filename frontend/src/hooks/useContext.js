@@ -6,6 +6,7 @@ import { ReservationContext } from "../contexts/ReservationContext";
 import { PackageContext } from "../contexts/PackageContext";
 import { SubscriptionContext } from "../contexts/SubscriptionContext";
 import { VehicleContext } from "../contexts/VehicleContext";
+import { SwapContext } from "../contexts/SwapContext";
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -32,4 +33,8 @@ export function useSubscription() {
 
 export function useVehicle() {
   return useContext(VehicleContext);
+}
+
+export function useSwap() {
+  return useContext(SwapContext);
 }

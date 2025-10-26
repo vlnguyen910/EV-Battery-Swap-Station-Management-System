@@ -24,9 +24,15 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await createSwapTransactionService(swapData);
+            // If backend returns the created swap object under `swapTransaction`, use it.
+            const created = response?.swapTransaction || response;
+            // prepend to local list so UI reflects newest transaction immediately
+            setSwapTransaction(prev => [created, ...prev]);
             return response;
         } catch (error) {
             setError(error);
+            // propagate error so callers (UI) can react to failures
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -41,6 +47,7 @@ export const SwapProvider = ({ children }) => {
             return response;
         } catch (error) {
             setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -53,10 +60,19 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await updateSwapTransactionService(transactionId, updateData);
-            setSwapTransaction([...swapTransaction, response]);
+            // replace existing item in state if present, otherwise append
+            setSwapTransaction(prev => {
+                const updatedItem = response?.swapTransaction || response;
+                const idx = prev.findIndex(t => String(t.transaction_id || t.id) === String(transactionId));
+                if (idx === -1) return [updatedItem, ...prev];
+                const copy = [...prev];
+                copy[idx] = updatedItem;
+                return copy;
+            });
             return response;
         } catch (error) {
             setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -69,9 +85,12 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await getAllSwapTransactionsService();
+            // store fetched histories in local state
+            setSwapTransaction(Array.isArray(response) ? response : (response?.data || []));
             return response;
         } catch (error) {
             setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
