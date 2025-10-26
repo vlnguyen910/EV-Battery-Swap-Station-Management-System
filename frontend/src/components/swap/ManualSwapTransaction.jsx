@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useBattery, useAuth, useSubscription, usePackage, useSwap } from '../../hooks/useContext';
+import { useBattery, useAuth, useSubscription, usePackage, useSwap, useReservation } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
 
@@ -12,6 +12,7 @@ export default function ManualSwapTransaction() {
     const { getActiveSubscription } = useSubscription();
     const { packages, getPackageById } = usePackage();
     const { createSwapTransaction } = useSwap();
+    const { updateReservationStatus } = useReservation();
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
@@ -311,6 +312,27 @@ export default function ManualSwapTransaction() {
                 // Use SwapContext so local state is updated consistently
                 const resp = await createSwapTransaction(swapData);
                 console.log('Swap transaction created via context/service:', resp);
+
+                // If this swap was created to satisfy an existing reservation (Luồng 1),
+                // mark the reservation as completed in the reservation context so UI lists update.
+                if (reservationId) {
+                    try {
+                        const resId = parseInt(reservationId);
+                        // Determine user id to send to reservation update: prefer URL param or form, fallback to logged-in user
+                        const userIdForUpdate = parseInt(urlUserId || formData.user_id || user?.id);
+                        if (!isNaN(resId) && !isNaN(userIdForUpdate)) {
+                            console.log(`Updating reservation ${resId} status -> completed (user ${userIdForUpdate})`);
+                            await updateReservationStatus(resId, userIdForUpdate, 'completed');
+                        } else {
+                            console.warn('Cannot update reservation status - missing reservationId or userId', { reservationId, userIdForUpdate });
+                        }
+                    } catch (resUpdateErr) {
+                        // Don't block the success flow if reservation update fails; show a non-blocking error
+                        console.warn('Failed to update reservation status after creating swap:', resUpdateErr);
+                        // Surface message to user but continue navigation
+                        setApiErrors(prev => [...prev, 'Swap created but failed to update reservation status. Please refresh the requests list.']);
+                    }
+                }
             } catch (createErr) {
                 console.error('Swap creation failed:', createErr);
                 // Try to extract validation messages from backend and show inline
