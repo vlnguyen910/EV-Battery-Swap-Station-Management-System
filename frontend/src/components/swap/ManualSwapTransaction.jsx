@@ -11,7 +11,7 @@ export default function ManualSwapTransaction() {
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
     const { packages, getPackageById } = usePackage();
-    const { createSwapTransaction } = useSwap();
+    const { createSwapTransaction, swapBatteries } = useSwap();
     const { updateReservationStatus } = useReservation();
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
@@ -236,82 +236,35 @@ export default function ManualSwapTransaction() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate subscription_id
-        if (!formData.subscription_id || formData.subscription_id === 'undefined') {
-            alert('Subscription ID is required. User must have an active subscription.');
-            return;
-        }
-
+        // For both flows we now call the backend swapping endpoint which accepts only {user_id, station_id}
         try {
             // clear previous API errors
             setApiErrors([]);
-            // Prepare swap transaction data for API
 
-            // Only send minimal payload by default. For Luồng 1 (reservation flow) the backend
-            // currently expects certain fields to be present (vehicle_id, battery_taken_id,
-            // subscription_id and status). Include them when reservationId is provided.
-            const swapData = {
-                user_id: parseInt(formData.user_id),
-                station_id: parseInt(formData.station_id),
-            };
+            const userIdPayload = parseInt(formData.user_id) || parseInt(urlUserId) || user?.id;
+            const stationIdPayload = parseInt(formData.station_id) || staffStationId;
 
-            // If this request is handling an existing reservation (Luồng 1), include required fields
-            // so backend validations pass. We do NOT send reservation_id (backend rejects it).
-            if (reservationId) {
-                // Try to derive required values from reservationDetails or formData
-                const vehicleId = formData.vehicle_id ? parseInt(formData.vehicle_id) : (reservationDetails?.vehicle_id ? parseInt(reservationDetails.vehicle_id) : (reservationDetails?.vehicle?.vehicle_id ? parseInt(reservationDetails.vehicle.vehicle_id) : null));
-                const subscriptionId = formData.subscription_id ? parseInt(formData.subscription_id) : (reservationDetails?.subscription_id ? parseInt(reservationDetails.subscription_id) : null);
-
-                // battery id can be in multiple shapes: reservation.battery_id or reservation.battery.battery_id
-                let batteryTakenId = null;
-                if (reservationDetails?.battery_id) batteryTakenId = parseInt(reservationDetails.battery_id);
-                else if (reservationDetails?.battery?.battery_id) batteryTakenId = parseInt(reservationDetails.battery.battery_id);
-                else if (formData.battery_taken_id) batteryTakenId = parseInt(formData.battery_taken_id);
-
-                const batteryReturnedId = formData.battery_returned_id ? parseInt(formData.battery_returned_id) : null;
-
-                // Validate required presence
-                const missing = [];
-                if (!vehicleId) missing.push('vehicle_id is required for reservation processing');
-                if (!batteryTakenId) missing.push('battery_taken_id is required for reservation processing');
-                if (!subscriptionId) missing.push('subscription_id is required for reservation processing');
-
-                // If any missing, show errors and abort early
-                if (missing.length > 0) {
-                    setApiErrors(missing);
-                    return;
-                }
-
-                // Ensure the chosen battery is currently full at this station
-                const chosenBattery = availableBatteries.find(b => Number(b.battery_id) === Number(batteryTakenId));
-                if (!chosenBattery) {
-                    if (availableBatteries.length > 0) {
-                        // Auto-select the first available full battery to satisfy backend
-                        const auto = availableBatteries[0];
-                        batteryTakenId = Number(auto.battery_id);
-                        // Update formData so UI reflects selection
-                        setFormData(prev => ({ ...prev, battery_taken_id: String(batteryTakenId) }));
-                    } else {
-                        setApiErrors(['No full batteries currently available at this station.']);
-                        return;
-                    }
-                }
-
-                swapData.vehicle_id = vehicleId;
-                swapData.subscription_id = subscriptionId;
-                swapData.battery_taken_id = batteryTakenId;
-                if (batteryReturnedId) swapData.battery_returned_id = batteryReturnedId;
-                swapData.status = 'completed';
+            if (isNaN(userIdPayload) || isNaN(stationIdPayload)) {
+                setApiErrors(['user_id and station_id are required']);
+                return;
             }
 
-            console.log('Creating swap transaction:', swapData);
-            console.log('Request payload (stringified):', JSON.stringify(swapData, null, 2));
+            const swapPayload = { user_id: Number(userIdPayload), station_id: Number(stationIdPayload) };
+
+            // For reservation flow we also call the automatic swapping endpoint and let server handle details.
+
+            console.log('Creating swap transaction payload:', swapPayload);
+            console.log('Request payload (stringified):', JSON.stringify(swapPayload, null, 2));
 
             // Call real API to create swap transaction
+            let created = false;
+            let createdResp = null;
             try {
-                // Use SwapContext so local state is updated consistently
-                const resp = await createSwapTransaction(swapData);
-                console.log('Swap transaction created via context/service:', resp);
+                // Use SwapContext.swapBatteries which calls the automatic-swap endpoint
+                const resp = await swapBatteries(swapPayload);
+                console.log('Swap transaction created via swapping endpoint:', resp);
+                created = true;
+                createdResp = resp;
 
                 // If this swap was created to satisfy an existing reservation (Luồng 1),
                 // mark the reservation as completed in the reservation context so UI lists update.
@@ -334,7 +287,7 @@ export default function ManualSwapTransaction() {
                     }
                 }
             } catch (createErr) {
-                console.error('Swap creation failed:', createErr);
+                console.error('Swap creation failed (swapping endpoint):', createErr);
                 // Try to extract validation messages from backend and show inline
                 const resp = createErr?.response?.data;
                 const messages = resp?.message;
@@ -347,8 +300,81 @@ export default function ManualSwapTransaction() {
                 } else if (createErr?.message) {
                     setApiErrors([String(createErr.message)]);
                 }
-                // rethrow so outer catch also logs
-                throw createErr;
+
+                // If backend complains about missing fields, attempt to resolve them and retry once
+                const needVehicle = messages && messages.some && messages.some(m => /vehicle_id/i.test(m));
+                const needBatteryTaken = messages && messages.some && messages.some(m => /battery_taken_id/i.test(m));
+                const needSubscription = messages && messages.some && messages.some(m => /subscription_id/i.test(m));
+                const needStatus = messages && messages.some && messages.some(m => /status/i.test(m));
+
+                if (needVehicle || needBatteryTaken || needSubscription || needStatus) {
+                    try {
+                        const retryData = { ...swapPayload };
+                        const userId = parseInt(formData.user_id) || parseInt(urlUserId) || user?.id;
+
+                        // Try to fetch active subscription
+                        try {
+                            const sub = await getActiveSubscription(userId);
+                            if (sub) retryData.subscription_id = parseInt(sub.subscription_id || sub.id || sub.subscriptionId);
+                        } catch (sErr) {
+                            console.warn('Retry: failed to fetch subscription:', sErr);
+                        }
+
+                        // Try to fetch user's vehicles
+                        try {
+                            const vehicles = await vehicleService.getVehicleByUserId(userId);
+                            // vehicleService may return array or single - normalize
+                            const vehArr = Array.isArray(vehicles) ? vehicles : (vehicles ? [vehicles] : []);
+                            if (vehArr.length > 0) {
+                                retryData.vehicle_id = parseInt(vehArr[0].vehicle_id || vehArr[0].id || vehArr[0].vehicleId);
+                                // if vehicle has battery, use it as returned battery
+                                if (vehArr[0].battery_id) retryData.battery_returned_id = parseInt(vehArr[0].battery_id);
+                            }
+                        } catch (vErr) {
+                            console.warn('Retry: failed to fetch vehicles for user:', vErr);
+                        }
+
+                        // Ensure we have a battery_taken_id: prefer formData, otherwise pick first available full battery
+                        if (!retryData.battery_taken_id) {
+                            if (formData.battery_taken_id) retryData.battery_taken_id = parseInt(formData.battery_taken_id);
+                            else if (availableBatteries.length > 0) retryData.battery_taken_id = Number(availableBatteries[0].battery_id);
+                        }
+
+                        // Keep retryData.battery_returned_id if resolved; backend will store it or return validation error.
+
+                        // Ensure status
+                        retryData.status = 'completed';
+
+                        console.log('Retrying swap creation with resolved fields:', retryData);
+                        const retryResp = await createSwapTransaction(retryData);
+                        console.log('Retry successful:', retryResp);
+                        created = true;
+                        createdResp = retryResp;
+
+                        // On retry success, proceed to post-success steps (refresh and reservation update below)
+                    } catch (retryErr) {
+                        console.error('Retry attempt failed:', retryErr);
+                        // leave apiErrors as set above and fall through to outer catch
+                        throw createErr;
+                    }
+                } else {
+                    // rethrow so outer catch also logs
+                    throw createErr;
+                }
+            }
+
+            // If swap was created (initial or retry) and this was a reservation flow, update reservation status now
+            if (created && reservationId) {
+                try {
+                    const resId = parseInt(reservationId);
+                    const userIdForUpdate = parseInt(urlUserId || formData.user_id || user?.id);
+                    if (!isNaN(resId) && !isNaN(userIdForUpdate)) {
+                        await updateReservationStatus(resId, userIdForUpdate, 'completed');
+                    }
+                } catch (resUpdateErr) {
+                    console.warn('Failed to update reservation status after creating swap (post-retry):', resUpdateErr);
+                    setApiErrors(prev => [...prev, 'Swap created but failed to update reservation status. Please refresh the requests list.']);
+                }
             }
 
             // Backend now handles reservation/battery/vehicle updates and ensures 'battery must be full' logic.
@@ -682,8 +708,8 @@ export default function ManualSwapTransaction() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!formData.subscription_id}
-                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.subscription_id
+                                    disabled={!formData.user_id || !formData.station_id}
+                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.user_id && formData.station_id
                                         ? 'bg-green-600 text-white hover:bg-green-700'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         }`}>
