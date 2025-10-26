@@ -83,7 +83,9 @@ export default function StaffSwapRequests() {
             });
 
             console.log('URL Params being sent:', params.toString());
-            navigate(`/staff/manual-swap?${params.toString()}`);
+            // Navigate and set navigation state so ManualSwapTransaction can open modal only
+            // when navigation originates from 'Process Swap'. This avoids opening on reload.
+            navigate(`/staff/manual-swap?${params.toString()}`, { state: { openSwapModal: true } });
         } catch (error) {
             console.error('Error processing request:', error);
             alert('Failed to process request: ' + error.message);
