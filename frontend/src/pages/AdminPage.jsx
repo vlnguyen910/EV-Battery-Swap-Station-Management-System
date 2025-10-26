@@ -5,15 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../hooks/useContext";
 
 const registerSchema = z.object({
-  username: z.string().nonempty("Tên đăng nhập không được để trống").min(3, "Tên đăng nhập ít nhất 3 ký tự"),
-  password: z.string().nonempty("Vui lòng nhập mật khẩu").min(6, "Mật khẩu ít nhất 6 ký tự"),
+  username: z.string().nonempty("Username is required").min(3, "Username must be at least 3 characters"),
+  password: z.string().nonempty("Please enter a password").min(6, "Password must be at least 6 characters"),
   phone: z
     .string()
-    .nonempty("Số điện thoại không được để trống")
-    .regex(/^0(3|5|7|8|9)\d{8}$/, "Số điện thoại không hợp lệ"),
-  email: z.string().nonempty("Email không được để trống").email("Email không hợp lệ"),
+    .nonempty("Phone number is required")
+    .regex(/^0(3|5|7|8|9)\d{8}$/, "Invalid phone number"),
+  email: z.string().nonempty("Email is required").email("Invalid email"),
   role: z.enum(["station_staff", "admin"]).refine((v) => !!v, {
-    message: 'Role là bắt buộc',
+    message: 'Role is required',
   }),
 });
 
@@ -38,7 +38,7 @@ export default function AdminPage() {
     },
   });
 
-  // Clear error khi component mount
+  // Clear error on mount
   useEffect(() => {
     clearError();
     setMessage("");
@@ -55,19 +55,19 @@ export default function AdminPage() {
 
       // Success message
       if (res && res.username) {
-        setMessage(`✅ Tạo tài khoản thành công cho ${res.username}`);
+        setMessage(`✅ Account created for ${res.username}`);
       } else if (res && res.data && res.data.username) {
-        setMessage(`✅ Tạo tài khoản thành công cho ${res.data.username}`);
+        setMessage(`✅ Account created for ${res.data.username}`);
       } else {
-        setMessage('✅ Yêu cầu tạo tài khoản đã được gửi');
+        setMessage('✅ Account creation request submitted');
       }
 
       reset();
     } catch (err) {
       console.error("Create staff error:", err);
 
-      // Format error message
-      let errorMsg = "Không thể tạo tài khoản. Có thể dữ liệu bị trùng hoặc bạn không có quyền.";
+  // Format error message
+  let errorMsg = "Unable to create account. Data may be duplicated or you may not have permission.";
 
       if (err?.message) {
         errorMsg = err.message;
@@ -84,7 +84,7 @@ export default function AdminPage() {
     }
   };
 
-  // Hiển thị error từ context hoặc local error
+  // Display error from context or local error
   const displayError = localError || error;
 
   return (
@@ -109,7 +109,7 @@ export default function AdminPage() {
               className="space-y-4"
             >
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Tạo tài khoản nhân viên trạm
+                Create Station Staff Account
               </h2>
 
               {/* Error Message Box */}
@@ -121,11 +121,11 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên đăng nhập
+                  Username
                 </label>
                 <input
                   {...register("username")}
-                  placeholder="Tên đăng nhập"
+                  placeholder="Username"
                   disabled={loading}
                   className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -138,12 +138,12 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mật khẩu
+                  Password
                 </label>
                 <input
                   type="password"
                   {...register("password")}
-                  placeholder="Mật khẩu"
+                  placeholder="Password"
                   disabled={loading}
                   className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -156,11 +156,11 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Số điện thoại
+                  Phone number
                 </label>
                 <input
                   {...register("phone")}
-                  placeholder="Số điện thoại"
+                  placeholder="Phone number"
                   disabled={loading}
                   className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -191,14 +191,14 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vai trò
+                  Role
                 </label>
                 <select
                   {...register("role")}
                   disabled={loading}
                   className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="station_staff">Nhân viên trạm</option>
+                  <option value="station_staff">Station Staff</option>
                   <option value="admin">Admin</option>
                 </select>
                 {errors.role && (
@@ -235,10 +235,10 @@ export default function AdminPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Đang tạo...
+                    Creating...
                   </span>
                 ) : (
-                  "➕ Tạo tài khoản"
+                  "➕ Create Account"
                 )}
               </button>
 

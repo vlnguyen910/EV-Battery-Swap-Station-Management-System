@@ -7,31 +7,31 @@ import Navigation from "../layout/Navigation";
 
 const registerSchema = z
   .object({
-    username: z.string().nonempty("Tên đăng nhập không được để trống").min(3, "Tên đăng nhập ít nhất 3 ký tự"),
+    username: z.string().nonempty("Username is required").min(3, "Username must be at least 3 characters"),
     email: z
       .string()
-      .nonempty("Email không được để trống")
+      .nonempty("Email is required")
       .refine((value) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(value);
       }, {
-        message: "Hãy nhập email hợp lệ",
+        message: "Please enter a valid email address",
       }),
     phone: z
       .string()
-      .nonempty("Số điện thoại không được để trống")
-      .min(10, "Số điện thoại không hợp lệ")
+      .nonempty("Phone number is required")
+      .min(10, "Invalid phone number")
       .refine((value) => {
         const phoneRegex = /^0(3|5|7|8|9)\d{8}$/;
         return phoneRegex.test(value);
       }, {
-        message: "Hãy nhập số điện thoại hợp lệ",
+        message: "Please enter a valid phone number",
       }),
-    password: z.string().nonempty("Vui lòng nhập mật khẩu").min(6, "Mật khẩu ít nhất 6 ký tự"),
+    password: z.string().nonempty("Please enter a password").min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Mật khẩu xác nhận không khớp",
+    message: "Password confirmation does not match",
     path: ["confirmPassword"],
   });
 
@@ -48,7 +48,7 @@ export default function Register() {
     resolver: zodResolver(registerSchema),
   });
 
-  // Clear error khi component mount
+  // Clear error on mount
   useEffect(() => {
     clearError();
     setLocalError(null);
@@ -60,7 +60,7 @@ export default function Register() {
     setSuccess(false);
 
     try {
-      // Remove confirmPassword trước khi gửi
+      // Remove confirmPassword before sending
       const { confirmPassword, ...registerData } = data;
       const res = await registerUser(registerData);
       if (res) {
@@ -68,7 +68,7 @@ export default function Register() {
       }
     } catch (err) {
       // Errors are set in AuthContext (error state). Mirror it locally if needed.
-      const errorMessage = err?.message || error || "Đăng ký không thành công. Vui lòng thử lại.";
+      const errorMessage = err?.message || error || "Registration failed. Please try again.";
       setLocalError(errorMessage);
     }
   };
@@ -90,22 +90,20 @@ export default function Register() {
         <div className="relative max-w-md w-full space-y-8">
           {/* Header */}
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Human Power
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Human Power</h2>
             <p className="text-sm text-gray-600 mb-8">
-              Tạo tài khoản mới để bắt đầu
+              Create a new account to get started
             </p>
           </div>
 
           <form onSubmit={handleSubmit(handleRegister)} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">User name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
               <input
                 {...register("username")}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
-                placeholder="Tên đăng nhập"
+                placeholder="Username"
               />
               {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>}
             </div>
@@ -122,36 +120,36 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
               <input
                 {...register("phone")}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
-                placeholder="Số điện thoại"
+                placeholder="Phone number"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <input
                 type="password"
                 {...register("password")}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
-                placeholder="Mật khẩu"
+                placeholder="Password"
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Xác nhận mật khẩu</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
               <input
                 type="password"
                 {...register("confirmPassword")}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
-                placeholder="Nhập lại mật khẩu"
+                placeholder="Re-enter password"
               />
               {errors.confirmPassword && (
                 <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
@@ -168,9 +166,7 @@ export default function Register() {
             {/* Success Message */}
             {success && (
               <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">
-                  Đăng ký thành công! Đang chuyển đến trang đăng nhập...
-                </p>
+                <p className="text-sm text-green-600">Registration successful! Redirecting to the login page...</p>
               </div>
             )}
 
@@ -204,7 +200,7 @@ export default function Register() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Đang đăng ký...
+                  Registering...
                 </span>
               ) : success ? (
                 <span className="flex items-center justify-center">
@@ -221,10 +217,10 @@ export default function Register() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  Đăng ký thành công!
+                  Registration successful!
                 </span>
               ) : (
-                "📝 Đăng ký"
+                "📝 Register"
               )}
             </button>
           </form>
