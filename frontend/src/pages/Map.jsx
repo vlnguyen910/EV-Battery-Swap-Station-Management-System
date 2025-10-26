@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import 'trackasia-gl/dist/trackasia-gl.css';
-import MapHeader from '../components/map/MapHeader';
 import MapSearchBar from '../components/map/MapSearchBar';
 import MapContainer from '../components/map/MapContainer';
 import StationsList from '../components/map/StationsList';
@@ -66,10 +65,10 @@ export default function MapPage() {
   };
 
   const handleMapReady = useCallback((mapInstance) => {
-  setMap(mapInstance);
-  // Tự động định vị người dùng khi map load xong
-  locateUser();
-}, []);
+    setMap(mapInstance);
+    // Tự động định vị người dùng khi map load xong
+    locateUser();
+  }, []);
 
   // Keep filteredStations in sync when stations change (async fetch)
   useEffect(() => {
@@ -109,9 +108,7 @@ export default function MapPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <MapHeader />
-
+    <div className="flex flex-col pb-6 h-screen overflow-hidden">
       <MapSearchBar
         searchQuery={searchQuery}
         onSearch={handleSearch}
@@ -130,7 +127,7 @@ export default function MapPage() {
         </div>
 
         {/* Right side - Nearby Stations */}
-        <div className="w-96 bg-white overflow-y-auto">
+        <div className="w-96 bg-transparent overflow-hidden ">
           <StationsList
             stations={filteredStations}
             onStationClick={handleStationClick}
