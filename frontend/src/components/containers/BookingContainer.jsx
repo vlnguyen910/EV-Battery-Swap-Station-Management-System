@@ -144,14 +144,28 @@ export default function BookingContainer() {
     } catch (err) {
       console.error('Failed to create reservation', err);
       console.error('Error response:', err.response?.data);
+      // Map some backend messages to friendlier UI flows
+      const serverMsg = err.response?.data?.message || '';
 
-      // Check if reservation already exists
-      if (err.response?.data?.message?.includes('already have a reservation')) {
+      if (typeof serverMsg === 'string' && serverMsg.includes('already have a reservation')) {
         alert('You already have an active reservation. Please complete or cancel it first.');
-        // Optionally navigate to show existing reservation
-      } else {
-        alert('Failed to create reservation: ' + (err.response?.data?.message || err.message || 'Unknown error'));
+        return;
       }
+
+      if (typeof serverMsg === 'string' && serverMsg.includes('does not have an active subscription')) {
+        // Guide user to subscription plans
+        if (window.confirm('Your vehicle does not have an active subscription. Would you like to view plans?')) {
+          navigate('/driver/plans');
+        }
+        return;
+      }
+
+      if (typeof serverMsg === 'string' && serverMsg.includes('Not found driver vehicle')) {
+        alert('No active vehicle found for your account. Please register or activate a vehicle before booking.');
+        return;
+      }
+
+      alert('Failed to create reservation: ' + (serverMsg || err.message || 'Unknown error'));
     }
   };
 
