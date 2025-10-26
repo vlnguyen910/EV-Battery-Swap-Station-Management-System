@@ -1,11 +1,9 @@
-model Batteries {
-    ticket_id        Int      
-    battery_id       Int
+model BatteriesTransfer {
+  ticket_id  Int
+  battery_id Int
+  battery    Battery               @relation(fields: [battery_id], references: [battery_id])
+  ticket     BatteryTransferTicket @relation(fields: [ticket_id], references: [ticket_id])
 
-    // Relations
-    ticket BatteryTransferTicket @relation(fields: [ticket_id], references: [ticket_id])
-    battery Battery         @relation(fields: [battery_id], references: [battery_id])
-
-    @@id([ticket_id, battery_id])
-    @@map("batteries_transfer")
+  @@id([ticket_id, battery_id])
+  @@map("batteries_transfer")
 }

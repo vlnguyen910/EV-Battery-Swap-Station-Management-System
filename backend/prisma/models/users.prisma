@@ -1,15 +1,14 @@
 model User {
-  user_id       Int      @id @default(autoincrement())
-  username      String
-  password      String
-  phone         String   @unique
-  email         String   @unique
-  role          Role
-  created_at    DateTime @default(now())
-  station_id    Int?
-  refresh_token String?
-
-  // Relations
+  user_id                Int                     @id @default(autoincrement())
+  username               String
+  password               String
+  phone                  String                  @unique
+  email                  String                  @unique
+  role                   Role
+  created_at             DateTime                @default(now())
+  refresh_token          String?
+  station_id             Int?
+  batteryTransferTickets BatteryTransferTicket[]
   payments               Payment[]
   reservations           Reservation[]
   subscriptions          Subscription[]
@@ -17,7 +16,6 @@ model User {
   swapTransactions       SwapTransaction[]
   station                Station?                @relation(fields: [station_id], references: [station_id])
   vehicles               Vehicle[]
-  batteryTransferTickets BatteryTransferTicket[]
 
   @@map("users")
 }
