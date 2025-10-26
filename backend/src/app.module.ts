@@ -16,6 +16,8 @@ import { SwapTransactionsModule } from './modules/swap-transactions/swap-transac
 import { SwappingModule } from './modules/swapping/swapping.module';
 import { SupportsModule } from './modules/supports/supports.module';
 import { ConfigModule } from '@nestjs/config';
+import { BatteryTransferRequestModule } from './modules/battery-transfer-request/battery-transfer-request.module';
+import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/battery-transfer-ticket.module';
 
 @Module({
   imports: [
@@ -36,7 +38,9 @@ import { ConfigModule } from '@nestjs/config';
     SubscriptionsModule,
     PaymentsModule,
     SwappingModule,
-    SupportsModule
+    SupportsModule,
+    BatteryTransferRequestModule,
+    BatteryTransferTicketModule
   ],
   controllers: [AppController],
   providers: [AppService],
