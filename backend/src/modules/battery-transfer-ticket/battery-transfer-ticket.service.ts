@@ -24,7 +24,7 @@ export class BatteryTransferTicketService {
     try {
       const transferRequest = await this.batteryTransferRequestService.findOne(dto.transfer_request_id);
 
-      // ✅ Kiểm tra status của transfer request
+      // Kiểm tra status của transfer request
       if (transferRequest.status === TransferStatus.completed) {
         throw new BadRequestException('Transfer request already completed');
       }
@@ -85,7 +85,7 @@ export class BatteryTransferTicketService {
         }
       }
 
-      // ✅ Kiểm tra cho import ticket
+      // Kiểm tra cho import ticket
       if (dto.ticket_type === TicketType.import) {
         for (const battery of batteries) {
           if (battery.status !== BatteryStatus.in_transit) {
