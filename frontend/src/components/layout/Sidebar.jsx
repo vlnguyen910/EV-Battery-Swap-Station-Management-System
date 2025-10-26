@@ -20,6 +20,7 @@ export default function Sidebar() {
   const menuItems = [
     { name: 'Dashboard', path: '/driver', icon: LayoutDashboard },
     { name: 'Stations', path: '/driver/map', icon: MapPin },
+    { name: 'History', path: '/driver/swap-history', icon: LayoutDashboard },
     { name: 'Plans', path: '/driver/plans', icon: CreditCard },
     { name: 'Profile', path: '/driver/profile', icon: User },
     { name: 'Support', path: '/driver/support', icon: MessageCircle }

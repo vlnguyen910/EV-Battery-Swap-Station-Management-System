@@ -16,7 +16,7 @@ export default function User() {
   const { stations } = useStation();
   const { user } = useAuth();
   const { activeSubscription, getActiveSubscription } = useSubscription();
-  const [vehicleData, setVehicleData] = useState(null);
+  const [vehicleData, setVehicleData] = useState([]);
   const [showSwapSuccess, setShowSwapSuccess] = useState(false);
 
   // Fetch user's active subscription on component mount
@@ -34,33 +34,31 @@ export default function User() {
     fetchActiveSubscription();
   }, [user?.id, getActiveSubscription]);
 
-  // Fetch vehicle data when subscription is loaded
+  // Fetch vehicle data by user ID
   useEffect(() => {
     const fetchVehicleData = async () => {
-      if (!activeSubscription?.vehicle_id) return;
+      if (!user?.id) return;
 
       try {
-        console.log('Fetching vehicle with ID:', activeSubscription.vehicle_id);
-        const vehicle = await vehicleService.getVehicleById(activeSubscription.vehicle_id);
-        console.log('Vehicle data fetched:', vehicle);
-        setVehicleData(vehicle);
+        console.log('Fetching vehicle for user ID:', user.id);
+        const vehicles = await vehicleService.getVehicleByUserId(user.id);
+        console.log('Vehicle data fetched:', vehicles);
+        
+        // Store all vehicles as array
+        if (vehicles && vehicles.length > 0) {
+          setVehicleData(vehicles);
+        } else {
+          console.warn('No vehicles found for user');
+          setVehicleData([]);
+        }
       } catch (error) {
         console.error('Error fetching vehicle data:', error);
-        // If fetch fails, create minimal vehicle data from subscription
-        console.warn('Using vehicle_id from subscription instead');
-        setVehicleData({
-          vehicle_id: activeSubscription.vehicle_id,
-          user_id: user.id,
-          battery_id: null,
-          vin: 'N/A',
-        });
+        setVehicleData([]);
       }
     };
 
-    if (activeSubscription) {
-      fetchVehicleData();
-    }
-  }, [activeSubscription, user?.id]);
+    fetchVehicleData();
+  }, [user?.id]);
 
   const headerName = user?.name || 'Driver';
 
@@ -110,7 +108,7 @@ export default function User() {
 
               {/* Left column */}
               <div className="lg:col-span-1 flex flex-col gap-6">
-                <VehicleStatusCard onFindStations={() => navigate('/driver/map')} />
+                <VehicleStatusCard vehicles={vehicleData} onFindStations={() => navigate('/driver/map')} />
                 <RecentActivityCard onViewAll={() => navigate('/driver/reports')} />
               </div>
 
