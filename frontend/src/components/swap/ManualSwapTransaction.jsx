@@ -30,25 +30,7 @@ export default function ManualSwapTransaction() {
     // Staff's station_id from logged-in user
     const staffStationId = user?.station_id ? parseInt(user.station_id) : null;
 
-    // Debug user data
-    console.log('🔍 Debug User Object:', {
-        full_user: user,
-        station_id: user?.station_id,
-        role: user?.role,
-        id: user?.id,
-        name: user?.name
-    });
-    console.log('📍 Staff station_id resolved:', staffStationId);
-
-    // Debug: Log URL params
-    console.log('URL Params:', {
-        reservationId,
-        urlUserId,
-        urlVehicleId,
-        staffStationId,
-        urlBatteryReturnedId,
-        urlSubscriptionId,
-    });
+    // minimal debug: station id available via `staffStationId`
 
     const [formData, setFormData] = useState({
         user_id: urlUserId || '',
@@ -116,10 +98,7 @@ export default function ManualSwapTransaction() {
         const fetchUserData = async () => {
             try {
                 const userId = parseInt(formData.user_id);
-                console.log('🔍 Luồng 2: Fetching user data for userId:', userId);
-
                 const subscription = await getActiveSubscription(userId);
-                console.log('🔍 getActiveSubscription response:', subscription);
 
                 if (subscription) {
                     // Resolve package name: prefer backend-provided nested package, otherwise look up from packages list
@@ -140,23 +119,20 @@ export default function ManualSwapTransaction() {
                     setFormData(prev => ({
                         ...prev,
                         subscription_id: subscription.subscription_id.toString(),
-                        subscription_name: packageName || 'N/A',
+                        subscription_name: packageName || 'Chưa đăng ký',
                         vehicle_id: subscription.vehicle_id?.toString() || prev.vehicle_id,
                     }));
 
                     if (subscription.vehicle_id) {
                         const vehicle = await vehicleService.getVehicleById(subscription.vehicle_id);
-                        setFormData(prev => ({
-                            ...prev,
-                            battery_returned_id: vehicle.battery_id?.toString() || '',
-                        }));
+                        setFormData(prev => ({ ...prev, battery_returned_id: vehicle.battery_id?.toString() || '' }));
                         setVehicleData(vehicle);
                     }
                 } else {
                     console.warn('⚠️ No active subscription found for userId:', userId);
                 }
 
-                // Also fetch all vehicles belonging to this user so staff can choose if multiple
+                // Fetch user's vehicles so staff can choose if multiple
                 try {
                     const vehiclesResp = await vehicleService.getVehicleByUserId(userId);
                     const vehArr = Array.isArray(vehiclesResp) ? vehiclesResp : (vehiclesResp ? [vehiclesResp] : []);
@@ -165,12 +141,10 @@ export default function ManualSwapTransaction() {
                     if (!formData.vehicle_id && vehArr.length > 0) {
                         setFormData(prev => ({ ...prev, vehicle_id: String(vehArr[0].vehicle_id) }));
                         setVehicleData(vehArr[0]);
-                        if (vehArr[0].battery_id) {
-                            setFormData(prev => ({ ...prev, battery_returned_id: String(vehArr[0].battery_id) }));
-                        }
+                        if (vehArr[0].battery_id) setFormData(prev => ({ ...prev, battery_returned_id: String(vehArr[0].battery_id) }));
                     }
                 } catch (vehErr) {
-                    console.warn('Failed to fetch vehicles for user:', vehErr);
+                    // non-fatal: user may have no vehicles
                 }
             } catch (error) {
                 console.error('❌ Error fetching user data for manual entry:', error);
@@ -190,44 +164,20 @@ export default function ManualSwapTransaction() {
             try {
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
-
-                // Ensure vehicle_id is present in formData for backend validation
-                if (vehicle && vehicle.vehicle_id) {
-                    setFormData(prev => ({
-                        ...prev,
-                        vehicle_id: String(vehicle.vehicle_id)
-                    }));
-                }
-
-                if (vehicle.battery_id) {
-                    setFormData(prev => ({
-                        ...prev,
-                        battery_returned_id: vehicle.battery_id.toString()
-                    }));
-                }
+                if (vehicle?.vehicle_id) setFormData(prev => ({ ...prev, vehicle_id: String(vehicle.vehicle_id) }));
+                if (vehicle?.battery_id) setFormData(prev => ({ ...prev, battery_returned_id: String(vehicle.battery_id) }));
 
                 if (!urlSubscriptionId && urlUserId) {
-                    console.log('🔍 Luồng 1: subscription_id missing from URL, fetching for userId:', urlUserId);
                     const subscription = await getActiveSubscription(parseInt(urlUserId));
-                    console.log('🔍 Luồng 1: getActiveSubscription response:', subscription);
-
                     if (subscription) {
                         const packageName = subscription.package?.package_name || subscription.package?.name
                             || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
-                            || 'N/A';
-
-                        setFormData(prev => ({
-                            ...prev,
-                            subscription_id: subscription.subscription_id.toString(),
-                            subscription_name: packageName,
-                        }));
-                        console.log('✅ Luồng 1: Updated subscription_id to:', subscription.subscription_id);
+                            || 'Chưa đăng ký';
+                        setFormData(prev => ({ ...prev, subscription_id: subscription.subscription_id.toString(), subscription_name: packageName }));
                     }
                 }
-
             } catch (error) {
-                console.error('Error fetching vehicle data:', error);
-                alert('Failed to fetch vehicle data');
+                // keep minimal error handling; loading flag reset below
             } finally {
                 setLoading(false);
             }
@@ -250,6 +200,39 @@ export default function ManualSwapTransaction() {
                 setVehicleData(vehicle);
                 if (vehicle?.battery_id) {
                     setFormData(prev => ({ ...prev, battery_returned_id: String(vehicle.battery_id) }));
+                }
+                // Also determine subscription/package for the selected vehicle
+                try {
+                    const userId = parseInt(formData.user_id || urlUserId || user?.id);
+                    if (!isNaN(userId)) {
+                        const subscription = await getActiveSubscription(userId);
+                        if (subscription && Number(subscription.vehicle_id) === Number(vid)) {
+                            // Resolve package name from subscription or packages list
+                            let packageName = subscription.package?.package_name || subscription.package?.name
+                                || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
+                                || null;
+
+                            if (!packageName && subscription.package_id && typeof getPackageById === 'function') {
+                                try {
+                                    const pkg = await getPackageById(subscription.package_id);
+                                    packageName = pkg?.package_name || pkg?.name || null;
+                                } catch (pkgErr) {
+                                    /* ignore */
+                                }
+                            }
+
+                            setFormData(prev => ({
+                                ...prev,
+                                subscription_id: subscription.subscription_id?.toString() || '',
+                                subscription_name: packageName || 'Chưa đăng ký'
+                            }));
+                        } else {
+                            // Selected vehicle has no subscription (or subscription belongs to another vehicle)
+                            setFormData(prev => ({ ...prev, subscription_id: '', subscription_name: 'Chưa đăng ký' }));
+                        }
+                    }
+                } catch (subErr) {
+                    // non-fatal: keep previous subscription_name if any
                 }
             } catch (err) {
                 console.warn('Failed to fetch vehicle on vehicle_id change:', err);
@@ -299,8 +282,7 @@ export default function ManualSwapTransaction() {
     // Filter batteries: only show batteries that are 'full' and at staff's station
     const availableBatteries = batteries.filter(b => {
         if (!b || b.status !== 'full' || !staffStationId || b.station_id !== staffStationId) return false;
-        // If we have vehicle data, ensure battery model/type match vehicle's required model/type
-        if (_vehicleData && (_vehicleData.battery_model || _vehicleData.battery_type)) {
+        if (_vehicleData?.battery_model || _vehicleData?.battery_type) {
             return b.model === _vehicleData.battery_model && b.type === _vehicleData.battery_type;
         }
         return true;
@@ -308,15 +290,8 @@ export default function ManualSwapTransaction() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Clear server-side API errors when the staff changes critical fields
-        if (name === 'vehicle_id' || name === 'user_id' || name === 'battery_taken_id') {
-            setApiErrors([]);
-        }
-
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+        if (['vehicle_id', 'user_id', 'battery_taken_id'].includes(name)) setApiErrors([]);
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -540,7 +515,7 @@ export default function ManualSwapTransaction() {
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
-                    <div className="relative max-w-4xl w-full mx-4 bg-white p-8 rounded-lg shadow-md z-10">
+                    <div className="relative w-[920px] max-w-[calc(100%-2rem)] max-h-[90vh] overflow-auto mx-4 bg-white p-8 rounded-lg shadow-md z-10">
                         <div className="flex justify-between items-start mb-4">
                             <h2 className="text-2xl font-bold text-gray-900">Create New Swap Transaction</h2>
                             <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
@@ -548,7 +523,7 @@ export default function ManualSwapTransaction() {
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* User ID */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="user_id">
                                         User ID
                                     </label>
@@ -573,7 +548,7 @@ export default function ManualSwapTransaction() {
                                 </div>
 
                                 {/* Vehicle ID */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="vehicle_id">
                                         Vehicle ID
                                     </label>
@@ -613,7 +588,7 @@ export default function ManualSwapTransaction() {
                                 </div>
 
                                 {/* Station ID */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="station_id">
                                         Station ID
                                     </label>
@@ -632,7 +607,7 @@ export default function ManualSwapTransaction() {
                                 </div>
 
                                 {/* Subscription name */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="subscription_name">
                                         Package Name
                                     </label>
@@ -642,9 +617,9 @@ export default function ManualSwapTransaction() {
                                             type="text"
                                             id="subscription_name"
                                             name="subscription_name"
-                                            value={formData.subscription_name || 'N/A'}
+                                            value={formData.subscription_name || 'Chưa đăng ký'}
                                             onChange={handleChange}
-                                            className={`w-full pl-12 pr-4 py-2 border rounded-md ${formData.subscription_name && formData.subscription_name !== 'N/A'
+                                            className={`w-full pl-12 pr-4 py-2 border rounded-md ${formData.subscription_name && formData.subscription_name !== 'Chưa đăng ký'
                                                 ? 'bg-gray-50 border-gray-300 text-gray-900'
                                                 : 'bg-red-50 border-red-300 text-red-600'
                                                 } focus:ring-green-500 focus:border-green-500`}
@@ -652,7 +627,7 @@ export default function ManualSwapTransaction() {
                                             readOnly
                                         />
                                     </div>
-                                    {(!formData.subscription_name || formData.subscription_name === 'N/A') && (
+                                    {(!formData.subscription_name || formData.subscription_name === 'Chưa đăng ký') && (
                                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                                             <span className="material-icons text-sm">warning</span>
                                             User must have an active subscription
@@ -663,7 +638,7 @@ export default function ManualSwapTransaction() {
                                 <div className="md:col-span-2 border-t border-gray-300 my-2"></div>
 
                                 {/* Battery Taken ID */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="battery_taken_id">
                                         Battery Taken ID
                                     </label>
@@ -709,7 +684,7 @@ export default function ManualSwapTransaction() {
                                 </div>
 
                                 {/* Battery Returned ID */}
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="battery_returned_id">
                                         Battery Returned ID
                                     </label>
