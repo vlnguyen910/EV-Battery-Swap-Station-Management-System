@@ -15,8 +15,9 @@ const getAllVehicles = async () => {
 // Get vehicle by user ID function
 const getVehicleByUserId = async (userId) => {
   try {
+    // Backend expects a query parameter on /vehicles: /vehicles?userId=5
     const response = await api.get(
-      API_ENDPOINTS.VEHICLE.GET_VEHICLES_BY_USER(userId)
+      `${API_ENDPOINTS.VEHICLE.GET_ALL_VEHICLES}?userId=${userId}`
     );
     return response.data;
   } catch (error) {

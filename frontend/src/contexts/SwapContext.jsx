@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { swapService } from "../services/swapService";
+import { swappingService } from "../services/swappingService";
 import { useNavigate } from "react-router-dom";
 
 const { createSwapTransaction: createSwapTransactionService,
@@ -37,6 +38,25 @@ export const SwapProvider = ({ children }) => {
             setLoading(false);
         }
     }
+
+    // Function to perform automatic swap flow (server resolves vehicle/subscription/batteries)
+    const swapBatteries = async (payload) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await swappingService.swapBatteries(payload);
+            // backend returns swapTransaction inside response.swapTransaction (see backend)
+            const created = response?.swapTransaction || response;
+            // prepend to local list so UI reflects newest transaction immediately
+            setSwapTransaction(prev => [created, ...prev]);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Function to get a swap transaction by ID
     const getSwapTransactionById = async (transactionId) => {
@@ -106,6 +126,7 @@ export const SwapProvider = ({ children }) => {
                 loading,
                 error,
                 createSwapTransaction,
+                swapBatteries,
                 getSwapTransactionById,
                 getAllSwapHistories,
                 updateSwapTransaction,
