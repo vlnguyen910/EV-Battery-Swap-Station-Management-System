@@ -76,8 +76,13 @@ export default function VehicleStatusCard({ vehicles = [], onFindStations }) {
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-gray-500 text-sm">Status</span>
-            <span className="text-gray-900 text-sm">{currentVehicle.status || 'N/A'}</span>
+            {currentVehicle.status ? (
+              <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-0.5 rounded-full">Active</span>
+            ) : (
+              <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded-full">Inactive</span>
+            )}
           </div>
+
         </div>
 
         <div className="flex flex-col gap-4">
