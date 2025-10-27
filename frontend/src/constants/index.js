@@ -98,7 +98,7 @@ export const API_ENDPOINTS = {
     VNPAY_IPN: "/payments/vnpay-ipn",
     GET_PAYMENT: (id) => `/payments/${id}`,
     GET_BY_TXN_REF: (vnpTxnRef) => `/payments/txn/${vnpTxnRef}`,
-    GET_BY_USER: (userId) => `/payments/user/${userId}`,
+    GET_PAYMENTS_BY_USER: (userId) => `/payments/user/${userId}`,
     GET_ALL_PAYMENTS: "/payments",
     MOCK_PAYMENT: "/payments/mock-payment",
   },
