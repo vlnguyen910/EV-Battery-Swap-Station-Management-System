@@ -4,17 +4,25 @@ import { paymentService } from '../services/paymentService';
 import { swapService } from '../services/swapService';
 
 export default function SwapHistory() {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [resultsPerPage, setResultsPerPage] = useState(20);
-  const [totalResults, setTotalResults] = useState(0);
+  // Pagination state for swaps
+  const [swapCurrentPage, setSwapCurrentPage] = useState(1);
+  const [swapResultsPerPage, setSwapResultsPerPage] = useState(20);
+  const [swapTotalResults, setSwapTotalResults] = useState(0);
+  
+  // Pagination state for payments
+  const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
+  const [paymentResultsPerPage, setPaymentResultsPerPage] = useState(20);
+  const [paymentTotalResults, setPaymentTotalResults] = useState(0);
   
   // Sorting state
   const [sortBy, setSortBy] = useState('date'); // 'date' or 'amount'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   
-  // Filter state
-  const [timePeriod, setTimePeriod] = useState('week'); // 'week', 'month', 'year'
+  // Filter state for swaps
+  const [swapTimePeriod, setSwapTimePeriod] = useState('week'); // 'week', 'month', 'year'
+  
+  // Filter state for payments
+  const [paymentTimePeriod, setPaymentTimePeriod] = useState('week'); // 'week', 'month', 'year'
   
   // Data state
   const [swapHistory, setSwapHistory] = useState([]);
@@ -32,31 +40,25 @@ export default function SwapHistory() {
   }, []);
 
   // Filter data by time period
-  const filterByTimePeriod = (data) => {
+  const filterByTimePeriod = (data, timePeriod) => {
     const now = new Date();
-    const filtered = data.filter(swap => {
-      const swapDate = new Date(swap.date);
+    const filtered = data.filter(item => {
+      const itemDate = new Date(item.date);
       
       if (timePeriod === 'week') {
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return swapDate >= oneWeekAgo;
+        return itemDate >= oneWeekAgo;
       } else if (timePeriod === 'month') {
         const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-        return swapDate >= oneMonthAgo;
+        return itemDate >= oneMonthAgo;
       } else if (timePeriod === 'year') {
         const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-        return swapDate >= oneYearAgo;
+        return itemDate >= oneYearAgo;
       }
       return true;
     });
     
     return filtered;
-  };
-
-  // Handle time period change
-  const handleTimePeriodChange = (period) => {
-    setTimePeriod(period);
-    setCurrentPage(1); // Reset to first page
   };
 
   // Fetch data
@@ -134,8 +136,8 @@ export default function SwapHistory() {
         }));
 
         // Apply time period filter to both
-        const filteredSwaps = filterByTimePeriod(transformedSwaps);
-        const filteredPayments = filterByTimePeriod(transformedPayments);
+        const filteredSwaps = filterByTimePeriod(transformedSwaps, swapTimePeriod);
+        const filteredPayments = filterByTimePeriod(transformedPayments, paymentTimePeriod);
         
         // Apply sorting to swaps
         const sortedSwaps = [...filteredSwaps].sort((a, b) => {
@@ -159,17 +161,18 @@ export default function SwapHistory() {
           return 0;
         });
         
-        // Update total results (combined count)
-        setTotalResults(sortedSwaps.length + sortedPayments.length);
+        // Update total results
+        setSwapTotalResults(sortedSwaps.length);
+        setPaymentTotalResults(sortedPayments.length);
         
         // Apply pagination to swaps
-        const swapStartIndex = (currentPage - 1) * resultsPerPage;
-        const swapEndIndex = swapStartIndex + resultsPerPage;
+        const swapStartIndex = (swapCurrentPage - 1) * swapResultsPerPage;
+        const swapEndIndex = swapStartIndex + swapResultsPerPage;
         const paginatedSwaps = sortedSwaps.slice(swapStartIndex, swapEndIndex);
 
         // Apply pagination to payments
-        const paymentStartIndex = (currentPage - 1) * resultsPerPage;
-        const paymentEndIndex = paymentStartIndex + resultsPerPage;
+        const paymentStartIndex = (paymentCurrentPage - 1) * paymentResultsPerPage;
+        const paymentEndIndex = paymentStartIndex + paymentResultsPerPage;
         const paginatedPayments = sortedPayments.slice(paymentStartIndex, paymentEndIndex);
         
         setSwapHistory(paginatedSwaps);
@@ -178,19 +181,25 @@ export default function SwapHistory() {
         console.error('Error fetching history:', error);
         setSwapHistory([]);
         setPaymentHistory([]);
-        setTotalResults(0);
+        setSwapTotalResults(0);
+        setPaymentTotalResults(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchSwapHistory();
-  }, [currentPage, resultsPerPage, sortBy, sortOrder, timePeriod, user?.id]);
+  }, [swapCurrentPage, swapResultsPerPage, paymentCurrentPage, paymentResultsPerPage, sortBy, sortOrder, swapTimePeriod, paymentTimePeriod, user?.id]);
 
-  // Calculate pagination info
-  const totalPages = Math.ceil(totalResults / resultsPerPage);
-  const startIndex = (currentPage - 1) * resultsPerPage + 1;
-  const endIndex = Math.min(currentPage * resultsPerPage, totalResults);
+  // Calculate pagination info for swaps
+  const swapTotalPages = Math.ceil(swapTotalResults / swapResultsPerPage);
+  const swapStartIndex = (swapCurrentPage - 1) * swapResultsPerPage + 1;
+  const swapEndIndex = Math.min(swapCurrentPage * swapResultsPerPage, swapTotalResults);
+
+  // Calculate pagination info for payments
+  const paymentTotalPages = Math.ceil(paymentTotalResults / paymentResultsPerPage);
+  const paymentStartIndex = (paymentCurrentPage - 1) * paymentResultsPerPage + 1;
+  const paymentEndIndex = Math.min(paymentCurrentPage * paymentResultsPerPage, paymentTotalResults);
 
   // Handle sort
   const handleSort = (column) => {
@@ -200,34 +209,12 @@ export default function SwapHistory() {
       setSortBy(column);
       setSortOrder('desc');
     }
-    setCurrentPage(1); // Reset to first page when sorting
-  };
-
-  // Handle results per page change
-  const handleResultsPerPageChange = (value) => {
-    setResultsPerPage(parseInt(value));
-    setCurrentPage(1); // Reset to first page
-  };
-
-  // Handle page navigation
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePageClick = (pageNum) => {
-    setCurrentPage(pageNum);
+    setSwapCurrentPage(1); // Reset to first page when sorting
+    setPaymentCurrentPage(1);
   };
 
   // Generate page numbers to display
-  const getPageNumbers = () => {
+  const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
     const maxPagesToShow = 5;
     
@@ -273,71 +260,78 @@ export default function SwapHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Transaction History</h1>
-            
-            {/* Results per page selector */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Show result:</span>
-              <select
-                value={resultsPerPage}
-                onChange={(e) => handleResultsPerPageChange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="1">1</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-          
-          {/* Time Period Filter */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600 mr-2">Show by:</span>
-            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
-              <button
-                onClick={() => handleTimePeriodChange('week')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  timePeriod === 'week'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Week
-              </button>
-              <button
-                onClick={() => handleTimePeriodChange('month')}
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
-                  timePeriod === 'month'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Month
-              </button>
-              <button
-                onClick={() => handleTimePeriodChange('year')}
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
-                  timePeriod === 'year'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Year
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Swap Transaction History Card */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">Swap History</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Swap History</h2>
+              
+              {/* Results per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Show result:</span>
+                <select
+                  value={swapResultsPerPage}
+                  onChange={(e) => {
+                    setSwapResultsPerPage(parseInt(e.target.value));
+                    setSwapCurrentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="1">1</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Time Period Filter */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 mr-2">Show by:</span>
+              <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => {
+                    setSwapTimePeriod('week');
+                    setSwapCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    swapTimePeriod === 'week'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => {
+                    setSwapTimePeriod('month');
+                    setSwapCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+                    swapTimePeriod === 'month'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => {
+                    setSwapTimePeriod('year');
+                    setSwapCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+                    swapTimePeriod === 'year'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Year
+                </button>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -410,12 +404,131 @@ export default function SwapHistory() {
               </tbody>
             </table>
           </div>
+
+          {/* Swap History Pagination */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {swapStartIndex} to {swapEndIndex} of {swapTotalResults} results
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setSwapCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={swapCurrentPage === 1}
+                  className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-1">
+                    <ChevronLeft size={16} />
+                    <span>Previous</span>
+                  </div>
+                </button>
+                
+                {getPageNumbers(swapCurrentPage, swapTotalPages).map((pageNum, index) => (
+                  pageNum === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => setSwapCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        pageNum === swapCurrentPage
+                          ? 'bg-green-600 text-white'
+                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                ))}
+                
+                <button
+                  onClick={() => setSwapCurrentPage(prev => Math.min(swapTotalPages, prev + 1))}
+                  disabled={swapCurrentPage === swapTotalPages}
+                  className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Next</span>
+                    <ChevronRight size={16} />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Payment History Card */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">Payment History</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Payment History</h2>
+              
+              {/* Results per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Show result:</span>
+                <select
+                  value={paymentResultsPerPage}
+                  onChange={(e) => {
+                    setPaymentResultsPerPage(parseInt(e.target.value));
+                    setPaymentCurrentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="1">1</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Time Period Filter */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 mr-2">Show by:</span>
+              <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => {
+                    setPaymentTimePeriod('week');
+                    setPaymentCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    paymentTimePeriod === 'week'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => {
+                    setPaymentTimePeriod('month');
+                    setPaymentCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+                    paymentTimePeriod === 'month'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => {
+                    setPaymentTimePeriod('year');
+                    setPaymentCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+                    paymentTimePeriod === 'year'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Year
+                </button>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -501,72 +614,57 @@ export default function SwapHistory() {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Pagination Footer */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
-          <div className="flex items-center justify-between">
-            {/* Showing info */}
-            <div className="text-sm text-gray-600">
-              showing {startIndex} - {endIndex} of {totalResults}
-            </div>
-
-            {/* Pagination controls */}
-            <div className="flex items-center space-x-2">
-              {/* Previous button */}
-              <button
-                onClick={handlePrevious}
-                disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-1">
-                  <ChevronLeft size={16} />
-                  <span>Previous</span>
-                </div>
-              </button>
-
-              {/* Page numbers */}
-              <div className="flex items-center space-x-1">
-                {getPageNumbers().map((page, index) => (
-                  page === '...' ? (
+          {/* Payment History Pagination */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {paymentStartIndex} to {paymentEndIndex} of {paymentTotalResults} results
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setPaymentCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={paymentCurrentPage === 1}
+                  className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-1">
+                    <ChevronLeft size={16} />
+                    <span>Previous</span>
+                  </div>
+                </button>
+                
+                {getPageNumbers(paymentCurrentPage, paymentTotalPages).map((pageNum, index) => (
+                  pageNum === '...' ? (
                     <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
                       ...
                     </span>
                   ) : (
                     <button
-                      key={page}
-                      onClick={() => handlePageClick(page)}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                        currentPage === page
+                      key={pageNum}
+                      onClick={() => setPaymentCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        pageNum === paymentCurrentPage
                           ? 'bg-green-600 text-white'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      {page}
+                      {pageNum}
                     </button>
                   )
                 ))}
+                
+                <button
+                  onClick={() => setPaymentCurrentPage(prev => Math.min(paymentTotalPages, prev + 1))}
+                  disabled={paymentCurrentPage === paymentTotalPages}
+                  className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Next</span>
+                    <ChevronRight size={16} />
+                  </div>
+                </button>
               </div>
-
-              {/* Next button */}
-              <button
-                onClick={handleNext}
-                disabled={currentPage === totalPages}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Next</span>
-                  <ChevronRight size={16} />
-                </div>
-              </button>
             </div>
           </div>
         </div>
