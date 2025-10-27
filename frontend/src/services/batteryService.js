@@ -25,6 +25,18 @@ const getBatteryById = async (id) => {
   }
 };
 
+//Function to get battery by vehicle id
+// const getBatteryByVehicleId = async (vehicleId) => {
+//   try {
+//     const response = await api.get(
+//       API_ENDPOINTS.BATTERY.GET_BATTERY_BY_VEHICLE_ID(vehicleId)
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error fetching battery by vehicle id:", error);
+//     throw error;
+//   }
+
 // Function to update battery by id
 const updateBatteryById = async (id, batteryData) => {
   try {
@@ -38,6 +50,7 @@ const updateBatteryById = async (id, batteryData) => {
     throw error;
   }
 };
+
 
 export const batteryService = {
   getAllBatteries,

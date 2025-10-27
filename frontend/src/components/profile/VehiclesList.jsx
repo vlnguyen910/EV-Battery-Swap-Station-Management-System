@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../../components/ui/button';
-import { Plus, Edit3, ToggleLeft, ToggleRight, Car as CarIcon } from 'lucide-react';
+import { Plus, Edit3, ToggleLeft, ToggleRight, Bike } from 'lucide-react';
 
 export default function VehiclesList({ vehicles = [], onAddVehicle }) {
   return (
@@ -18,9 +18,9 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <CarIcon className={`w-6 h-6 ${v.active ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <Bike className={`w-6 h-6 ${v.active ? 'text-blue-600' : 'text-gray-400'}`} />
                   <h3 className="font-semibold text-lg text-gray-900">{v.name}</h3>
-                  {v.active ? (
+                  {v.status ? (
                     <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Active</span>
                   ) : (
                     <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Inactive</span>
@@ -28,16 +28,12 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 mt-3 text-sm">
                   <div>
-                    <span className="text-gray-500">License:</span>
-                    <span className="text-gray-800 ml-1">{v.license}</span>
-                  </div>
-                  <div>
                     <span className="text-gray-500">VIN:</span>
                     <span className="text-gray-800 ml-1">{v.vin}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Battery:</span>
-                    <span className="text-gray-800 ml-1">{v.battery}</span>
+                    <span className="text-gray-800 ml-1">{v.battery_model}</span>
                   </div>
                 </div>
               </div>
