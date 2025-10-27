@@ -63,6 +63,20 @@ const updateVehicle = async (vehicleId, updateData) => {
   }
 };
 
+//Function to create vehicle
+ const createVehicle = async (vehicleData) => {
+  try { 
+    const response = await api.post(
+      API_ENDPOINTS.VEHICLE.CREATE_VEHICLE,
+      vehicleData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating vehicle:", error);
+    throw error;
+  }
+};
+
 export const vehicleService = {
   getAllVehicles,
   getVehicleById,
