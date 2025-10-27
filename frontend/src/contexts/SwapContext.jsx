@@ -98,6 +98,22 @@ export const SwapProvider = ({ children }) => {
         }
     };
 
+    // Function to get all swap transaction histories by user ID
+    const getAllSwapHistoriesByUserId = async (userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllSwapTransactionsByUserIdService(userId);
+            console.log("Fetched swap histories by user ID:", response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Function to get all swap transaction histories
     const getAllSwapHistories = async () => {
         setLoading(true);
@@ -130,6 +146,8 @@ export const SwapProvider = ({ children }) => {
                 getSwapTransactionById,
                 getAllSwapHistories,
                 updateSwapTransaction,
+                swapTransaction,
+                getAllSwapHistoriesByUserId,
             }}
         >
             {children}

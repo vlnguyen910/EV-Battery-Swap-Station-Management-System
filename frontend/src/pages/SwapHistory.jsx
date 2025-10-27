@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
-import { generateSwapHistory } from '../data/mockData';
+import { paymentService } from '../services/paymentService';
+import { swapService } from '../services/swapService';
 
 export default function SwapHistory() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [resultsPerPage, setResultsPerPage] = useState(20);
-  const [totalResults, setTotalResults] = useState(0); // Will be updated after filtering
+  const [totalResults, setTotalResults] = useState(0);
   
   // Sorting state
   const [sortBy, setSortBy] = useState('date'); // 'date' or 'amount'
@@ -17,10 +18,18 @@ export default function SwapHistory() {
   
   // Data state
   const [swapHistory, setSwapHistory] = useState([]);
+  const [paymentHistory, setPaymentHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // Total mock data count
-  const TOTAL_MOCK_DATA = 230;
+
+  // Get user from localStorage
+  const user = useMemo(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Filter data by time period
   const filterByTimePeriod = (data) => {
@@ -53,27 +62,96 @@ export default function SwapHistory() {
   // Fetch data
   useEffect(() => {
     const fetchSwapHistory = async () => {
+      if (!user?.id) {
+        console.warn('No user ID found');
+        setSwapHistory([]);
+        setPaymentHistory([]);
+        setTotalResults(0);
+        return;
+      }
+
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        // const response = await swapHistoryService.getHistory({
-        //   page: currentPage,
-        //   limit: resultsPerPage,
-        //   sortBy: sortBy,
-        //   sortOrder: sortOrder
-        // });
+        // Fetch both swap transactions and payments in parallel
+        const [swapTransactions, payments] = await Promise.all([
+          swapService.getAllSwapTransactionsByUserId(user.id),
+          paymentService.getPaymentByUserId(user.id)
+        ]);
         
-        // Mock data simulation
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const mockData = generateSwapHistory(TOTAL_MOCK_DATA);
+        console.log('Swap transactions from API:', swapTransactions);
+        console.log('Payments from API:', payments);
         
-        // Apply time period filter
-        const filteredByTime = filterByTimePeriod(mockData);
+        // Transform swap transactions to UI format
+        const transformedSwaps = (swapTransactions || []).map(transaction => ({
+          id: `swap-${transaction.transaction_id}`,
+          type: 'swap',
+          date: transaction.createAt 
+            ? new Date(transaction.createAt).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              })
+            : 'N/A',
+          time: transaction.createAt 
+            ? new Date(transaction.createAt).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })
+            : 'N/A',
+          location: `Station ${transaction.station_id}`,
+          amount: 1, // Each transaction is 1 battery swap
+          timestamp: transaction.createAt ? new Date(transaction.createAt).getTime() : 0,
+          status: transaction.status,
+          batteryTaken: transaction.battery_taken_id,
+          batteryReturned: transaction.battery_returned_id,
+          rawData: transaction
+        }));
+
+        // Transform payments to UI format
+        const transformedPayments = (payments || []).map(payment => ({
+          id: `payment-${payment.payment_id}`,
+          type: 'payment',
+          date: payment.created_at 
+            ? new Date(payment.created_at).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              })
+            : 'N/A',
+          time: payment.created_at 
+            ? new Date(payment.created_at).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })
+            : 'N/A',
+          location: payment.package?.name || payment.order_info || 'Payment',
+          amount: parseFloat(payment.amount || 0),
+          timestamp: payment.created_at ? new Date(payment.created_at).getTime() : 0,
+          status: payment.status,
+          method: payment.method,
+          packageName: payment.package?.name,
+          rawData: payment
+        }));
+
+        // Apply time period filter to both
+        const filteredSwaps = filterByTimePeriod(transformedSwaps);
+        const filteredPayments = filterByTimePeriod(transformedPayments);
         
-        // Apply sorting
-        const sorted = [...filteredByTime].sort((a, b) => {
+        // Apply sorting to swaps
+        const sortedSwaps = [...filteredSwaps].sort((a, b) => {
           if (sortBy === 'date') {
-            const comparison = new Date(a.date) - new Date(b.date) || a.time.localeCompare(b.time);
+            const comparison = a.timestamp - b.timestamp;
+            return sortOrder === 'asc' ? comparison : -comparison;
+          } else if (sortBy === 'amount') {
+            return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+          }
+          return 0;
+        });
+
+        // Apply sorting to payments
+        const sortedPayments = [...filteredPayments].sort((a, b) => {
+          if (sortBy === 'date') {
+            const comparison = a.timestamp - b.timestamp;
             return sortOrder === 'asc' ? comparison : -comparison;
           } else if (sortBy === 'amount') {
             return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
@@ -81,24 +159,33 @@ export default function SwapHistory() {
           return 0;
         });
         
-        // Update total results based on filtered data
-        setTotalResults(sorted.length);
+        // Update total results (combined count)
+        setTotalResults(sortedSwaps.length + sortedPayments.length);
         
-        // Apply pagination
-        const startIndex = (currentPage - 1) * resultsPerPage;
-        const endIndex = startIndex + resultsPerPage;
-        const paginatedData = sorted.slice(startIndex, endIndex);
+        // Apply pagination to swaps
+        const swapStartIndex = (currentPage - 1) * resultsPerPage;
+        const swapEndIndex = swapStartIndex + resultsPerPage;
+        const paginatedSwaps = sortedSwaps.slice(swapStartIndex, swapEndIndex);
+
+        // Apply pagination to payments
+        const paymentStartIndex = (currentPage - 1) * resultsPerPage;
+        const paymentEndIndex = paymentStartIndex + resultsPerPage;
+        const paginatedPayments = sortedPayments.slice(paymentStartIndex, paymentEndIndex);
         
-        setSwapHistory(paginatedData);
+        setSwapHistory(paginatedSwaps);
+        setPaymentHistory(paginatedPayments);
       } catch (error) {
-        console.error('Error fetching swap history:', error);
+        console.error('Error fetching history:', error);
+        setSwapHistory([]);
+        setPaymentHistory([]);
+        setTotalResults(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchSwapHistory();
-  }, [currentPage, resultsPerPage, sortBy, sortOrder, timePeriod]);
+  }, [currentPage, resultsPerPage, sortBy, sortOrder, timePeriod, user?.id]);
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalResults / resultsPerPage);
@@ -191,7 +278,7 @@ export default function SwapHistory() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Swap History</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Transaction History</h1>
             
             {/* Results per page selector */}
             <div className="flex items-center space-x-2">
@@ -247,8 +334,11 @@ export default function SwapHistory() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Swap Transaction History Card */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Swap History</h2>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -304,16 +394,107 @@ export default function SwapHistory() {
                     </td>
                   </tr>
                 ) : (
-                  swapHistory.map((swap) => (
-                    <tr key={swap.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-gray-800">{swap.date}</td>
-                      <td className="px-6 py-4 text-gray-600">{swap.location}</td>
+                  swapHistory.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-gray-800">{item.date}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.location}</td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                          {swap.amount} {swap.amount === 1 ? 'battery' : 'batteries'}
+                          {item.amount} {item.amount === 1 ? 'battery' : 'batteries'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{swap.time}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.time}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Payment History Card */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Payment History</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  {/* Date Column */}
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('date')}
+                      className="flex items-center space-x-2 font-semibold text-gray-700 hover:text-green-600 transition-colors"
+                    >
+                      <span>Date</span>
+                      <SortIcon column="date" />
+                    </button>
+                  </th>
+
+                  {/* Package/Description Column */}
+                  <th className="px-6 py-4 text-left">
+                    <span className="font-semibold text-gray-700">Package</span>
+                  </th>
+
+                  {/* Amount Column */}
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('amount')}
+                      className="flex items-center space-x-2 font-semibold text-gray-700 hover:text-green-600 transition-colors"
+                    >
+                      <span>Price</span>
+                      <SortIcon column="amount" />
+                    </button>
+                  </th>
+
+                  {/* Time Column */}
+                  <th className="px-6 py-4 text-left">
+                    <span className="font-semibold text-gray-700">Time</span>
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200">
+                {loading ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                        <span className="ml-3 text-gray-600">Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : paymentHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                      No payment history found
+                    </td>
+                  </tr>
+                ) : (
+                  paymentHistory.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-gray-800">{item.date}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-gray-800">{item.location}</span>
+                          <span className="text-xs text-gray-500 mt-1">
+                            {item.method?.toUpperCase()} • {item.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          item.status === 'success' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : item.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {item.amount.toLocaleString()} VND
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{item.time}</td>
                     </tr>
                   ))
                 )}
