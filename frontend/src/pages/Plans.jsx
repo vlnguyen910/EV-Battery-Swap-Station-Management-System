@@ -135,18 +135,9 @@ export default function Plans() {
     }
   }
 
-  // Load subscriptions from localStorage (temporary until backend is ready)
-  useEffect(() => {
-    const savedSubscriptions = localStorage.getItem('subscriptions')
-    if (savedSubscriptions) {
-      try {
-        setSubscriptions(JSON.parse(savedSubscriptions))
-      } catch (err) {
-        console.error('Error parsing subscriptions:', err)
-        setSubscriptions([])
-      }
-    }
-  }, [])
+  // Previously we preloaded subscriptions from localStorage here which caused
+  // the UI to briefly show stale "subscribed" state on page refresh. Removed
+  // that preload so we only render subscriptions from the backend fetch.
 
   // Fetch packages on component mount
   useEffect(() => {

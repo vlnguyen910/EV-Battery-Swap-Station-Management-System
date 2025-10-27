@@ -37,6 +37,7 @@ export default function VehicleStatusCard({ vehicles = [], onFindStations }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[22px]">Vehicle Status</CardTitle>
+          <h4>CANH BAO THEM SO SLOT CON LAI</h4>
           {vehicles.length > 1 && (
             <div className="flex items-center gap-2">
               <button
@@ -61,28 +62,38 @@ export default function VehicleStatusCard({ vehicles = [], onFindStations }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 mb-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-gray-500 text-sm">Battery Type</span>
-            <span className="text-gray-900 text-sm">{currentVehicle.battery_type || 'N/A'}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-gray-500 text-sm">VIN</span>
-            <span className="text-gray-900 text-sm">{currentVehicle.vin || 'N/A'}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-gray-500 text-sm">Battery Model</span>
-            <span className="text-gray-900 text-sm">{currentVehicle.battery_model || 'N/A'}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-gray-500 text-sm">Status</span>
-            {currentVehicle.status ? (
-              <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-0.5 rounded-full">Active</span>
-            ) : (
-              <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded-full">Inactive</span>
-            )}
-          </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4 mb-4">
+          <div className="md:col-span-2 grid grid-cols-2 gap-x-4 gap-y-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-gray-500 text-sm">Battery Type</span>
+              <span className="text-gray-900 text-sm">{currentVehicle.battery_type || 'N/A'}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-gray-500 text-sm">VIN</span>
+              <span className="text-gray-900 text-sm">{currentVehicle.vin || 'N/A'}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-gray-500 text-sm">Battery Model</span>
+              <span className="text-gray-900 text-sm">{currentVehicle.battery_model || 'N/A'}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-gray-500 text-sm">Status</span>
+              {currentVehicle.status ? (
+                <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-0.5 rounded">Active</span>
+              ) : (
+                <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">Inactive</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center md:col-span-1">
+            <img 
+              src="/images/xe-may-1.png" 
+              alt="Vehicle" 
+              className="w-full max-w-[300px] h-auto object-contain"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-4">

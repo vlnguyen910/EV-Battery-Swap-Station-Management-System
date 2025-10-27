@@ -1,14 +1,14 @@
+//KHONG BIET CAI NAY DE LAM GI
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
 import { Link } from "react-router-dom"
 import { Battery } from "lucide-react"
-import { mockVehicles, mockBatteries } from "../../data/mockData"
 
 export default function VehicleStatus() {
   // Get current user's vehicle (user_id: 1, vehicle_id: 1)
   const vehicle = mockVehicles[0];
   const currentBattery = mockBatteries.find(b => b.battery_id === vehicle.battery_id);
-  
+
   const batteryLevel = currentBattery?.pin_hien_tai || 68;
   // Assuming 1% = 4.2km range for 100kWh battery
   const range = Math.floor(batteryLevel * 4.2);
@@ -48,12 +48,11 @@ export default function VehicleStatus() {
           {/* Battery Progress Bar */}
           <div className="relative">
             <div className="w-full bg-gray-300 rounded-full h-4 shadow-inner">
-              <div 
-                className={`h-4 rounded-full transition-all duration-300 shadow-sm ${
-                  batteryLevel > 50 ? 'bg-gradient-to-r from-green-600 to-green-400' :
-                  batteryLevel > 20 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                  'bg-gradient-to-r from-red-600 to-red-400'
-                }`}
+              <div
+                className={`h-4 rounded-full transition-all duration-300 shadow-sm ${batteryLevel > 50 ? 'bg-gradient-to-r from-green-600 to-green-400' :
+                    batteryLevel > 20 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
+                      'bg-gradient-to-r from-red-600 to-red-400'
+                  }`}
                 style={{ width: `${batteryLevel}%` }}
               ></div>
             </div>
