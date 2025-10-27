@@ -1,12 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileStats from '../components/profile/ProfileStats';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import VehiclesList from '../components/profile/VehiclesList';
 import { ArrowLeftRight, PiggyBank } from 'lucide-react';
-import { useVehicle } from '../hooks/useContext';
+import { vehicleService } from '../services/vehicleService';
 
 export default function Profile() {
+  const [vehicles, setVehicles] = useState([]);
+
   // Read user from localStorage (fallback to demo user)
   const user = useMemo(() => {
     try {
@@ -17,26 +19,26 @@ export default function Profile() {
     }
   }, []);
 
+  // Fetch vehicles from API
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      if (!user?.id) return;
+
+      try {
+        const vehicleData = await vehicleService.getVehicleByUserId(user.id);
+        setVehicles(vehicleData || []);
+      } catch (error) {
+        console.error('Error fetching vehicles:', error);
+        setVehicles([]);
+      }
+    };
+
+    fetchVehicles();
+  }, [user?.id]);
+
   const stats = [
     { label: 'Total Swaps', value: '128', icon: ArrowLeftRight, accent: 'text-blue-600 bg-blue-50' },
     { label: 'Total Savings', value: '$1,450.75', icon: PiggyBank, accent: 'text-blue-600 bg-blue-50' },
-  ];
-
-  const vehicles = [
-    {
-      name: '2023 Tesla Model 3',
-      active: true,
-      license: 'EVDRIVR',
-      vin: '...KLP123',
-      battery: '75 kWh',
-    },
-    {
-      name: '2021 Nissan Leaf',
-      active: false,
-      license: 'LEAFY',
-      vin: '...XYZ789',
-      battery: '40 kWh',
-    },
   ];
 
   return (
