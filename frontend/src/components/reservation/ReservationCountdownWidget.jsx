@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Battery, MapPin, Clock, X, Zap, UserCog } from 'lucide-react';
 import { useReservation, useAuth } from '../../hooks/useContext';
+import { useNavigate } from 'react-router-dom';
+import BookingSuccessHeader from '../booking/BookingSuccessHeader';
 
 export default function ReservationCountdownWidget() {
     const { activeReservation, updateReservationStatus, clearActiveReservation } = useReservation();
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isMinimized, setIsMinimized] = useState(false);
+
+    // confirmation modal state (declare early to avoid closure timing issues)
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [showCancelledScreen, setShowCancelledScreen] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Calculate initial time remaining
     useEffect(() => {
@@ -49,65 +57,67 @@ export default function ReservationCountdownWidget() {
         return () => clearInterval(timer);
     }, [activeReservation, timeRemaining, handleTimeExpired]);
 
-    const handleManualSwap = async () => {
-        if (!activeReservation || !user) {
-            alert('Missing required information for swap');
-            return;
-        }
 
-        console.log('Active reservation:', activeReservation);
-        console.log('Attempting to update reservation_id:', activeReservation.reservation_id);
-
-        try {
-            // Mark reservation as completed (scheduled → completed)
-            // This reservation is already the "swap request" in the new system
-            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'completed');
-
-            clearActiveReservation();
-            alert('Reservation completed! Manual swap request is now visible to staff.');
-        } catch (error) {
-            console.error('Failed to process manual swap:', error);
-            alert('Failed to process swap request');
-        }
-    };
 
     const handleCancelBooking = async () => {
         if (!activeReservation) return;
-
-        const confirm = window.confirm('Are you sure you want to cancel this reservation?');
-        if (!confirm) return;
-
-        try {
-            // Cancel reservation (scheduled → cancelled)
-            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
-            clearActiveReservation();
-        } catch (error) {
-            console.error('Failed to cancel reservation:', error);
-            alert('Failed to cancel reservation');
-        }
+        // show confirmation modal
+        setShowCancelDialog(true);
     };
 
     const handleCancel = async () => {
         if (!activeReservation) return;
+        // open confirmation modal
+        setShowCancelDialog(true);
+    };
 
-        const confirm = window.confirm('Are you sure you want to cancel this reservation?');
-        if (!confirm) return;
+    const performCancelReservation = useCallback(async () => {
+        if (!activeReservation || !user) return;
+        console.debug('performCancelReservation: start (optimistic)', { reservationId: activeReservation?.reservation_id, userId: user?.id ?? user?.user_id });
+
+        // Optimistic UI: immediately show cancelled screen so user sees feedback.
+        setShowCancelDialog(false);
+        setShowCancelledScreen(true);
+        setIsCancelling(true);
 
         try {
-            // Cancel reservation (scheduled → cancelled)
-            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
+            const updated = await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
+            console.debug('performCancelReservation: api success', updated);
+            // clear active reservation in context so other consumers update
             clearActiveReservation();
         } catch (error) {
-            console.error('Failed to cancel reservation:', error);
-            alert('Failed to cancel reservation');
+            console.error('Failed to cancel reservation (api):', error);
+            // revert optimistic UI and inform the user
+            setShowCancelledScreen(false);
+            alert('Failed to cancel reservation. Please try again.');
+        } finally {
+            setIsCancelling(false);
         }
-    };
+    }, [activeReservation, user, updateReservationStatus, clearActiveReservation]);
 
     const handleToggleMinimize = () => {
         setIsMinimized(!isMinimized);
     };
 
-    if (!activeReservation) return null;
+    if (!activeReservation && !showCancelledScreen) return null;
+
+    if (showCancelledScreen) {
+        // Full-screen cancelled view (reuses booking header styling)
+        return (
+            <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/20">
+                <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8 text-center">
+                    <BookingSuccessHeader
+                        title="Appointment canceled"
+                        subtitle="Hope to see you again soon 💫"
+                        variant="cancel"
+                    />
+                    <div className="flex justify-center">
+                        <button onClick={() => { setShowCancelledScreen(false); clearActiveReservation(); navigate('/driver/map'); }} className="bg-blue-600 text-white py-2 px-4 rounded-lg">Back to map</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const formatTime = (seconds) => {
         const hours = Math.floor(seconds / 3600);
@@ -182,6 +192,22 @@ export default function ReservationCountdownWidget() {
                                 <span>Cancel Booking</span>
                             </button>
 
+                        </div>
+                    </div>
+                )}
+                {/* Confirmation modal */}
+                {showCancelDialog && (
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black opacity-40" />
+                        <div className="relative bg-white rounded-lg p-6 z-[100000] max-w-sm w-full shadow-xl">
+                            <h3 className="text-lg font-bold mb-2">Confirm Cancellation</h3>
+                            <p className="text-gray-600 mb-4">Are you sure you want to cancel this reservation?</p>
+                            <div className="flex gap-3 justify-end">
+                                <button onClick={() => setShowCancelDialog(false)} className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">No</button>
+                                <button onClick={performCancelReservation} disabled={isCancelling} className={`bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded ${isCancelling ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                                    {isCancelling ? 'Cancelling...' : 'Yes'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -1,15 +1,17 @@
 import React from 'react';
 import { Battery, CheckCircle2, XCircle } from 'lucide-react';
 
-export default function StationInfoPanel({ 
-  stationInfo, 
+export default function StationInfoPanel({
+  stationInfo,
   bookingState,
   timeRemaining,
   onConfirmBooking,
   onCancelBooking,
   showCancelDialog,
   onConfirmCancel,
-  onCancelDialogClose
+  onCancelDialogClose,
+  selectedVehicleHasSubscription
+  , selectedVehicleBatteryModel
 }) {
 
 
@@ -22,6 +24,18 @@ export default function StationInfoPanel({
 
   const progressPercentage = Math.round((stationInfo.availableSlots / stationInfo.totalSlots) * 100);
 
+  // Determine available batteries at this station that are 'full'
+  const availableBatteries = Array.isArray(stationInfo.batteries) ? stationInfo.batteries.filter(b => String(b.status || '').toLowerCase() === 'full') : [];
+
+  // If a selected vehicle battery model is provided, filter batteries by model compatibility
+  const modelMatches = (battery, model) => {
+    if (!model) return true; // no filter
+    const bModel = battery?.battery_model ?? battery?.model ?? battery?.batteryModel ?? '';
+    return String(bModel).toLowerCase() === String(model).toLowerCase();
+  };
+
+  const compatibleBatteries = availableBatteries.filter(b => modelMatches(b, selectedVehicleBatteryModel));
+
   return (
     <div className="bg-white p-8 rounded-2xl shadow-xl">
       {/* Battery Availability Status */}
@@ -32,36 +46,57 @@ export default function StationInfoPanel({
             <span className="text-gray-700 font-semibold text-lg">Available Batteries</span>
           </div>
           <span className="text-2xl font-bold text-blue-800">
-            {stationInfo.availableSlots}/{stationInfo.totalSlots}
+            {availableBatteries.length}/{stationInfo.totalSlots}
           </span>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-          <div 
+          <div
             className="bg-blue-800 h-full rounded-full transition-all duration-300 shadow-sm"
             style={{ width: `${progressPercentage}%` }}
           />
+        </div>
+
+        {/* Compatible batteries message */}
+        <div className="mt-4">
+          {selectedVehicleBatteryModel ? (
+            <p className="text-sm text-gray-700">There are <span className="text-green-600 font-semibold">{compatibleBatteries.length}</span> batteries available that match your vehicle (<strong>{selectedVehicleBatteryModel}</strong>).</p>
+          ) : (
+            <p className="text-sm text-gray-600">Showing all available batteries: {availableBatteries.length}</p>
+          )}
         </div>
       </div>
 
       {/* Booking State UI */}
       {bookingState === 'idle' ? (
         /* Before Booking - Show Confirm Booking Button */
-        <button
-          onClick={onConfirmBooking}
-          disabled={stationInfo.availableSlots === 0}
-          className="w-full bg-blue-800 hover:bg-blue-700 disabled:bg-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-5 px-6 rounded-xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-        >
-          <CheckCircle2 size={22} />
-          Confirm Booking
-        </button>
+        <>
+          <button
+            onClick={onConfirmBooking}
+            disabled={
+              stationInfo.availableSlots === 0 ||
+              !selectedVehicleHasSubscription ||
+              (selectedVehicleBatteryModel && compatibleBatteries.length === 0)
+            }
+            className="w-full bg-blue-800 hover:bg-blue-700 disabled:bg-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-5 px-6 rounded-xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+          >
+            <CheckCircle2 size={22} />
+            Confirm Booking
+          </button>
+          {!selectedVehicleHasSubscription && (
+            <p className="text-sm mt-3 text-yellow-700 text-center">Selected vehicle has no active subscription — booking is disabled. <button onClick={() => window.location.href = '/driver/plans'} className="underline">View plans</button></p>
+          )}
+          {selectedVehicleBatteryModel && compatibleBatteries.length === 0 && (
+            <p className="text-sm mt-3 text-yellow-700 text-center">No compatible batteries available for this vehicle. Please select another station.</p>
+          )}
+        </>
       ) : (
         /* After Booking - Show Countdown Timer and Cancel */
         <div className="space-y-5">
           {/* Section Title */}
           <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">
-           Please arrive at the station within the time limit to complete the battery swap
+            Please arrive at the station within the time limit to complete the battery swap
           </h3>
 
           {/* Countdown Timer Display */}
