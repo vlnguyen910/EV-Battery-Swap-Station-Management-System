@@ -3,6 +3,7 @@ import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
+import { paymentService } from '../services/paymentService'
 
 export default function Plans() {
   const [packages, setPackages] = useState([])
@@ -135,18 +136,9 @@ export default function Plans() {
     }
   }
 
-  // Load subscriptions from localStorage (temporary until backend is ready)
-  useEffect(() => {
-    const savedSubscriptions = localStorage.getItem('subscriptions')
-    if (savedSubscriptions) {
-      try {
-        setSubscriptions(JSON.parse(savedSubscriptions))
-      } catch (err) {
-        console.error('Error parsing subscriptions:', err)
-        setSubscriptions([])
-      }
-    }
-  }, [])
+  // Previously we preloaded subscriptions from localStorage here which caused
+  // the UI to briefly show stale "subscribed" state on page refresh. Removed
+  // that preload so we only render subscriptions from the backend fetch.
 
   // Fetch packages on component mount
   useEffect(() => {
@@ -162,33 +154,37 @@ export default function Plans() {
 
     setSubscribing(true)
     try {
-      // Call backend API to create subscription
-      await subscriptionService.createSubscription(user.id, plan.rawData.package_id)
-      
-      // Refresh all data (packages + enriched subscriptions) after successful subscription
-      await fetchAllData()
-      
-      alert(`Successfully subscribed to ${plan.name}!`)
-    } catch (err) {
-      console.error('Subscription failed:', err)
-      alert(`Subscription failed: ${err.message}`)
-      
-      // Fallback: save to localStorage if API fails
-      const newSub = {
-        id: Date.now(), // temporary ID
+      // Create payment data for VNPay
+      const paymentData = {
         user_id: user.id,
         package_id: plan.rawData.package_id,
-        name: plan.name,
-        price: plan.price,
-        period: plan.period,
-        subscribedAt: new Date().toISOString()
+        orderDescription: `Subscribe to ${plan.name}`,
+        language: 'vn', // or 'en'
       }
 
-      const updatedSubscriptions = [...subscriptions, newSub]
-      setSubscriptions(updatedSubscriptions)
+      console.log('Sending payment data:', paymentData)
 
-      // Save to localStorage (temporary until backend is ready)
-      localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions))
+      // Call createPayment to get VNPay URL
+      const response = await paymentService.createPayment(paymentData)
+      
+      console.log('Payment response:', response)
+
+      if (response.paymentUrl) {
+        // Redirect to VNPay payment page
+        window.location.href = response.paymentUrl
+      } else {
+        throw new Error('No payment URL received from server')
+      }
+    } catch (err) {
+      console.error('Payment creation failed:', err)
+      console.error('Error response:', err.response?.data)
+      
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.error 
+        || err.message 
+        || 'Unable to create payment'
+      
+      alert(`Payment failed: ${errorMessage}`)
     } finally {
       setSubscribing(false)
     }

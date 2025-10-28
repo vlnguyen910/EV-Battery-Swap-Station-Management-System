@@ -46,8 +46,7 @@ function App() {
         </Route>
 
         {/* Payment Routes (outside Driver layout for clean UI) */}
-        <Route path="/payment/success" element={<Payment />} />
-        <Route path="/payment/failure" element={<Payment />} />
+
 
         {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
@@ -60,6 +59,9 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
+          <Route path="payment/success" element={<Payment />} />
+          <Route path="payment/failure" element={<Payment />} />
+          <Route path="payment/error" element={<Payment />} />
         </Route>
       </Routes>
     </div>
