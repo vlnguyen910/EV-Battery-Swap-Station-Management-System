@@ -10,10 +10,6 @@
 //         // Delete in correct order to respect foreign key constraints
 //         // (child tables first, then parent tables)
 
-//         console.log('📋 Deleting subscriptions...');
-//         const deletedSubscriptions = await prisma.subscription.deleteMany();
-//         console.log(`   ✓ Deleted ${deletedSubscriptions.count} subscriptions`);
-
 //         console.log('🔄 Deleting swap transactions...');
 //         const deletedSwapTransactions = await prisma.swapTransaction.deleteMany();
 //         console.log(`   ✓ Deleted ${deletedSwapTransactions.count} swap transactions`);
@@ -29,6 +25,22 @@
 //         console.log('🆘 Deleting support tickets...');
 //         const deletedSupports = await prisma.support.deleteMany();
 //         console.log(`   ✓ Deleted ${deletedSupports.count} support tickets`);
+
+//         console.log('📋 Deleting subscriptions...');
+//         const deletedSubscriptions = await prisma.subscription.deleteMany();
+//         console.log(`   ✓ Deleted ${deletedSubscriptions.count} subscriptions`);
+
+//         console.log('🔁 Deleting battery transfer requests...');
+//         try {
+//             const deletedTransferRequests = await prisma.batteryTransferRequest.deleteMany();
+//             console.log(`   ✓ Deleted ${deletedTransferRequests.count} battery transfer requests`);
+//         } catch (error: any) {
+//             if (error.code === 'P2021') {
+//                 console.log('   ⚠️  Battery transfer requests table does not exist yet, skipping...');
+//             } else {
+//                 throw error;
+//             }
+//         }
 
 //         console.log('🚗 Deleting vehicles...');
 //         const deletedVehicles = await prisma.vehicle.deleteMany();
@@ -54,7 +66,7 @@
 
 //         // Verify all tables are empty
 //         console.log('\n📊 Verifying database is empty...');
-//         const finalCounts = {
+//         const finalCounts: Record<string, number> = {
 //             users: await prisma.user.count(),
 //             stations: await prisma.station.count(),
 //             batteries: await prisma.battery.count(),
@@ -62,8 +74,19 @@
 //             vehicles: await prisma.vehicle.count(),
 //             reservations: await prisma.reservation.count(),
 //             swapTransactions: await prisma.swapTransaction.count(),
-//             subscriptions: await prisma.subscription.count()
+//             subscriptions: await prisma.subscription.count(),
+//             payments: await prisma.payment.count(),
+//             supports: await prisma.support.count(),
 //         };
+
+//         // Try to count battery transfer requests if table exists
+//         try {
+//             finalCounts.batteryTransferRequests = await prisma.batteryTransferRequest.count();
+//         } catch (error: any) {
+//             if (error.code === 'P2021') {
+//                 finalCounts.batteryTransferRequests = 0;
+//             }
+//         }
 
 //         console.log('Final counts:', finalCounts);
 

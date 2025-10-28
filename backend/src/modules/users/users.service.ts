@@ -1,10 +1,9 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
 import { hashPassword } from 'src/shared/utils/hash-password.util';
-import { emit } from 'process';
 import { $Enums } from '@prisma/client';
 
 @Injectable()
@@ -55,9 +54,15 @@ export class UsersService {
   }
 
   async findOneById(user_id: number) {
-    return this.databaseService.user.findUnique({
+    const user = await this.databaseService.user.findUnique({
       where: { user_id }
     });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID: ${user_id} not found `);
+    }
+
+    return user;
   }
 
   async findOneByEmailOrPhone(emailOrPhone: string) {

@@ -101,7 +101,7 @@ export class SwappingService {
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
 
                 const returnBattery = await this.batteriesService.findOne(return_battery_id);
-                const batteryUsedPercent = fullBatteryPercent - returnBattery.current_charge;
+                const batteryUsedPercent = fullBatteryPercent - returnBattery.current_charge.toNumber();
                 const distanceTraveled = batteryUsedPercent * kmPerPercent;
 
                 // Update distance traveled in subscription

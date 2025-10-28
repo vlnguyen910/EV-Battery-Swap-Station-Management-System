@@ -28,6 +28,11 @@ export class VehiclesController {
     return this.vehiclesService.findByVin(vin);
   }
 
+  @Get('user/:userId')
+  findByUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.vehiclesService.findByUser(userId);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.vehiclesService.findOne(id);
@@ -39,6 +44,13 @@ export class VehiclesController {
     @Body() updateVehicleDto: UpdateVehicleDto,
   ) {
     return this.vehiclesService.update(id, updateVehicleDto);
+  }
+
+  @Patch('add-vehicle')
+  assignVehicleToUser(
+    @Body() assignVehicleDto: AssignVehicleDto,
+  ) {
+    return this.vehiclesService.assignVehicleToUser(assignVehicleDto);
   }
 
   @Delete(':id')

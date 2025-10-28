@@ -6,6 +6,10 @@
 // async function clearDatabase() {
 //     console.log('🗑️  Clearing existing data...\n');
 
+//     // Delete in correct order to respect foreign key constraints
+//     await prisma.batteries.deleteMany();
+//     await prisma.batteryTransferTicket.deleteMany();
+//     await prisma.batteryTransferRequest.deleteMany();
 //     await prisma.support.deleteMany();
 //     await prisma.payment.deleteMany();
 //     await prisma.swapTransaction.deleteMany();
@@ -105,11 +109,7 @@
 //             phone: '0934567890',
 //             email: 'staff1@evswap.com',
 //             role: 'station_staff',
-//             station: {
-//                 connect: {
-//                     station_id: station1.station_id,
-//                 },
-//             },
+//             station_id: station1.station_id,
 //         },
 //     });
 
@@ -120,20 +120,28 @@
 //             phone: '0945678901',
 //             email: 'staff2@evswap.com',
 //             role: 'station_staff',
-//             station: {
-//                 connect: {
-//                     station_id: station2.station_id,
-//                 },
-//             },
+//             station_id: station2.station_id,
 //         },
 //     });
 
-//     console.log(`   ✓ Created ${2} station staff`);
+//     const staff3 = await prisma.user.create({
+//         data: {
+//             username: 'Staff Station 3',
+//             password: hashedPassword,
+//             phone: '0956789012',
+//             email: 'staff3@evswap.com',
+//             role: 'station_staff',
+//             station_id: station3.station_id,
+//         },
+//     });
+
+//     console.log(`   ✓ Created ${3} station staff`);
 
 //     // 4. Seed Batteries
 //     console.log('🔋 Seeding batteries...');
 //     const batteries = [];
 
+//     // Station 1 batteries
 //     for (let i = 1; i <= 5; i++) {
 //         batteries.push(
 //             await prisma.battery.create({
@@ -150,6 +158,7 @@
 //         );
 //     }
 
+//     // Station 2 batteries
 //     for (let i = 6; i <= 10; i++) {
 //         batteries.push(
 //             await prisma.battery.create({
@@ -161,6 +170,23 @@
 //                     current_charge: 75.0 + (i % 5),
 //                     soh: 93.0 + (i % 5) * 0.8,
 //                     status: i === 6 ? 'charging' : 'full',
+//                 },
+//             })
+//         );
+//     }
+
+//     // Station 3 batteries
+//     for (let i = 11; i <= 15; i++) {
+//         batteries.push(
+//             await prisma.battery.create({
+//                 data: {
+//                     station_id: station3.station_id,
+//                     model: `Battery Model ${i}`,
+//                     type: i % 2 === 0 ? 'Lithium-Ion' : 'LiFePO4',
+//                     capacity: 75.5,
+//                     current_charge: 70.0 + (i % 5),
+//                     soh: 90.0 + (i % 5) * 0.6,
+//                     status: 'full',
 //                 },
 //             })
 //         );
@@ -425,6 +451,133 @@
 
 //     console.log(`   ✓ Created ${3} support tickets`);
 
+//     // 12. Seed Battery Transfer Requests
+//     console.log('📦 Seeding battery transfer requests...');
+//     const transferRequest1 = await prisma.batteryTransferRequest.create({
+//         data: {
+//             battery_model: 'Battery Model 1',
+//             battery_type: 'LiFePO4',
+//             quantity: 3,
+//             from_station_id: station1.station_id,
+//             to_station_id: station2.station_id,
+//             status: 'completed',
+//             created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     const transferRequest2 = await prisma.batteryTransferRequest.create({
+//         data: {
+//             battery_model: 'Battery Model 6',
+//             battery_type: 'Lithium-Ion',
+//             quantity: 2,
+//             from_station_id: station2.station_id,
+//             to_station_id: station3.station_id,
+//             status: 'in_progress',
+//             created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     const transferRequest3 = await prisma.batteryTransferRequest.create({
+//         data: {
+//             battery_model: 'Battery Model 11',
+//             battery_type: 'LiFePO4',
+//             quantity: 4,
+//             from_station_id: station3.station_id,
+//             to_station_id: station1.station_id,
+//             status: 'cancelled',
+//             created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     console.log(`   ✓ Created ${3} battery transfer requests`);
+
+//     // 13. Seed Battery Transfer Tickets
+//     console.log('🎫 Seeding battery transfer tickets...');
+
+//     // Export ticket from Station 1 (completed request)
+//     const exportTicket1 = await prisma.batteryTransferTicket.create({
+//         data: {
+//             transfer_request_id: transferRequest1.transfer_request_id,
+//             ticket_type: 'export',
+//             station_id: station1.station_id,
+//             staff_id: staff1.user_id,
+//             created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     // Import ticket to Station 2 (completed request)
+//     const importTicket1 = await prisma.batteryTransferTicket.create({
+//         data: {
+//             transfer_request_id: transferRequest1.transfer_request_id,
+//             ticket_type: 'import',
+//             station_id: station2.station_id,
+//             staff_id: staff2.user_id,
+//             created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     // Export ticket from Station 2 (in progress request)
+//     const exportTicket2 = await prisma.batteryTransferTicket.create({
+//         data: {
+//             transfer_request_id: transferRequest2.transfer_request_id,
+//             ticket_type: 'export',
+//             station_id: station2.station_id,
+//             staff_id: staff2.user_id,
+//             created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+//         },
+//     });
+
+//     console.log(`   ✓ Created ${3} battery transfer tickets`);
+
+//     // 14. Seed Batteries Transfer (linking batteries to tickets)
+//     console.log('🔗 Seeding batteries transfer records...');
+
+//     // For completed transfer (request 1)
+//     await prisma.batteries.createMany({
+//         data: [
+//             {
+//                 ticket_id: exportTicket1.ticket_id,
+//                 battery_id: batteries[1].battery_id,
+//             },
+//             {
+//                 ticket_id: exportTicket1.ticket_id,
+//                 battery_id: batteries[2].battery_id,
+//             },
+//             {
+//                 ticket_id: exportTicket1.ticket_id,
+//                 battery_id: batteries[3].battery_id,
+//             },
+//             {
+//                 ticket_id: importTicket1.ticket_id,
+//                 battery_id: batteries[1].battery_id,
+//             },
+//             {
+//                 ticket_id: importTicket1.ticket_id,
+//                 battery_id: batteries[2].battery_id,
+//             },
+//             {
+//                 ticket_id: importTicket1.ticket_id,
+//                 battery_id: batteries[3].battery_id,
+//             },
+//         ],
+//     });
+
+//     // For in-progress transfer (request 2)
+//     await prisma.batteries.createMany({
+//         data: [
+//             {
+//                 ticket_id: exportTicket2.ticket_id,
+//                 battery_id: batteries[6].battery_id,
+//             },
+//             {
+//                 ticket_id: exportTicket2.ticket_id,
+//                 battery_id: batteries[7].battery_id,
+//             },
+//         ],
+//     });
+
+//     console.log(`   ✓ Created ${8} batteries transfer records`);
+
 //     console.log('\n✅ Database seeding completed successfully!\n');
 
 //     // Summary
@@ -439,6 +592,9 @@
 //     console.log('   Reservations:', await prisma.reservation.count());
 //     console.log('   Swap Transactions:', await prisma.swapTransaction.count());
 //     console.log('   Support Tickets:', await prisma.support.count());
+//     console.log('   Battery Transfer Requests:', await prisma.batteryTransferRequest.count());
+//     console.log('   Battery Transfer Tickets:', await prisma.batteryTransferTicket.count());
+//     console.log('   Batteries Transfer Records:', await prisma.batteries.count());
 // }
 
 // main()

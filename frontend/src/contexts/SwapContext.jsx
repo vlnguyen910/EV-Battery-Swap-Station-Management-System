@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { swapService } from "../services/swapService";
+import { swappingService } from "../services/swappingService";
 import { useNavigate } from "react-router-dom";
 
 const { createSwapTransaction: createSwapTransactionService,
@@ -24,13 +25,38 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await createSwapTransactionService(swapData);
+            // If backend returns the created swap object under `swapTransaction`, use it.
+            const created = response?.swapTransaction || response;
+            // prepend to local list so UI reflects newest transaction immediately
+            setSwapTransaction(prev => [created, ...prev]);
             return response;
         } catch (error) {
             setError(error);
+            // propagate error so callers (UI) can react to failures
+            throw error;
         } finally {
             setLoading(false);
         }
     }
+
+    // Function to perform automatic swap flow (server resolves vehicle/subscription/batteries)
+    const swapBatteries = async (payload) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await swappingService.swapBatteries(payload);
+            // backend returns swapTransaction inside response.swapTransaction (see backend)
+            const created = response?.swapTransaction || response;
+            // prepend to local list so UI reflects newest transaction immediately
+            setSwapTransaction(prev => [created, ...prev]);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Function to get a swap transaction by ID
     const getSwapTransactionById = async (transactionId) => {
@@ -41,6 +67,7 @@ export const SwapProvider = ({ children }) => {
             return response;
         } catch (error) {
             setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -53,10 +80,35 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await updateSwapTransactionService(transactionId, updateData);
-            setSwapTransaction([...swapTransaction, response]);
+            // replace existing item in state if present, otherwise append
+            setSwapTransaction(prev => {
+                const updatedItem = response?.swapTransaction || response;
+                const idx = prev.findIndex(t => String(t.transaction_id || t.id) === String(transactionId));
+                if (idx === -1) return [updatedItem, ...prev];
+                const copy = [...prev];
+                copy[idx] = updatedItem;
+                return copy;
+            });
             return response;
         } catch (error) {
             setError(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to get all swap transaction histories by user ID
+    const getAllSwapHistoriesByUserId = async (userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllSwapTransactionsByUserIdService(userId);
+            console.log("Fetched swap histories by user ID:", response);
+            return response;
+        } catch (error) {
+            setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -69,9 +121,12 @@ export const SwapProvider = ({ children }) => {
 
         try {
             const response = await getAllSwapTransactionsService();
+            // store fetched histories in local state
+            setSwapTransaction(Array.isArray(response) ? response : (response?.data || []));
             return response;
         } catch (error) {
             setError(error);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -87,9 +142,12 @@ export const SwapProvider = ({ children }) => {
                 loading,
                 error,
                 createSwapTransaction,
+                swapBatteries,
                 getSwapTransactionById,
                 getAllSwapHistories,
                 updateSwapTransaction,
+                swapTransaction,
+                getAllSwapHistoriesByUserId,
             }}
         >
             {children}

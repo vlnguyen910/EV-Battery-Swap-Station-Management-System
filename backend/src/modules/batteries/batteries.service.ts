@@ -75,11 +75,14 @@ export class BatteriesService {
     return bestBattery;
   }
 
-  async findOne(id: number, tx?: any) {
-    const db = tx ?? this.databaseService;
-    return await db.battery.findUnique({
+  async findOne(id: number) {
+    const battery = await this.databaseService.battery.findUnique({
       where: { battery_id: id },
     });
+    if (!battery) {
+      throw new NotFoundException(`Battery with ID ${id} not found`);
+    }
+    return battery;
   }
 
   async assignBatteryToVehicle(
@@ -90,8 +93,7 @@ export class BatteriesService {
     try {
       const db = tx ?? this.databaseService;
 
-      // Check if battery exists and is full (use tx if provided)
-      const battery = await this.findOne(battery_id, tx);
+      const battery = await this.findOne(battery_id);
       if (!battery) {
         throw new NotFoundException(`Battery with ID ${battery_id} not found`);
       }
@@ -133,7 +135,7 @@ export class BatteriesService {
       const db = tx ?? this.databaseService;
 
       // Check if battery exists
-      const battery = await this.findOne(battery_id, tx);
+      const battery = await this.findOne(battery_id);
       if (!battery) {
         throw new NotFoundException(`Battery with ID ${battery_id} not found`);
       }

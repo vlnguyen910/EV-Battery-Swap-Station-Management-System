@@ -22,7 +22,7 @@ export default function Navigation({ type = "main" }) {
           {/* Menu */}
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-              Trang chủ
+              Home
             </Link>
 
             {/* Dropdown */}
@@ -31,7 +31,7 @@ export default function Navigation({ type = "main" }) {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium flex items-center"
               >
-                Dịch vụ
+                Services
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -43,14 +43,14 @@ export default function Navigation({ type = "main" }) {
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    Trạm đổi pin
+                    Swap Stations
                   </Link>
                   <Link
                     to="/batteries"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    Quản lý pin
+                    Battery Management
                   </Link>
                   <Link
                     to="/dashboard"
@@ -64,13 +64,13 @@ export default function Navigation({ type = "main" }) {
             </div>
 
             <Link to="/users" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-              Người dùng
+              Users
             </Link>
             <Link to="/reports" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-              Báo cáo
+              Reports
             </Link>
             <Link to="/help" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-              Hỗ trợ
+              Support
             </Link>
           </div>
 
@@ -81,7 +81,7 @@ export default function Navigation({ type = "main" }) {
               <span className="text-white">EN</span>
             </div>
             <button className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">
-              <Link to="/login">Đăng nhập</Link>
+              <Link to="/login">Login</Link>
             </button>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function Navigation({ type = "main" }) {
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-search-line mr-2 text-blue-500"></i>
-              Kiểm tra pin
+              Battery Inspection
             </Link>
 
             <Link
@@ -134,7 +134,7 @@ export default function Navigation({ type = "main" }) {
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-archive-line mr-2 text-blue-500"></i>
-              Kho pin
+              Battery Inventory
             </Link>
 
             <Link
@@ -142,7 +142,7 @@ export default function Navigation({ type = "main" }) {
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-swap-line mr-2 text-orange-500"></i>
-              Yêu cầu đổi pin
+              Swap Requests
             </Link>
 
             {/* Dropdown Status */}
@@ -152,7 +152,7 @@ export default function Navigation({ type = "main" }) {
                 className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
               >
                 <i className="ri-battery-2-charge-line mr-2 text-blue-500"></i>
-                Trạng thái pin
+                Battery Status
                 <i
                   className={`ri-arrow-down-s-line ml-1 transition-transform ${isDropdownOpen ? "rotate-180" : ""
                     }`}
@@ -163,22 +163,22 @@ export default function Navigation({ type = "main" }) {
                 <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 shadow-lg rounded-md z-10">
                   <button className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center w-full px-3 py-2">
                     <i className="ri-time-line mr-2 text-blue-500"></i>
-                    Chờ xử lý
+                    Pending
                   </button>
                   <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
                     <i className="ri-loader-2-line mr-2 animate-spin text-yellow-500"></i>
-                    Đang xử lý
+                    In progress
                   </button>
                   <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
                     <i className="ri-check-double-line mr-2 text-green-500"></i>
-                    Hoàn thành
+                    Completed
                   </button>
                 </div>
               )}
             </div>
 
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-700">Nhân viên</span>
+              <span className="text-sm text-gray-700">Staff</span>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <i className="ri-user-3-line text-green-600 text-lg"></i>
               </div>
