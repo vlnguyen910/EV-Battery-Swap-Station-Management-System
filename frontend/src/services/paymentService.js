@@ -14,8 +14,21 @@ const getPaymentByUserId = async (userId) => {
     throw error;
   }
 };
+
+const createPayment = async (paymentData) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.PAYMENT.CREATE_VNPAY_URL, paymentData);
+    console.log("Created payment:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating payment:", error);
+    throw error;
+  }
+};
+
 export const paymentService = {
   getPaymentByUserId,
+  createPayment,
 };
 
 
