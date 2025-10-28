@@ -6,6 +6,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { $Enums } from '@prisma/client';
+import { AssignVehicleDto } from './dto/assign-vehicle.dto';
 
 @Controller('vehicles')
 @UseGuards(AuthGuard, RolesGuard)
@@ -30,7 +31,7 @@ export class VehiclesController {
 
   @Get('user/:userId')
   findByUser(@Param('userId', ParseIntPipe) userId: number) {
-    return this.vehiclesService.findByUser(userId);
+    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get(':id')
