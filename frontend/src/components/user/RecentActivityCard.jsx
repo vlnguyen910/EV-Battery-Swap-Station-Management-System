@@ -1,14 +1,103 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Zap, CheckCircle } from 'lucide-react';
+import { Zap, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
+import { swapService } from '../../services/swapService';
 
-export default function RecentActivityCard({ items = [], onViewAll }) {
-  const recent = items.length ? items : [
-    { title: 'ChargePoint Station', date: 'Oct 26, 2023', from: '40%', to: '85%', price: '$12.50' },
-    { title: 'EVgo Downtown', date: 'Oct 24, 2023', from: '25%', to: '90%', price: '$18.20' },
-  ];
+export default function RecentActivityCard({ onViewAll }) {
+  const [swapTransactions, setSwapTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Get user from localStorage
+  const user = useMemo(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchSwapHistory = async () => {
+      if (!user?.id) {
+        setSwapTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const transactions = await swapService.getAllSwapTransactionsByUserId(user.id);
+        
+        // Get recent 3 transactions
+        const recentActivities = (transactions || [])
+          .slice(0, 3)
+          .map(transaction => ({
+            transaction_id: transaction.transaction_id,
+            station: `Station ${transaction.station_id}`,
+            date: transaction.createAt 
+              ? new Date(transaction.createAt).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })
+              : 'N/A',
+            time: transaction.createAt 
+              ? new Date(transaction.createAt).toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })
+              : 'N/A',
+            status: transaction.status,
+            batteryTaken: transaction.battery_taken_id,
+            batteryReturned: transaction.battery_returned_id,
+            createAt: transaction.createAt
+          }));
+        
+        setSwapTransactions(recentActivities);
+      } catch (error) {
+        console.error('Error fetching swap transactions:', error);
+        setSwapTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSwapHistory();
+  }, [user?.id]);
+
+  const getStatusConfig = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return {
+          icon: CheckCircle,
+          color: 'text-green-600',
+          bgColor: 'bg-green-100',
+          label: 'Completed'
+        };
+      case 'pending':
+        return {
+          icon: Clock,
+          color: 'text-yellow-600',
+          bgColor: 'bg-yellow-100',
+          label: 'Pending'
+        };
+      case 'failed':
+        return {
+          icon: XCircle,
+          color: 'text-red-600',
+          bgColor: 'bg-red-100',
+          label: 'Failed'
+        };
+      default:
+        return {
+          icon: AlertCircle,
+          color: 'text-gray-600',
+          bgColor: 'bg-gray-100',
+          label: status || 'Unknown'
+        };
+    }
+  };
 
   return (
     <Card className="bg-white border-gray-200">
@@ -16,10 +105,10 @@ export default function RecentActivityCard({ items = [], onViewAll }) {
         <div className="w-full flex items-start justify-between">
           <div>
             <CardTitle className="text-[22px]">Recent Activity</CardTitle>
-            <CardDescription>Latest swap/charge events</CardDescription>
+            <CardDescription>Latest battery swap transactions</CardDescription>
           </div>
           <Link
-            to="/driver/reports"
+            to="/driver/swap-history"
             onClick={(e) => {
               if (onViewAll) {
                 e.preventDefault();
@@ -33,24 +122,45 @@ export default function RecentActivityCard({ items = [], onViewAll }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {recent.map((item, idx) => (
-          <div key={idx} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 text-blue-700 p-2 rounded-full"><Zap size={18} /></div>
-              <div>
-                <p className="font-medium text-gray-900">{item.title}</p>
-                <p className="text-gray-500 text-sm">{item.date}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-medium text-gray-900">{item.from} -&gt; {item.to}</p>
-              <p className="text-gray-500 text-sm">{item.price}</p>
-            </div>
-            <div className="text-green-600 font-medium text-sm flex items-center gap-1">
-              <CheckCircle size={16} /> Completed
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ))}
+        ) : swapTransactions.length === 0 ? (                       
+          <div className="text-center py-8 text-gray-500">
+            <Zap className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>No recent swap transactions</p>
+          </div>
+        ) : (
+          swapTransactions.map((item) => {
+            const statusConfig = getStatusConfig(item.status);
+            const StatusIcon = statusConfig.icon;
+
+            return (
+              <div 
+                key={item.transaction_id} 
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`${statusConfig.bgColor} ${statusConfig.color} p-2 rounded-full`}>
+                    <Zap size={18} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{item.station}</p>
+                    <p className="text-gray-500 text-sm">{item.date} at {item.time}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-gray-900">Battery Swap</p>
+                  
+                </div>
+                <div className={`${statusConfig.color} font-medium text-sm flex items-center gap-1`}>
+                  <StatusIcon size={16} /> {statusConfig.label}
+                </div>
+              </div>
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );

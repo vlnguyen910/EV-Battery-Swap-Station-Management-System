@@ -18,6 +18,7 @@ import StaffInspection from './components/dashboard/StaffInspection'
 import User from './pages/User'
 import StaffSwapRequests from './components/swap/StaffSwapRequests'
 import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
+import Payment from './pages/Payment'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -44,6 +45,9 @@ function App() {
           <Route path="manual-swap" element={<ManualSwapTransaction />} />
         </Route>
 
+        {/* Payment Routes (outside Driver layout for clean UI) */}
+
+
         {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
           {/* Route con */}
@@ -55,6 +59,9 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
+          <Route path="payment/success" element={<Payment />} />
+          <Route path="payment/failure" element={<Payment />} />
+          <Route path="payment/error" element={<Payment />} />
         </Route>
       </Routes>
     </div>

@@ -26,9 +26,23 @@ const createPayment = async (paymentData) => {
   }
 };
 
+const handleVnpayReturn = async (queryParams) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.PAYMENT.VNPAY_RETURN, {
+      params: queryParams,
+    });
+    console.log("vnpay return data: ", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error handling VNPay return:", error);
+    throw error;
+  }
+};
+
 export const paymentService = {
   getPaymentByUserId,
   createPayment,
+  handleVnpayReturn,
 };
 
 

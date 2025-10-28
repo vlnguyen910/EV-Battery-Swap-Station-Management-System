@@ -6,8 +6,8 @@ import { vehicleService } from '../services/vehicleService';
 import DashboardHeader from '../components/user/DashboardHeader';
 import VehicleStatusCard from '../components/user/VehicleStatusCard';
 import RecentActivityCard from '../components/user/RecentActivityCard';
-import MonthSummaryCard from '../components/user/MonthSummaryCard';
 import NearbyStationsCard from '../components/user/NearbyStationsCard';
+import PlansCard from '../components/user/PlansCard';
 import HelpLinksCard from '../components/user/HelpLinksCard';
 import SwapSuccessDialog from '../components/dashboard/SwapSuccessDialog';
 
@@ -114,8 +114,8 @@ export default function User() {
 
               {/* Right column */}
               <div className="lg:col-span-1 flex flex-col gap-6 ml-6">
-                <MonthSummaryCard />
-
+                {/* <MonthSummaryCard /> */}
+                <PlansCard/>  
                 <NearbyStationsCard stations={nearbyStations} onViewAll={() => navigate('/driver/map')} />
 
                 <HelpLinksCard

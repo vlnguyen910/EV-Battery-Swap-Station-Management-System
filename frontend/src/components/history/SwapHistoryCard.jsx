@@ -63,17 +63,6 @@ export default function SwapHistoryCard({
                 <span className="font-semibold text-gray-700">Location</span>
               </th>
 
-              {/* Amount Column */}
-              <th className="px-6 py-4 text-left">
-                <button
-                  onClick={() => onSort('amount')}
-                  className="flex items-center space-x-2 font-semibold text-gray-700 hover:text-green-600 transition-colors"
-                >
-                  <span>Amount</span>
-                  <SortIcon column="amount" />
-                </button>
-              </th>
-
               {/* Time Column */}
               <th className="px-6 py-4 text-left">
                 <span className="font-semibold text-gray-700">Time</span>
@@ -84,7 +73,7 @@ export default function SwapHistoryCard({
           <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="4" className="px-6 py-12 text-center">
+                <td colSpan="3" className="px-6 py-12 text-center">
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
                     <span className="ml-3 text-gray-600">Loading...</span>
@@ -93,7 +82,7 @@ export default function SwapHistoryCard({
               </tr>
             ) : swapHistory.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
                   No swap history found
                 </td>
               </tr>
@@ -102,11 +91,6 @@ export default function SwapHistoryCard({
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-gray-800">{item.date}</td>
                   <td className="px-6 py-4 text-gray-600">{item.location}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                      {item.amount} {item.amount === 1 ? 'battery' : 'batteries'}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 text-gray-600">{item.time}</td>
                 </tr>
               ))
