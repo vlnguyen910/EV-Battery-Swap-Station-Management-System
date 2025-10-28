@@ -74,29 +74,36 @@ export class VehiclesService {
     return vehicle;
   }
 
-  async findByUser(userId: number) {
-    return await this.databaseService.vehicle.findMany({
+  async findManyByUser(userId: number) {
+    const vehicles = await this.databaseService.vehicle.findMany({
       where: { user_id: userId },
       include: {
-        user: {
+        battery: {
           select: {
-            user_id: true,
-            username: true,
-            email: true,
-            role: true,
+            capacity: true,
+            current_charge: true,
+            soh: true,
           },
-        },
+        }
       },
     });
+
+    return vehicles;
   }
 
   async findOneActiveByUserId(userId: number) {
-    return await this.databaseService.vehicle.findFirst({
+    const activeVehicle = await this.databaseService.vehicle.findFirst({
       where: {
         user_id: userId,
         status: VehicleStatus.active
       },
     });
+
+    if (!activeVehicle) {
+      throw new NotFoundException(`No active vehicle found for user ID ${userId}`);
+    }
+
+    return activeVehicle;
   }
 
   async findByVin(vin: string) {
