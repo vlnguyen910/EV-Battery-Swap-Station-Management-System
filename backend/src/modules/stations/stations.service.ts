@@ -28,7 +28,7 @@ export class StationsService {
 
   async findAll(status?: StationStatus) {
     const whereClause = status ? { status } : {};
-    
+
     return await this.databaseService.station.findMany({
       where: whereClause,
       include: {
@@ -52,27 +52,16 @@ export class StationsService {
     longitude: Decimal,
     radiusKm: number = 20
   ) {
-    const vehicles = await this.vehiclesService.findByUser(user_id);
+    const vehicle = await this.vehiclesService.findOneActiveByUserId(user_id);
 
-    if (vehicles.length === 0) {
-      throw new NotFoundException('No vehicles found for this user');
-    }
-
-    const activeVehicles = vehicles.filter(vehicles => vehicles.status === 'active');
-
-    if (activeVehicles.length === 0) {
-      throw new NotFoundException('No active vehicles found for this user');
-    }
-
-    const { battery_model, battery_type } = activeVehicles[0];
 
     const allAvailableStations = await this.databaseService.station.findMany({
       where: {
         status: 'active',
         batteries: {
           some: {
-            model: battery_model,
-            type: battery_type,
+            model: vehicle.battery_model,
+            type: vehicle.battery_type,
             status: 'full'
           }
         }
@@ -88,8 +77,8 @@ export class StationsService {
           select: {
             batteries: {
               where: {
-                model: battery_model,
-                type: battery_type,
+                model: vehicle.battery_model,
+                type: vehicle.battery_type,
                 status: 'full'
               }
             }
