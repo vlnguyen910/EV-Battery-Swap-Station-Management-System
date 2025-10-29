@@ -47,6 +47,7 @@ export class PaymentsService {
       data: {
         user_id: createPaymentDto.user_id,
         package_id: createPaymentDto.package_id,
+        vehicle_id: createPaymentDto.vehicle_id, // Save vehicle_id for subscription
         amount: servicePackage.base_price,
         method: PaymentMethod.vnpay,
         status: PaymentStatus.pending,
@@ -191,6 +192,7 @@ export class PaymentsService {
         data: {
           user_id: payment.user_id,
           package_id: payment.package_id || 0,
+          vehicle_id: payment.vehicle_id, // Assign vehicle_id from payment
           start_date: startDate,
           end_date: endDate,
           status: 'active',
@@ -367,6 +369,7 @@ export class PaymentsService {
       data: {
         user_id: mockPaymentDto.user_id,
         package_id: mockPaymentDto.package_id,
+        vehicle_id: mockPaymentDto.vehicle_id, // Save vehicle_id for subscription
         amount: servicePackage.base_price,
         method: PaymentMethod.vnpay,
         status: PaymentStatus.pending,
