@@ -151,7 +151,7 @@ export default function AddVehicleDialog({ onAdded }) {
                             <div>
                                 <label className="text-sm text-gray-700">Battery Type</label>
                                 <select className="w-full border rounded px-2 py-1" value={batteryType} onChange={(e) => setBatteryType(e.target.value)}>
-                                    <option value="">-- Select battery type --</option>
+                                    <option value="">Select battery type</option>
                                     {(batteryTypes || []).map(t => (
                                         <option key={t} value={t}>{t}</option>
                                     ))}
