@@ -141,9 +141,9 @@ export default function AddVehicleDialog({ onAdded }) {
                                         }
                                     }}
                                 >
-                                    <option value="">-- Select battery module --</option>
+                                    <option value="">Select battery module</option>
                                     {(modules || []).map(m => (
-                                        <option key={m.key} value={m.key}>{`${m.model} (${m.type})`}</option>
+                                        <option key={m.key} value={m.key}>{`${m.model}`}</option>
                                     ))}
                                 </select>
                             </div>
