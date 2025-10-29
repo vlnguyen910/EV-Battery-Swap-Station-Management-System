@@ -1,64 +1,60 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link } from "react-router-dom"
+import { useState } from "react"
 
-// Navigation component
-export default function Navigation() {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+export default function Navigation({ type = "main" }) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-  return (
-    <nav className="bg-blue-600 text-white shadow-lg">
+  // --- NAVBAR CHO MAIN WEBSITE ---
+  const MainNavigation = () => (
+    <nav className="bg-blue-800 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-lg">E</span>
+                <span className="text-blue-800 font-bold text-lg">E</span>
               </div>
               <span className="text-xl font-bold">EV SWAP</span>
             </Link>
           </div>
 
-          {/* Main Navigation */}
+          {/* Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/" 
-              className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Trang chủ
+            <Link to="/" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
+              Home
             </Link>
-            
-            {/* Dropdown for Services */}
+
+            {/* Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors duration-200"
+                className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium flex items-center"
               >
-                Dịch vụ
+                Services
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
               {isDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50">
-                  <Link 
-                    to="/stations" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                  <Link
+                    to="/stations"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    Trạm đổi pin
+                    Swap Stations
                   </Link>
-                  <Link 
-                    to="/batteries" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                  <Link
+                    to="/batteries"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    Quản lý pin
+                    Battery Management
                   </Link>
-                  <Link 
-                    to="/dashboard" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                  <Link
+                    to="/dashboard"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Dashboard
@@ -67,52 +63,141 @@ export default function Navigation() {
               )}
             </div>
 
-            <Link 
-              to="/users" 
-              className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Người dùng
+            <Link to="/users" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
+              Users
             </Link>
-            
-            <Link 
-              to="/reports" 
-              className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Báo cáo
+            <Link to="/reports" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
+              Reports
             </Link>
-            
-            <Link 
-              to="/help" 
-              className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Hỗ trợ
+            <Link to="/help" className="hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
+              Support
             </Link>
           </div>
 
-          {/* Right side - Language & Login */}
+          {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Language Selector */}
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-blue-200">VI</span>
               <span className="text-white">EN</span>
             </div>
-            
-            {/* Login Button */}
-            <button className="bg-white text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors duration-200">
-              ĐĂNG NHẬP
-            </button>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button className="text-white hover:text-blue-200 p-2">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            <button className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">
+              <Link to="/login">Login</Link>
             </button>
           </div>
         </div>
       </div>
     </nav>
-  );
+  )
+
+  // --- NAVBAR CHO STAFF ---
+  const StaffNavigation = () => (
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="mx-auto px-6">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <h1
+              className="text-2xl font-bold text-gray-900"
+              style={{ fontFamily: "Pacifico, serif" }}
+            >
+              hman Power
+            </h1>
+            <span className="ml-4 text-sm text-gray-500">Staff Portal</span>
+          </div>
+
+          <div className="flex items-center space-x-6">
+            <Link
+              to="/staff"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-layout-grid-line mr-2 text-blue-500"></i>
+              Overview
+            </Link>
+
+            <Link
+              to="/staff/inspection"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-search-line mr-2 text-blue-500"></i>
+              Battery Inspection
+            </Link>
+
+            <Link
+              to="/staff/manual-swap"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-search-line mr-2 text-blue-500"></i>
+              Manual Swap
+            </Link>
+
+            <Link
+              to="/staff/inventory"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-archive-line mr-2 text-blue-500"></i>
+              Battery Inventory
+            </Link>
+
+            <Link
+              to="/staff/swap-requests"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-swap-line mr-2 text-orange-500"></i>
+              Swap Requests
+            </Link>
+
+            {/* Dropdown Status */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+              >
+                <i className="ri-battery-2-charge-line mr-2 text-blue-500"></i>
+                Battery Status
+                <i
+                  className={`ri-arrow-down-s-line ml-1 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                ></i>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 shadow-lg rounded-md z-10">
+                  <button className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-time-line mr-2 text-blue-500"></i>
+                    Pending
+                  </button>
+                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-loader-2-line mr-2 animate-spin text-yellow-500"></i>
+                    In progress
+                  </button>
+                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
+                    <i className="ri-check-double-line mr-2 text-green-500"></i>
+                    Completed
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-700">Staff</span>
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <i className="ri-user-3-line text-green-600 text-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+
+  // --- CHỌN NAVBAR NÀO DÙNG ---
+  // const AdminNavigation = () => <div>Navbar admin</div>
+
+  switch (type) {
+    case "staff":
+      return <StaffNavigation />
+    // case "admin":
+    //   return <AdminNavigation />
+    default:
+      return <MainNavigation />
+  }
 }

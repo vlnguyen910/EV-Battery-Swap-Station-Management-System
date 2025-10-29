@@ -1,18 +1,64 @@
-// Auth context
-import { createContext, useState, useEffect } from "react";
+// Auth context - Simplified
+import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { authService } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
-const { login: loginService, logout: logoutService, register: registerService } = authService;
+const {
+    login: loginService,
+    logout: logoutService,
+    register: registerService,
+    createStaffAccount: createStaffAccountService,
+    getAllUsers: getAllUsersService,
+    getProfile: getProfileService
+} = authService;
 
 export const AuthContext = createContext();
 
+// Custom hook để sử dụng AuthContext
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error("useAuth must be used within AuthProvider");
+    }
+    return context;
+};
+
 export const AuthProvider = ({ children }) => {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-    const [error, setError] = useState(null);
     const isAuthenticated = !!user;
+
+    // Helper function để format error message
+    const formatErrorMessage = (error) => {
+        if (!error) return null;
+
+        if (error.response) {
+            const status = error.response.status;
+            const message = error.response.data?.message;
+
+            if (status === 401 || status === 400) {
+                return "Tên đăng nhập hoặc mật khẩu không hợp lệ";
+            }
+            if (status === 409) {
+                return "Email hoặc số điện thoại đã được sử dụng";
+            }
+            if (status === 403) {
+                return "Bạn không có quyền thực hiện thao tác này";
+            }
+
+            return message || "Đã xảy ra lỗi. Vui lòng thử lại";
+        }
+
+        if (error.request) {
+            return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng";
+        }
+
+        return error.message || "Đã xảy ra lỗi không xác định";
+    };
 
     // Function to handle login
     const login = async (credentials) => {
@@ -23,29 +69,53 @@ export const AuthProvider = ({ children }) => {
             const response = await loginService(credentials);
             console.log('Login response:', response);
 
-            // Backend returns { accessToken, refreshToken }
-            // Extract user info from JWT payload (decode without verification for display)
             const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
+            console.log('Decoded token payload:', tokenPayload);
+
+            localStorage.setItem("token", response.accessToken);
+            localStorage.setItem("refreshToken", response.refreshToken);
+            setToken(response.accessToken);
 
             const userData = {
                 id: tokenPayload.sub,
                 name: tokenPayload.username,
                 email: tokenPayload.email,
                 phone: tokenPayload.phone,
-                role: tokenPayload.role
+                role: tokenPayload.role,
+                station_id: tokenPayload.station_id || tokenPayload.stationId || null
             };
 
-            setUser(userData);
-            setToken(response.accessToken);
+            // Fetch station_id if not in token
+            if (!userData.station_id && userData.id) {
+                try {
+                    const profileResponse = await getProfileService(userData.id);
+                    if (profileResponse?.station_id) {
+                        userData.station_id = profileResponse.station_id;
+                    }
+                } catch (profileError) {
+                    console.error('Failed to fetch profile for station_id:', profileError);
+                }
+            }
 
-            localStorage.setItem("token", response.accessToken);
-            localStorage.setItem("refreshToken", response.refreshToken);
+            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
-            return userData; // Return user base on role when successful login     
-        } catch (error) {
-            setError(error);
-            throw error; // Throw error để TestAuthPage catch được
+            // Navigate dựa vào role
+            if (userData.role === "admin") {
+                navigate("/admin");
+            } else if (userData.role === "station_staff") {
+                navigate("/staff");
+            } else {
+                navigate("/driver");
+            }
+
+            return userData;
+        } catch (err) {
+            // Format and store error for UI, but don't throw to avoid unhandled promise rejections
+            const errorMessage = formatErrorMessage(err);
+            setError(errorMessage);
+            // Return null to indicate login failure. Callers should check the return value.
+            return null;
         } finally {
             setLoading(false);
         }
@@ -60,8 +130,11 @@ export const AuthProvider = ({ children }) => {
         }
         setUser(null);
         setToken(null);
+        setError(null);
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
+        navigate("/", { replace: true });
     };
 
     // Function to handle register
@@ -73,15 +146,16 @@ export const AuthProvider = ({ children }) => {
             const response = await registerService(userInfo);
             console.log('Register response:', response);
 
-            //Check response that does it have accessToken 
-            if (response && response.accessToken) {
+            if (response?.accessToken) {
                 const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
+
                 const userData = {
                     id: tokenPayload.sub,
                     name: tokenPayload.username,
                     email: tokenPayload.email,
                     phone: tokenPayload.phone,
-                    role: tokenPayload.role
+                    role: tokenPayload.role,
+                    station_id: tokenPayload.station_id || tokenPayload.stationId || null
                 };
 
                 setUser(userData);
@@ -91,33 +165,105 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("refreshToken", response.refreshToken);
                 localStorage.setItem("user", JSON.stringify(userData));
 
+                // Navigate to login after 1 second
+                setTimeout(() => navigate("/login"), 1000);
+
                 return userData;
             } else {
-                // Nếu không có token (chỉ đăng ký thành công, chưa login)
-                console.log('Registration successful, no auto-login');
+                setTimeout(() => navigate("/login"), 1000);
                 return { success: true, message: 'Registration successful' };
             }
-        } catch (error) {
-            setError(error);
-            throw error;
+        } catch (err) {
+            // Format and store error for UI; return null so callers can handle gracefully.
+            const errorMessage = formatErrorMessage(err);
+            setError(errorMessage);
+            return null;
         } finally {
             setLoading(false);
         }
     };
 
-    // Check user if reload page
+    // Function to get user profile
+    const getProfile = async (userId) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await getProfileService(userId);
+            return response;
+        } catch (err) {
+            const errorMessage = formatErrorMessage(err);
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to create staff account
+    const createStaffAccount = async (staffInfo) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await createStaffAccountService(staffInfo);
+            console.log('Create staff account response:', response);
+            return response;
+        } catch (err) {
+            const errorMessage = formatErrorMessage(err);
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to get all users
+    const getAllUsers = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await getAllUsersService();
+            return response;
+        } catch (err) {
+            const errorMessage = formatErrorMessage(err);
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Clear error function (stable reference)
+    const clearError = useCallback(() => setError(null), []);
+
+    // Check user on page reload
     useEffect(() => {
-        const saveUser = localStorage.getItem("user");
-        if (saveUser) {
-            setUser(JSON.parse(saveUser));
+        const savedUser = localStorage.getItem("user");
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
         }
     }, []);
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, error, isAuthenticated, login, logout, register }}
+            value={{
+                user,
+                token,
+                loading,
+                error,
+                isAuthenticated,
+                login,
+                logout,
+                register,
+                createStaffAccount,
+                getAllUsers,
+                getProfile,
+                clearError
+            }}
         >
             {children}
         </AuthContext.Provider>
-    )
-}
+    );
+};

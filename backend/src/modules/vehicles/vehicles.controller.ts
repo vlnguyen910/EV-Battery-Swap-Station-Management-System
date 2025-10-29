@@ -5,6 +5,8 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { $Enums } from '@prisma/client';
+import { AssignVehicleDto } from './dto/assign-vehicle.dto';
 
 @Controller('vehicles')
 @UseGuards(AuthGuard, RolesGuard)
@@ -16,18 +18,20 @@ export class VehiclesController {
     return this.vehiclesService.create(createVehicleDto);
   }
 
-  @Get()
-  @Roles('admin', 'station_staff')
-  findAll(@Query('userId') userId?: string) {
-    if (userId) {
-      return this.vehiclesService.findByUser(parseInt(userId, 10));
-    }
-    return this.vehiclesService.findAll();
+  @Get('/user/:id')
+  @Roles($Enums.Role.driver)
+  findAll(@Param('id', ParseIntPipe) userId: number) {
+    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get('vin/:vin')
   findByVin(@Param('vin') vin: string) {
     return this.vehiclesService.findByVin(vin);
+  }
+
+  @Get('user/:userId')
+  findByUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get(':id')
@@ -41,6 +45,13 @@ export class VehiclesController {
     @Body() updateVehicleDto: UpdateVehicleDto,
   ) {
     return this.vehiclesService.update(id, updateVehicleDto);
+  }
+
+  @Patch('add-vehicle')
+  assignVehicleToUser(
+    @Body() assignVehicleDto: AssignVehicleDto,
+  ) {
+    return this.vehiclesService.assignVehicleToUser(assignVehicleDto);
   }
 
   @Delete(':id')

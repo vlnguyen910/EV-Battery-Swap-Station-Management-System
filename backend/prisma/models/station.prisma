@@ -1,20 +1,24 @@
-enum StationStatus {
-    active
-    inactive
-    maintenance
+model Station {
+  station_id                        Int                      @id @default(autoincrement())
+  name                              String                   @db.VarChar(100)
+  address                           String                   @db.VarChar(255)
+  latitude                          Decimal                  @db.Decimal(10, 8)
+  longitude                         Decimal                  @db.Decimal(11, 8)
+  status                            StationStatus
+  batteries                         Battery[]
+  BatteryTransferRequestFromStation BatteryTransferRequest[] @relation("FromStation")
+  BatteryTransferRequestToStation   BatteryTransferRequest[] @relation("ToStation")
+  BatteryTransferTicket             BatteryTransferTicket[]
+  Reservation                       Reservation[]
+  supports                          Support[]
+  swap_transactions                 SwapTransaction[]
+  staff                             User[]
+
+  @@map("stations")
 }
 
-model Station {
-    station_id Int           @id @default(autoincrement())
-    name       String        @db.VarChar(100)
-    address    String        @db.VarChar(255)
-    latitude   Decimal       @db.Decimal(10, 8) // 10 digits total, 8 after decimal
-    longitude  Decimal       @db.Decimal(11, 8) // 11 digits total, 8 after decimal
-    status     StationStatus
-
-    batteries         Battery[]
-    Reservation       Reservation[]
-    swap_transactions SwapTransaction[]
-
-    @@map("stations")
+enum StationStatus {
+  active
+  inactive
+  maintenance
 }

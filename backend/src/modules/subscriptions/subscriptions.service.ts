@@ -11,7 +11,7 @@ import { SubscriptionStatus } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     // 1. Check if package exists and is active
@@ -117,6 +117,15 @@ export class SubscriptionsService {
     return subscription;
   }
 
+  async findOneActiveByVehicleId(vehicleId: number) {
+    return await this.prisma.subscription.findFirst({
+      where: {
+        vehicle_id: vehicleId,
+        status: SubscriptionStatus.active,
+      },
+    });
+  }
+
   async findByUser(userId: number) {
     return this.prisma.subscription.findMany({
       where: { user_id: userId },
@@ -196,7 +205,8 @@ export class SubscriptionsService {
     });
   }
 
-  async incrementSwapUsed(id: number) {
+  async incrementSwapUsed(id: number, tx?: any) {
+    const db = tx ?? this.prisma;
     const subscription = await this.findOne(id);
 
     // Check if subscription is active
@@ -204,11 +214,46 @@ export class SubscriptionsService {
       throw new BadRequestException('Subscription is not active');
     }
 
-    return this.prisma.subscription.update({
+    return db.subscription.update({
       where: { subscription_id: id },
       data: {
         swap_used: {
           increment: 1,
+        },
+      },
+      include: {
+        package: true,
+        user: {
+          select: {
+            user_id: true,
+            username: true,
+            email: true,
+            phone: true,
+          },
+        },
+        vehicle: true,
+      },
+    });
+  }
+
+  async updateDistanceTraveled(id: number, distance: number, tx?: any) {
+    const db = tx ?? this.prisma;
+    const subscription = await this.findOne(id);
+    // Check if subscription is active
+    if (subscription.status !== SubscriptionStatus.active) {
+      throw new BadRequestException('Subscription is not active');
+    }
+
+    // Đảm bảo distance là số hợp lệ
+    if (typeof distance !== 'number' || isNaN(distance) || distance < 0) {
+      throw new BadRequestException('Invalid distance value');
+    }
+
+    return db.subscription.update({
+      where: { subscription_id: id },
+      data: {
+        distance_traveled: {
+          increment: distance,
         },
       },
       include: {

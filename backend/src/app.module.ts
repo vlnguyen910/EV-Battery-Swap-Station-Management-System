@@ -13,9 +13,17 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SwapTransactionsModule } from './modules/swap-transactions/swap-transactions.module';
+import { SwappingModule } from './modules/swapping/swapping.module';
+import { SupportsModule } from './modules/supports/supports.module';
+import { ConfigModule } from '@nestjs/config';
+import { BatteryTransferRequestModule } from './modules/battery-transfer-request/battery-transfer-request.module';
+import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/battery-transfer-ticket.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     DatabaseModule,
     UsersModule,
@@ -28,7 +36,12 @@ import { SwapTransactionsModule } from './modules/swap-transactions/swap-transac
     SubscriptionsModule,
     SwapTransactionsModule,
     SubscriptionsModule,
-    PaymentsModule],
+    PaymentsModule,
+    SwappingModule,
+    SupportsModule,
+    BatteryTransferRequestModule,
+    BatteryTransferTicketModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

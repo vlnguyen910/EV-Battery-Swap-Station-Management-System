@@ -1,21 +1,15 @@
-import { BadRequestException, ConflictException, Injectable, UseGuards } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
 import { hashPassword } from 'src/shared/utils/hash-password.util';
-import { emit } from 'process';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
 
-@UseGuards(AuthGuard, RolesGuard)
 @Injectable()
 export class UsersService {
   constructor(private readonly databaseService: DatabaseService) { }
 
-  @Roles($Enums.Role.admin)
   async create(createUserDto: CreateUserDto) {
     const { username, password, email, phone, role } = createUserDto;
 
@@ -60,9 +54,15 @@ export class UsersService {
   }
 
   async findOneById(user_id: number) {
-    return this.databaseService.user.findUnique({
+    const user = await this.databaseService.user.findUnique({
       where: { user_id }
     });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID: ${user_id} not found `);
+    }
+
+    return user;
   }
 
   async findOneByEmailOrPhone(emailOrPhone: string) {
@@ -80,6 +80,13 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     return "This action updates a #${id} user";
+  }
+
+  async updateRefreshToken(user_id: number, refreshToken: string) {
+    await this.databaseService.user.update({
+      where: { user_id },
+      data: { refresh_token: refreshToken },
+    });
   }
 
   async remove(id: number) {

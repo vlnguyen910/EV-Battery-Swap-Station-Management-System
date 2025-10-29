@@ -1,12 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { CreateReservationDto } from './dto/create-reservation.dto';
-import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { BatteriesService } from '../batteries/batteries.service';
 import { DatabaseService } from '../database/database.service';
-import { ReservationStatus } from '@prisma/client';
+import { BatteryStatus, ReservationStatus } from '@prisma/client';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { UsersService } from '../users/users.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { ConfigService } from '@nestjs/config';
+import { StationsService } from '../stations/stations.service';
+import { stat } from 'fs';
 
 @Injectable()
 export class ReservationsService {
@@ -15,66 +18,64 @@ export class ReservationsService {
     private databaseService: DatabaseService,
     private vehicleService: VehiclesService,
     private userService: UsersService,
+    private subscriptionsService: SubscriptionsService,
+    private stationsService: StationsService,
+    private configService: ConfigService
   ) { }
 
-  private readonly logger = new Logger(ReservationsService.name);
 
   async create(dto: CreateReservationDto) {
+    const { user_id, station_id, scheduled_time } = dto;
+
     try {
       //1. Check user có tồn tại
-      const user = await this.userService.findOneById(dto.user_id);
-
+      const user = await this.userService.findOneById(user_id);
       if (!user) {
-        throw new NotFoundException('User with ID: qq ' + dto.user_id + ' not exist');
+        throw new NotFoundException('User with ID: ' + user_id + ' not exist');
       }
 
-      //2. lấy active vehicle của driver nếu không nhập vehicle_id
-      let selectedVehicleId = dto.vehicle_id;
-      if (!selectedVehicleId) {
-        const vehicle = await this.vehicleService.findOneActiveByUserId(dto.user_id);
-
-        if (!vehicle) {
-          throw new NotFoundException('Not found driver vehicle or not active yet');
-        }
-
-        selectedVehicleId = vehicle.vehicle_id;
+      const station = await this.stationsService.findOne(station_id);
+      if (!station) {
+        throw new NotFoundException('Station with ID: ' + station_id + ' not exist');
       }
 
-      //3. lấy best battery nếu không nhập battery_id
-      let selectedBatteryId = dto.battery_id;
-      if (!selectedBatteryId) {
-        const availableBattery = await this.batteriesService.findBestBatteryForVehicle(
-          dto.vehicle_id,
-          dto.station_id
-        )
+      const vehicle = await this.vehicleService.findOneActiveByUserId(user_id);
 
-        if (!availableBattery) {
-          throw new NotFoundException('No compatible battery available at station');
-        }
-
-        selectedBatteryId = availableBattery.battery_id;
+      if (!vehicle) {
+        throw new NotFoundException('Not found driver vehicle or not active yet');
       }
+
+      const hasActiveSubscription = await this.subscriptionsService.findOneActiveByVehicleId(vehicle.vehicle_id);
+      if (!hasActiveSubscription) {
+        throw new NotFoundException(`Vehicle with id ${vehicle.vehicle_id} does not have an active subscription`);
+      }
+
+      // 3. tìm pin phù hợp với xe tại trạm 
+      const reservationBattery = await this.batteriesService.findBestBatteryForVehicle(vehicle.vehicle_id, station_id);
+      const updatedBatteryStatus = await this.batteriesService.updateBatteryStatus(reservationBattery.battery_id, BatteryStatus.booked);
 
       const now = new Date();
-      const scheduledTime = new Date(dto.scheduled_time);
-      const maxAllowed = new Date(now.getTime() + 60 * 60 * 1000);
+      // chuyển string sang date
+      const scheduledTime = new Date(scheduled_time);
+      const maxAllowedMinutes = this.configService.get<number>('RESERVATION_MAX_TIME') || 60;
+      const maxAllowed = new Date(now.getTime() + maxAllowedMinutes * 60 * 1000);
 
       // 4. kiểm tra đặt lịch trong quá khứ
       if (scheduledTime < now) {
         throw new BadRequestException('Cannot not schedule in the past')
       }
 
-      // 5. kiểm tra đặt quá giờ cho phép. Ex: đặt vào ngày mai
+      // 5. kiểm tra đặt quá giờ cho phép.(max = 1 giờ)
       if (scheduledTime > maxAllowed) {
-        throw new BadRequestException('You can only schedule max is 1 hour');
+        throw new BadRequestException(`Scheduled time exceeds the maximum allowed limit of ${maxAllowedMinutes} minutes from now`);
       }
 
       //6. kiểm tra user có đặt lịch trùng 
       const existing = await this.databaseService.reservation.findFirst({
         where: {
-          user_id: dto.user_id,
-          vehicle_id: selectedVehicleId,
-          status: 'scheduled'
+          user_id: user_id,
+          vehicle_id: vehicle.vehicle_id,
+          status: ReservationStatus.scheduled
         }
       })
 
@@ -82,38 +83,28 @@ export class ReservationsService {
         throw new BadRequestException('You already have a reservation for this vehicle at this time');
       }
 
+
       //7. tạo lịch nếu các params hợp lệ
       const newReservation = await this.databaseService.reservation.create({
         data: {
-          user_id: dto.user_id,
-          vehicle_id: dto.vehicle_id,
-          battery_id: selectedBatteryId,
-          station_id: dto.station_id,
-          scheduled_time: dto.scheduled_time,
-          status: 'scheduled'
+          user_id: user_id,
+          vehicle_id: vehicle.vehicle_id,
+          battery_id: reservationBattery.battery_id,
+          station_id: station_id,
+          scheduled_time: scheduled_time,
+          status: ReservationStatus.scheduled
         }
-      })
+      });
 
-      if (selectedBatteryId) {
-        await this.batteriesService.updateBatteryStatus(selectedBatteryId, 'booked');
-      }
-
-      this.logger.log(
-        `✅ Reservation created successfully for user ${dto.user_id} with battery ${selectedBatteryId}`,
-      );
-
-      return newReservation;
+      return {
+        reservation: newReservation,
+        battery: {
+          battery_id: reservationBattery.battery_id,
+          status: updatedBatteryStatus.status
+        }
+      };
     } catch (error) {
-      this.logger.error(
-        `Failed to create reservation for user ${dto.user_id}`,
-        error.stack || error.message,
-      );
-
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
-        throw error;
-      }
-
-      throw new BadRequestException('Unexpected error while creating reservation');
+      throw error;
     }
   }
 
@@ -124,16 +115,14 @@ export class ReservationsService {
   async findManyByUserId(userId: number) {
     return await this.databaseService.reservation.findMany({
       where: { user_id: userId },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
+      orderBy: { scheduled_time: 'desc' }
+    });
+  }
+
+  async findManyScheduledByStationId(stationId: number) {
+    return await this.databaseService.reservation.findMany({
+      where: { station_id: stationId, status: ReservationStatus.scheduled },
+      orderBy: { scheduled_time: 'desc' }
     });
   }
 
@@ -141,16 +130,34 @@ export class ReservationsService {
     return `This action returns a #${id} reservation`;
   }
 
-  update(id: number, updateReservationDto: UpdateReservationDto) {
-    return `This action updates a #${id} reservation`;
+  async findOneScheduledByUserId(userId: number) {
+    try {
+      const vehicle = await this.vehicleService.findOneActiveByUserId(userId);
+      if (!vehicle) {
+        throw new NotFoundException('Not found driver vehicle or not active yet');
+      }
+
+      return this.databaseService.reservation.findFirst({
+        where: {
+          user_id: userId,
+          vehicle_id: vehicle.vehicle_id,
+          status: ReservationStatus.scheduled
+        }
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateReservationStatus(
     id: number,
     user_id: number,
-    status: ReservationStatus
+    status: ReservationStatus,
+    tx?: any
   ) {
-    const reservationUpdate = await this.databaseService.reservation.findUnique({
+    const prisma = tx || this.databaseService;
+
+    const reservationUpdate = await prisma.reservation.findUnique({
       where: { reservation_id: id }
     })
 
@@ -158,9 +165,22 @@ export class ReservationsService {
       throw new NotFoundException(`Reservation not found or made by user with ID ${user_id}`);
     }
 
-    return await this.databaseService.reservation.update({
+    if (status === ReservationStatus.cancelled) {
+      // If cancelling a reservation, update the battery status to 'full'
+      await this.batteriesService.updateBatteryStatus(reservationUpdate.battery_id, BatteryStatus.full);
+    }
+
+    return await prisma.reservation.update({
       where: { reservation_id: id },
-      data: { status }
+      data: { status },
+      include: {
+        battery: {
+          select: {
+            battery_id: true,
+            status: true,
+          }
+        }
+      },
     });
   }
 
@@ -190,8 +210,6 @@ export class ReservationsService {
         where: { reservation_id: { in: expiredReservationIds } },
         data: { status: ReservationStatus.cancelled },
       });
-
-      this.logger.log(`⏰ Auto-canceled ${expiredReservationIds.length} expired reservations: ${expiredReservationIds.join(', ')}`);
     }
   }
 }

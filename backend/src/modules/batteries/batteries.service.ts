@@ -1,23 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { CreateBatteryDto } from './dto/create-battery.dto';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
 import { DatabaseService } from '../database/database.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { BatteryStatus } from '@prisma/client';
+import { StationsService } from '../stations/stations.service';
 
 @Injectable()
 export class BatteriesService {
   constructor(
     private databaseService: DatabaseService,
-    private vehiclesService: VehiclesService
+    private vehiclesService: VehiclesService,
+    private stationsService: StationsService,
   ) { }
 
+  private readonly logger = new Logger(BatteriesService.name);
+
   create(createBatteryDto: CreateBatteryDto) {
+    this.logger.log('Creating a new battery');
     return 'This action adds a new battery';
   }
 
   findAll() {
-    return `This action returns all batteries`;
+    return this.databaseService.battery.findMany();
   }
 
   async findAllByStationId(station_id: number) {
@@ -71,13 +76,86 @@ export class BatteriesService {
   }
 
   async findOne(id: number) {
-    return await this.databaseService.battery.findUnique({
+    const battery = await this.databaseService.battery.findUnique({
       where: { battery_id: id },
     });
+    if (!battery) {
+      throw new NotFoundException(`Battery with ID ${id} not found`);
+    }
+    return battery;
   }
 
-  update(id: number, updateBatteryDto: UpdateBatteryDto) {
-    return `This action updates a #${id} battery`;
+  async assignBatteryToVehicle(
+    battery_id: number,
+    vehicle_id: number,
+    tx?: any // transaction instance
+  ) {
+    try {
+      const db = tx ?? this.databaseService;
+
+      const battery = await this.findOne(battery_id);
+      if (!battery) {
+        throw new NotFoundException(`Battery with ID ${battery_id} not found`);
+      }
+
+      if (battery.status !== 'full') {
+        throw new BadRequestException(`Battery with ID ${battery_id} is not full`);
+      }
+
+      // Check if vehicle exists
+      const vehicle = await this.vehiclesService.findOne(vehicle_id);
+      if (!vehicle) {
+        throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
+      }
+
+      // Ensure no other battery is currently assigned to this vehicle (avoid unique constraint)
+      await db.battery.updateMany({
+        where: { vehicle_id },
+        data: { vehicle_id: null },
+      });
+
+      // Assign battery to vehicle
+      this.logger.log(`Assigning battery ${battery_id} to vehicle ${vehicle_id}`);
+      return await db.battery.update({
+        where: { battery_id },
+        data: { vehicle_id, station_id: null, status: BatteryStatus.in_use },
+      });
+    } catch (error) {
+      this.logger.error(`Error assigning battery to vehicle: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async returnBatteryToStation(
+    battery_id: number,
+    station_id: number,
+    tx?: any // transaction instance
+  ) {
+    try {
+      const db = tx ?? this.databaseService;
+
+      // Check if battery exists
+      const battery = await this.findOne(battery_id);
+      if (!battery) {
+        throw new NotFoundException(`Battery with ID ${battery_id} not found`);
+      }
+
+      // Check if station exists
+      const station = await this.stationsService.findOne(station_id);
+      if (!station) {
+        throw new NotFoundException(`Station with ID ${station_id} not found`);
+      }
+
+      // Return battery to station
+      this.logger.log(`Returning battery ID ${battery_id} to station ID ${station_id}`);
+      return await db.battery.update({
+        where: { battery_id },
+        data: { station_id, vehicle_id: null, status: BatteryStatus.charging },
+      });
+    } catch (error) {
+      this.logger.error(`Error returning battery to station: ${error.message}`);
+      throw error;
+    }
   }
 
   updateBatteryStatus(id: number, status: BatteryStatus) {

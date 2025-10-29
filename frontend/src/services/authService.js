@@ -4,13 +4,9 @@ import { API_ENDPOINTS } from "../constants";
 
 //Login function
 const login = async (credentials) => {
-  try {
-    const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
-    return response.data;
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
-  }
+  // Let callers handle errors (they can format and display messages as needed).
+  const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
+  return response.data;
 };
 
 //Logout function
@@ -31,22 +27,85 @@ const logout = async () => {
 
 //Register function
 const register = async (userInfo) => {
+  // Let callers handle errors and decide what to display; avoid noisy logs here.
+  const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userInfo);
+  return response.data;
+};
+
+//Create account for staff
+const createStaffAccount = async (staffInfo) => {
+  const normalizePhone = (phone) => {
+    if (!phone) return phone;
+    let normalized = phone.toString().replace(/\D/g, "");
+    if (normalized.startsWith("84")) normalized = "0" + normalized.slice(2);
+    return normalized;
+  };
+
+  const payload = {
+    ...staffInfo,
+    phone: normalizePhone(staffInfo.phone),
+    email: staffInfo.email.trim().toLowerCase(),
+    username: staffInfo.username.trim(),
+  };
+
+  // Debug: log payload to help trace server 400 validation
+  console.log("createStaffAccount payload:", payload);
+
+  const token = localStorage.getItem("token");
+  const res = await api.post(API_ENDPOINTS.USER.USERS, payload, {
+    headers: { Authorization: token ? `Bearer ${token}` : undefined },
+  });
+  return res.data;
+};
+
+//update user profile
+const updateProfile = async (profileData) => {
   try {
-    const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userInfo);
+    const response = await api.patch(
+      API_ENDPOINTS.USER.UPDATE_USER,
+      profileData
+    );
     return response.data;
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Update profile error:", error);
     throw error;
   }
 };
 
 //get current user profile
-const getProfile = async () => {
+const getProfile = async (userId) => {
   try {
-    const response = await api.get(API_ENDPOINTS.USERS.GET_PROFILE);
+    const response = await api.get(API_ENDPOINTS.USER.GET_USER(userId));
     return response.data;
   } catch (error) {
     console.error("Get profile error:", error);
+    if (error.response) console.log(error.response.data, error.response.status);
+    else if (error.request) console.log(error.request);
+    else console.log(error.message);
+    throw error;
+  }
+};
+
+//Get all users
+const getAllUsers = async () => {
+  try {
+    const response = await api.get(API_ENDPOINTS.USER.USERS);
+    return response.data;
+  } catch (error) {
+    console.error("Get all users error:", error);
+    throw error;
+  }
+};
+
+// Delete user by ID
+const deleteUser = async (userId) => {
+  try {
+    const response = await api.delete(
+      `${API_ENDPOINTS.USER.DELETE_USER}/${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Delete user error:", error);
     throw error;
   }
 };
@@ -57,4 +116,8 @@ export const authService = {
   logout,
   register,
   getProfile,
+  getAllUsers,
+  updateProfile,
+  deleteUser,
+  createStaffAccount,
 };
