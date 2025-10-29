@@ -40,17 +40,10 @@ export default function User() {
       if (!user?.id) return;
 
       try {
-        console.log('Fetching vehicle for user ID:', user.id);
-        const vehicles = await vehicleService.getVehicleByUserId(user.id);
-        console.log('Vehicle data fetched:', vehicles);
-        
-        // Store all vehicles as array
-        if (vehicles && vehicles.length > 0) {
-          setVehicleData(vehicles);
-        } else {
-          console.warn('No vehicles found for user');
-          setVehicleData([]);
-        }
+        console.log('Fetching enriched vehicles for user ID:', user.id);
+        const vehicles = await vehicleService.getVehiclesByUserIdWithBattery(user.id);
+        console.log('Enriched vehicle data fetched:', vehicles);
+        setVehicleData(Array.isArray(vehicles) ? vehicles : []);
       } catch (error) {
         console.error('Error fetching vehicle data:', error);
         setVehicleData([]);
