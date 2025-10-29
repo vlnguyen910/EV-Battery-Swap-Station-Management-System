@@ -73,7 +73,7 @@ export default function Sidebar() {
       {/* Bottom Section - Dark Mode & Logout */}
       <div className="p-4 border-t border-gray-200 space-y-2">
         {/* Dark Mode Toggle */}
-        <button
+        {/* <button
           onClick={toggleDarkMode}
           className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors duration-200"
         >
