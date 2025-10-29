@@ -78,6 +78,41 @@ export class UsersService {
     });
   }
 
+  async findOneByEmail(email: string) {
+    return this.databaseService.user.findUnique({
+      where: { email: normalizeEmail(email) }
+    });
+  }
+
+  async createGoogleUser(data: { email: string; username: string; role: $Enums.Role }) {
+    const normalizedEmail = normalizeEmail(data.email);
+
+    // Check if email already exists
+    const existingUser = await this.databaseService.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email already in use');
+    }
+
+    // Generate random phone for Google users (they can update later)
+    const randomPhone = `GOOGLE_${Date.now()}`;
+
+    // Create user without password (Google OAuth)
+    const newUser = await this.databaseService.user.create({
+      data: {
+        username: data.username,
+        password: '', // Empty password for Google users
+        email: normalizedEmail,
+        phone: randomPhone,
+        role: data.role,
+      },
+    });
+
+    return newUser;
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto) {
     return "This action updates a #${id} user";
   }
