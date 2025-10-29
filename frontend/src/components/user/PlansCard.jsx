@@ -161,7 +161,7 @@ export default function SubscriptionCard() {
       <CardContent>
         <div className="space-y-3">
           {/* Package Name */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <Package className="w-4 h-4 text-blue-600" />
               <p className="text-xs text-gray-600 font-medium">Package</p>
@@ -174,7 +174,7 @@ export default function SubscriptionCard() {
           </div>
 
           {/* Price */}
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <CreditCard className="w-4 h-4 text-green-600" />
               <p className="text-xs text-gray-600 font-medium">Price</p>
@@ -188,7 +188,7 @@ export default function SubscriptionCard() {
           </div>
 
           {/* Vehicle */}
-          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <Car className="w-4 h-4 text-purple-600" />
               <p className="text-xs text-gray-600 font-medium">Vehicle</p>
@@ -205,7 +205,7 @@ export default function SubscriptionCard() {
           </div>
 
           {/* Subscription Period */}
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="w-4 h-4 text-orange-600" />
               <p className="text-xs text-gray-600 font-medium">Period</p>

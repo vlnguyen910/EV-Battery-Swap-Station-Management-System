@@ -16,6 +16,7 @@ export default function MapPage() {
   const [geoError, setGeoError] = useState(null);
 
   // Compute Haversine distance in meters
+  //Công thức tính quãng đường giữa hai điểm trên map dựa trên vĩ độ và kinh độ của chúng
   const distanceMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = (v) => (v * Math.PI) / 180;
     const R = 6371000; // meters
