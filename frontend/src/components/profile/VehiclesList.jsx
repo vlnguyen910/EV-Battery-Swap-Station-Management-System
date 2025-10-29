@@ -40,7 +40,8 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
                 <div className="flex items-center gap-3">
                   {/* determine active state: either vehicle.status === 'active' or matched active subscription */}
                   {(function () {
-                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active') || Boolean(v?.hasActiveSubscription)
+                    // Use authoritative DB status only (active / inactive)
+                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active')
                     return <Bike className={`w-6 h-6 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                   })()}
                   <h3 className="font-semibold text-lg text-gray-900">{v.name || v.vin || 'Vehicle'}</h3>
@@ -59,7 +60,8 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
               <div className="flex items-center gap-2 flex-shrink-0 ml-4 mt-1">
                 <div className="flex flex-col items-end">
                   {(function () {
-                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active') || Boolean(v?.hasActiveSubscription)
+                    // Respect DB `status` field as authoritative
+                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active')
                     if (isActive) return (<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Active</span>)
                     return (
                       <>
