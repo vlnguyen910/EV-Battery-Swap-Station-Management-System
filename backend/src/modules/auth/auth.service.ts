@@ -90,5 +90,53 @@ export class AuthService {
 
         return newUser;
     }
+
+    async googleLogin(googleUser: any) {
+        if (!googleUser) {
+            throw new UnauthorizedException('No user from Google');
+        }
+
+        // Tìm user theo email
+        let user = await this.usersService.findOneByEmail(googleUser.email);
+
+        // Nếu user chưa tồn tại, tạo mới
+        if (!user) {
+            user = await this.usersService.createGoogleUser({
+                email: googleUser.email,
+                username: googleUser.firstName + ' ' + googleUser.lastName,
+                role: Role.driver,
+            });
+        }
+
+        // Tạo token
+        const tokenPayload = {
+            sub: user.user_id,
+            email: user.email,
+            phone: user.phone,
+            username: user.username,
+            role: user.role,
+        };
+
+        const accessToken = await this.jwtService.signAsync(tokenPayload);
+        const refreshToken = await this.jwtService.signAsync(tokenPayload, {
+            secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+            expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
+        });
+
+        // Save refreshToken to db
+        await this.usersService.updateRefreshToken(user.user_id, refreshToken);
+
+        return {
+            accessToken,
+            refreshToken,
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+            }
+        };
+    }
 }
 
