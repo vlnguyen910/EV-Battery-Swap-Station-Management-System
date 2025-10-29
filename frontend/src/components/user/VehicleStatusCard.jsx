@@ -37,7 +37,6 @@ export default function VehicleStatusCard({ vehicles = [], onFindStations }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[22px]">Vehicle Status</CardTitle>
-          <h4>CANH BAO THEM SO SLOT CON LAI</h4>
           {vehicles.length > 1 && (
             <div className="flex items-center gap-2">
               <button

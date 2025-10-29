@@ -19,6 +19,9 @@ export default function SubscribedList({ subscriptions }) {
             <div className="text-lg font-bold text-gray-900">{s.price}</div>
             <div className="text-sm text-gray-500">{s.period}</div>
             <div className="text-sm text-gray-500">{s.vehicle_id}</div>
+            <div className="text-sm text-gray-500">{s.status}</div>
+            {/* <div className="text-sm text-gray-500">{s.start_date} - {s.end_date}</div> */}
+            <div className="text-sm text-gray-500">Swap Count: {s.swap_used}</div>
           </div>
         </div>
       ))}
