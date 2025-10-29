@@ -44,7 +44,7 @@ export default function PersonalInfoEdit({ onUpdated }) {
         const existing = JSON.parse(localStorage.getItem('user') || '{}');
         const updated = { ...existing, name: res?.name || values.fullName };
         localStorage.setItem('user', JSON.stringify(updated));
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -56,7 +56,7 @@ export default function PersonalInfoEdit({ onUpdated }) {
       setServerError(err?.response?.data?.message || err.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
-      try { setFormikSubmitting && setFormikSubmitting(false); } catch (e) { }
+      try { setFormikSubmitting && setFormikSubmitting(false); } catch { /* ignore */ }
     }
   };
 
@@ -69,7 +69,7 @@ export default function PersonalInfoEdit({ onUpdated }) {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="sm:max-w-[560px] w-full sm:max-h-[420px] overflow-auto">
+        <DialogContent className="max-w-md w-full sm:max-h-[420px] overflow-auto">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>Update your full name or change your password here.</DialogDescription>
