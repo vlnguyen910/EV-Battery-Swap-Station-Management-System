@@ -1,18 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { BatteriesService } from '../batteries/batteries.service';
 import { DatabaseService } from '../database/database.service';
-import { BatteryStatus, ReservationStatus } from '@prisma/client';
+import { BatteryStatus, ReservationStatus, SubscriptionStatus } from '@prisma/client';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { UsersService } from '../users/users.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ConfigService } from '@nestjs/config';
 import { StationsService } from '../stations/stations.service';
-import { stat } from 'fs';
 
 @Injectable()
 export class ReservationsService {
+  private logger = new Logger(ReservationsService.name);
+
   constructor(
     private batteriesService: BatteriesService,
     private databaseService: DatabaseService,
@@ -30,24 +31,22 @@ export class ReservationsService {
     try {
       //1. Check user có tồn tại
       const user = await this.userService.findOneById(user_id);
-      if (!user) {
-        throw new NotFoundException('User with ID: ' + user_id + ' not exist');
-      }
 
-      const station = await this.stationsService.findOne(station_id);
-      if (!station) {
-        throw new NotFoundException('Station with ID: ' + station_id + ' not exist');
-      }
+      await this.stationsService.findOne(station_id);
 
       const vehicle = await this.vehicleService.findOneActiveByUserId(user_id);
 
-      if (!vehicle) {
-        throw new NotFoundException('Not found driver vehicle or not active yet');
+      const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle.vehicle_id);
+
+      // 2. Check user có penalty ko
+      if (subscription.status === SubscriptionStatus.pending_penalty_payment) {
+        throw new BadRequestException('You have to pay the penalty for this subscription before making a new reservation');
       }
 
-      const hasActiveSubscription = await this.subscriptionsService.findOneActiveByVehicleId(vehicle.vehicle_id);
-      if (!hasActiveSubscription) {
-        throw new NotFoundException(`Vehicle with id ${vehicle.vehicle_id} does not have an active subscription`);
+      // 3. Check xe có gói cước active
+      if (subscription.status !== SubscriptionStatus.active) {
+        this.logger.warn(`Vehicle ID ${vehicle.vehicle_id} does not have an active subscription`);
+        throw new BadRequestException('Vehicle does not have an active subscription');
       }
 
       // 3. tìm pin phù hợp với xe tại trạm 
@@ -96,6 +95,7 @@ export class ReservationsService {
         }
       });
 
+      this.logger.log(`New reservation created with ID ${newReservation.reservation_id} for user ID ${user_id} at station ID ${station_id}`);
       return {
         reservation: newReservation,
         battery: {

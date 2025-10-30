@@ -8,6 +8,8 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  HttpCode,
+  HttpStatus
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -25,6 +27,14 @@ export class SubscriptionsController {
   @Roles('driver', 'admin')
   create(@Body() createSubscriptionDto: CreateSubscriptionDto) {
     return this.subscriptionsService.create(createSubscriptionDto);
+  }
+
+  // StatusCode = 200 do ko tạo mới
+  @HttpCode(HttpStatus.OK)
+  @Post('expire-subscriptions')
+  @Roles('admin')
+  expireSubscriptions() {
+    return this.subscriptionsService.updateExpiredSubscriptions();
   }
 
   @Get()
@@ -67,12 +77,6 @@ export class SubscriptionsController {
   @Roles('station_staff', 'admin')
   incrementSwapUsed(@Param('id', ParseIntPipe) id: number) {
     return this.subscriptionsService.incrementSwapUsed(id);
-  }
-
-  @Post('check-expired')
-  @Roles('admin')
-  checkExpiredSubscriptions() {
-    return this.subscriptionsService.checkExpiredSubscriptions();
   }
 
   @Delete(':id')
