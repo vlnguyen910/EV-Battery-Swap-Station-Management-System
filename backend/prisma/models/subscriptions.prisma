@@ -23,4 +23,5 @@ enum SubscriptionStatus {
   active
   expired
   cancelled
+  pending_penalty_payment
 }

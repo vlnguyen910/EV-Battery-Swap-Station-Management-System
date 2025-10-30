@@ -7,7 +7,7 @@ import { StationsService } from '../stations/stations.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { DatabaseService } from '../database/database.service';
 import { SwapTransactionsService } from '../swap-transactions/swap-transactions.service';
-import { BatteryStatus, ReservationStatus, SwapTransactionStatus } from '@prisma/client';
+import { BatteryStatus, ReservationStatus, SubscriptionStatus, SwapTransactionStatus } from '@prisma/client';
 import { FirstSwapDto } from './dto/first-swap.dto';
 import { ReservationsService } from '../reservations/reservations.service';
 @Injectable()
@@ -32,41 +32,32 @@ export class SwappingService {
         try {
             // Check user is exist
             const user = await this.usersService.findOneById(user_id);
-            if (!user) {
-                throw new NotFoundException(`User with ID ${user_id} not found`);
-            }
 
             // Check station is exist
             const station = await this.stationsService.findOne(station_id);
-            if (!station) {
-                throw new NotFoundException(`Station with ID ${station_id} not found`);
-            }
 
             // Check vehicle is exist
             const vehicle = await this.vehiclesService.findOneActiveByUserId(user_id);
-            if (!vehicle) {
-                throw new NotFoundException(`Active vehicle for user ID ${user_id} not found`);
-            }
 
             // Get vehicle id and return battery id from vehicle
             const vehicle_id = vehicle.vehicle_id;
             const return_battery_id = vehicle.battery_id;
 
             // Check user subscription is valid
-            const subscription = await this.subscriptionsService.findOneActiveByVehicleId(vehicle_id);
-            if (!subscription) {
-                throw new NotFoundException(`No active subscription found for vehicle ID ${vehicle_id} `);
+            const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle_id);
+            if (subscription.status === SubscriptionStatus.pending_penalty_payment) {
+                throw new BadRequestException('Your subscription is pending penalty payment. Please settle the penalties to proceed with battery swapping.');
             }
 
+            if (subscription.status !== SubscriptionStatus.active) {
+                throw new BadRequestException('No active subscription found for this vehicle. Please subscribe to a plan to swap batteries.');
+            }
 
             //check is use have reservation at this station
             const reservation = await this.reservationsService.findOneScheduledByUserId(user_id);
             let taken_battery_id: number;
             if (reservation) {
                 taken_battery_id = reservation.battery_id;
-
-                //update battery status to full
-                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full);
 
                 if (reservation.station_id !== station_id) {
                     throw new BadRequestException(`Reservation station does not match the swapping station`);
@@ -92,9 +83,11 @@ export class SwappingService {
                 return await this.initializeBattery(firstSwapDto);
             }
 
-
             // Perform the swap within a transaction
             return await this.databaseService.$transaction(async (prisma) => {
+                //update battery status booked to full for swapping
+                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full, prisma);
+
                 await this.batteriesService.returnBatteryToStation(return_battery_id, station_id, prisma);
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
                 await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
@@ -148,10 +141,13 @@ export class SwappingService {
         const { user_id, station_id, vehicle_id, taken_battery_id, reservation_id, subscription_id } = firstSwapDto;
         try {
             return await this.databaseService.$transaction(async (prisma) => {
+                //update battery status booked to full for swapping
+                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full, prisma);
+
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
                 await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
-                //Create swap transaction 
 
+                //Create swap transaction 
                 const swapRecord = await this.swapTransactionsService.create({
                     user_id,
                     vehicle_id,

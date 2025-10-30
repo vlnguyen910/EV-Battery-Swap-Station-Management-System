@@ -2,26 +2,26 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
+  ConflictException, Logger,
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { DatabaseService } from '../database/database.service';
 import { SubscriptionStatus } from '@prisma/client';
+import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: DatabaseService) { }
+  private readonly logger = new Logger(SubscriptionsService.name);
+
+  constructor(
+    private prisma: DatabaseService,
+    private packageService: BatteryServicePackagesService,
+  ) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     // 1. Check if package exists and is active
-    const servicePackage = await this.prisma.batteryServicePackage.findUnique({
-      where: { package_id: createSubscriptionDto.package_id },
-    });
-
-    if (!servicePackage) {
-      throw new NotFoundException('Package not found');
-    }
+    const servicePackage = await this.packageService.findOne(createSubscriptionDto.package_id);
 
     if (!servicePackage.active) {
       throw new BadRequestException('Package is not active');
@@ -93,6 +93,7 @@ export class SubscriptionsService {
     });
   }
 
+
   async findOne(id: number) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { subscription_id: id },
@@ -117,13 +118,18 @@ export class SubscriptionsService {
     return subscription;
   }
 
-  async findOneActiveByVehicleId(vehicleId: number) {
-    return await this.prisma.subscription.findFirst({
+  async findOneByVehicleId(vehicleId: number) {
+    const subscription = await this.prisma.subscription.findFirst({
       where: {
         vehicle_id: vehicleId,
-        status: SubscriptionStatus.active,
       },
     });
+
+    if (!subscription) {
+      throw new NotFoundException(`Active subscription for vehicle ID ${vehicleId} not found`);
+    }
+
+    return subscription;
   }
 
   async findByUser(userId: number) {
@@ -245,7 +251,7 @@ export class SubscriptionsService {
     }
 
     // Đảm bảo distance là số hợp lệ
-    if (typeof distance !== 'number' || isNaN(distance) || distance < 0) {
+    if (typeof distance !== 'number' || isNaN(distance) || distance <= 0) {
       throw new BadRequestException('Invalid distance value');
     }
 
@@ -271,7 +277,7 @@ export class SubscriptionsService {
     });
   }
 
-  async checkExpiredSubscriptions() {
+  async updateExpiredSubscriptions(): Promise<{ count: number; subscriptions: any[] }> {
     const now = new Date();
 
     // Find all active subscriptions that have expired
@@ -282,21 +288,63 @@ export class SubscriptionsService {
           lt: now,
         },
       },
+      include: {
+        package: true,
+        user: {
+          select: {
+            user_id: true,
+            username: true,
+            email: true,
+          },
+        },
+      },
     });
 
-    // Update them to expired status
-    for (const subscription of expiredSubscriptions) {
-      await this.prisma.subscription.update({
-        where: { subscription_id: subscription.subscription_id },
-        data: {
-          status: SubscriptionStatus.expired,
-        },
-      });
+    if (expiredSubscriptions.length === 0) {
+      this.logger.log('No expired subscriptions found at this time.');
+      return {
+        count: 0,
+        subscriptions: [],
+      };
     }
 
+    const expiredIds = expiredSubscriptions.map(sub => sub.subscription_id);
+
+    // Subscriptions that have exceeded base distance and need penalty payment
+    const needPaymentIds = expiredSubscriptions
+      .filter(sub => sub.distance_traveled > sub.package.base_distance)
+      .map(sub => sub.subscription_id);
+
+    await this.prisma.subscription.updateMany({
+      where: {
+        subscription_id: { in: expiredIds },
+      },
+      data: {
+        status: SubscriptionStatus.expired,
+      },
+    });
+    this.logger.log(`Marked ${expiredIds.length} subscriptions as expired.`);
+
+    await this.prisma.subscription.updateMany({
+      where: {
+        subscription_id: { in: needPaymentIds },
+      },
+      data: {
+        status: SubscriptionStatus.pending_penalty_payment,
+      },
+    });
+    this.logger.log(`Marked ${needPaymentIds.length} subscriptions as pending penalty payment.`);
+
+    this.logger.log(`Expired ${expiredSubscriptions.length} subscriptions.`);
     return {
-      message: `Updated ${expiredSubscriptions.length} expired subscriptions`,
       count: expiredSubscriptions.length,
+      subscriptions: expiredSubscriptions.map(sub => ({
+        subscription_id: sub.subscription_id,
+        user_id: sub.user_id,
+        username: sub.user.username,
+        package_name: sub.package.name,
+        end_date: sub.end_date,
+      })),
     };
   }
 
@@ -305,5 +353,19 @@ export class SubscriptionsService {
       where: { subscription_id: id },
     });
   }
-}
 
+  async calculatePenaltyFee(id: number): Promise<number> {
+    const subscription = await this.findOne(id);
+
+    // Check if subscription is expired
+    if (subscription.status !== SubscriptionStatus.expired) {
+      throw new BadRequestException('Subscription is not expired');
+    }
+
+    // Calculate penalty fee
+    //TODO: chỉnh lại phí phạt
+    const penaltyFee = subscription.distance_traveled * subscription.package.penalty_fee;
+
+    return penaltyFee;
+  }
+}
