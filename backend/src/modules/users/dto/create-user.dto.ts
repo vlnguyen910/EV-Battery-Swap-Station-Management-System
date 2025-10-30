@@ -4,6 +4,8 @@ import {
   MinLength,
   IsNotEmpty,
   IsPhoneNumber,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 import { Role } from '@prisma/client';
 
@@ -23,6 +25,13 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Email is required' })
   @IsEmail({}, { message: 'Invalid email format' })
   email: string;
+
+  @IsOptional()
+  @IsString()
+  email_token?: string;
+
+  @IsOptional()
+  email_token_expires?: Date;
 
   @IsNotEmpty({ message: 'Role is required' })
   @IsEnum(Role, { message: 'Role must be driver, station_staff, or admin' })

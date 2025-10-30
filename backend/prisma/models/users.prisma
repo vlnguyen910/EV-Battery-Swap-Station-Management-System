@@ -1,13 +1,18 @@
 model User {
-  user_id                Int                     @id @default(autoincrement())
-  username               String
-  password               String
-  phone                  String                  @unique
-  email                  String                  @unique
-  role                   Role
-  created_at             DateTime                @default(now())
-  refresh_token          String?
-  station_id             Int?
+  user_id             Int       @id @default(autoincrement())
+  username            String
+  password            String
+  phone               String    @unique
+  email               String    @unique
+  role                Role
+  created_at          DateTime  @default(now())
+  refresh_token       String?
+  station_id          Int?
+  email_verified      Boolean   @default(false)
+  email_token         String?
+  email_token_expires DateTime?
+
+  // Relations
   batteryTransferTickets BatteryTransferTicket[]
   payments               Payment[]
   reservations           Reservation[]
