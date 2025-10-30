@@ -8,14 +8,13 @@ import {
   Res,
   Req,
   Get,
-  UseGuards
+  UseGuards,
+  Query
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from './guards/auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
-import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -23,7 +22,7 @@ import { RegisterDto } from './dto/register.dto';
 export class AuthController {
   constructor(
     private readonly configService: ConfigService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) { }
 
   @HttpCode(HttpStatus.OK)
@@ -32,7 +31,7 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response
   ) {
-    const result = await this.authService.signIn(loginDto);
+    const result = await this.authService.login(loginDto);
     response.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       sameSite: 'strict', // Bảo mật hơn 'lax'
@@ -83,7 +82,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response
   ) {
     const result = await this.authService.googleLogin(req.user);
-    
+
     response.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
@@ -94,6 +93,17 @@ export class AuthController {
     // Redirect to frontend with access token
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     return response.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`);
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('resend-verification')
+  async resendVerificationEmail(@Body('email') email: string) {
+    return this.authService.resendVerificationEmail(email);
   }
 }
 
