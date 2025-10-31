@@ -40,7 +40,6 @@ export default function Plans() {
       pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
       pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${pkg.phi_phat}` : 'No extra fee',
       'Access to all stations',
-      'Mobile app access',
       '24/7 customer support'
     ],
     details: pkg.description,
