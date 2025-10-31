@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum PaymentTypeEnum {
   SUBSCRIPTION = 'subscription',
@@ -9,22 +9,14 @@ export enum PaymentTypeEnum {
   OTHER = 'other',
 }
 
-export class CreatePaymentDto {
-  @IsInt()
+export class CreateVnpayPaymentDto {
+  @IsNumber()
   @IsNotEmpty()
-  user_id: number;
+  package_id: number;
 
-  @IsInt()
-  @IsOptional()
-  package_id?: number;
-
-  @IsInt()
+  @IsNumber()
   @IsOptional()
   vehicle_id?: number;
-
-  @IsString()
-  @IsOptional()
-  orderDescription?: string;
 
   @IsEnum(PaymentTypeEnum)
   @IsOptional()
@@ -32,5 +24,5 @@ export class CreatePaymentDto {
 
   @IsString()
   @IsOptional()
-  language?: string; // 'vn' or 'en'
+  order_info?: string;
 }

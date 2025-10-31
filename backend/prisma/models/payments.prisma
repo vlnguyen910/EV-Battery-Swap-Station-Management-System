@@ -5,6 +5,7 @@ model Payment {
   payment_time      DateTime?
   method            PaymentMethod
   status            PaymentStatus
+  payment_type      PaymentType            @default(subscription)
   invoice_url       String?
   created_at        DateTime               @default(now())
   order_info        String?                @db.VarChar(255)
@@ -40,4 +41,13 @@ enum PaymentStatus {
   failed
   success
   cancelled
+}
+
+enum PaymentType {
+  subscription               // Thanh toán gói đăng ký
+  subscription_with_deposit  // Thanh toán gói + tiền đặt cọc pin
+  battery_deposit            // Chỉ thanh toán tiền đặt cọc pin
+  battery_replacement        // Thanh toán thay thế pin
+  damage_fee                 // Thanh toán phí hư hỏng
+  other                      // Thanh toán khác
 }

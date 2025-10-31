@@ -26,35 +26,47 @@ export class PaymentsService {
    * Create VNPAY payment URL for subscription
    */
   async createPaymentUrl(createPaymentDto: CreatePaymentDto, ipAddr: string) {
-    // 1. Get package information
-    const servicePackage = await this.prisma.batteryServicePackage.findUnique({
-      where: { package_id: createPaymentDto.package_id },
-    });
+    // 1. Get package information (if package_id exists)
+    let servicePackage: any = null;
+    let amount: number;
 
-    if (!servicePackage) {
-      throw new NotFoundException('Package not found');
-    }
+    if (createPaymentDto.package_id) {
+      servicePackage = await this.prisma.batteryServicePackage.findUnique({
+        where: { package_id: createPaymentDto.package_id },
+      });
 
-    if (!servicePackage.active) {
-      throw new BadRequestException('Package is not active');
+      if (!servicePackage) {
+        throw new NotFoundException('Package not found');
+      }
+
+      if (!servicePackage.active) {
+        throw new BadRequestException('Package is not active');
+      }
+
+      amount = Math.floor(servicePackage.base_price.toNumber() * 100);
+    } else if (createPaymentDto.payment_type !== 'subscription' && createPaymentDto.payment_type !== 'subscription_with_deposit') {
+      // Nếu không có package_id và không phải subscription, cần lấy amount từ đâu đó
+      amount = 0; // TODO: Xác định amount dựa trên payment_type
+    } else {
+      throw new BadRequestException('package_id is required for subscription payment');
     }
 
     // 2. Create payment record with pending status
-    const vnpTxnRef = moment().format('DDHHmmss'); // Unique transaction reference
-    const amount = Math.floor(servicePackage.base_price.toNumber() * 100); // Convert to VND cents (integer only)
+    const vnpTxnRef = moment().format('DDHHmmss');
 
     const payment = await this.prisma.payment.create({
       data: {
         user_id: createPaymentDto.user_id,
         package_id: createPaymentDto.package_id,
-        vehicle_id: createPaymentDto.vehicle_id, // Save vehicle_id for subscription
-        amount: servicePackage.base_price,
+        vehicle_id: createPaymentDto.vehicle_id,
+        amount: servicePackage?.base_price || 0,
         method: PaymentMethod.vnpay,
         status: PaymentStatus.pending,
+        payment_type: createPaymentDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
         order_info:
           createPaymentDto.orderDescription ||
-          `Thanh toan goi ${servicePackage.name}`,
+          (servicePackage ? `Thanh toan goi ${servicePackage.name}` : `Thanh toan ${createPaymentDto.payment_type}`),
       },
     });
 
@@ -182,64 +194,223 @@ export class PaymentsService {
       },
     });
 
-    // If payment successful, create subscription
-    if (paymentStatus === PaymentStatus.success && payment.package) {
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + payment.package.duration_days);
-
-      const subscription = await this.prisma.subscription.create({
-        data: {
-          user_id: payment.user_id,
-          package_id: payment.package_id || 0,
-          vehicle_id: payment.vehicle_id, // Assign vehicle_id from payment
-          start_date: startDate,
-          end_date: endDate,
-          status: 'active',
-          swap_used: 0,
-        },
-      });
-
-      // Link payment to subscription
-      await this.prisma.payment.update({
-        where: { payment_id: payment.payment_id },
-        data: { subscription_id: subscription.subscription_id },
-      });
-
-      return {
-        success: true,
-        message: 'Payment successful',
-        payment: updatedPayment,
-        subscription,
-      };
+    // If payment successful, handle based on payment_type
+    if (paymentStatus === PaymentStatus.success) {
+      await this.handleSuccessfulPayment(payment);
     }
 
-    return {
-      success: false,
-      message: 'Payment failed',
-      payment: updatedPayment,
-      responseCode,
-    };
+    return updatedPayment;
   }
 
   /**
-   * Handle VNPAY IPN (Instant Payment Notification)
+   * Handle successful payment based on payment_type
    */
+  private async handleSuccessfulPayment(payment: any) {
+    const paymentType = payment.payment_type;
+
+    switch (paymentType) {
+      case 'subscription':
+        // Thanh toán gói đăng ký thường
+        await this.createSubscriptionFromPayment(payment);
+        break;
+
+      case 'subscription_with_deposit':
+        // Thanh toán gói + tiền đặt cọc pin
+        // Tách số tiền: gói đăng ký + phí đặt cọc pin
+        await this.createSubscriptionWithDeposit(payment);
+        break;
+
+      case 'battery_deposit':
+        // Chỉ thanh toán tiền đặt cọc pin - không tạo subscription
+        console.log(`Battery deposit payment processed for user ${payment.user_id}`);
+        // Có thể lưu thông tin deposit vào user hoặc bảng khác
+        break;
+
+      case 'battery_replacement':
+        // Thanh toán thay thế pin
+        console.log(`Battery replacement payment processed for user ${payment.user_id}`);
+        // Xử lý logic thay thế pin
+        break;
+
+      case 'damage_fee':
+        // Thanh toán phí hư hỏng
+        console.log(`Damage fee payment processed for user ${payment.user_id}`);
+        // Xử lý logic phí hư hỏng
+        break;
+
+      case 'other':
+      default:
+        console.log(`Other payment type processed for user ${payment.user_id}`);
+        break;
+    }
+  }
+
+  /**
+   * Create subscription from standard subscription payment
+   */
+  private async createSubscriptionFromPayment(payment: any) {
+    if (!payment.package) return;
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + payment.package.duration_days);
+
+    const subscription = await this.prisma.subscription.create({
+      data: {
+        user_id: payment.user_id,
+        package_id: payment.package_id || 0,
+        vehicle_id: payment.vehicle_id, // Assign vehicle_id from payment
+        start_date: startDate,
+        end_date: endDate,
+        status: 'active',
+        swap_used: 0,
+      },
+    });
+
+    // Link payment to subscription
+    await this.prisma.payment.update({
+      where: { payment_id: payment.payment_id },
+      data: { subscription_id: subscription.subscription_id },
+    });
+
+    return subscription;
+  }
+
+  /**
+   * Create subscription with deposit payment
+   * Tách tiền thanh toán: phí gói + phí đặt cọc pin
+   */
+  private async createSubscriptionWithDeposit(payment: any) {
+    if (!payment.package) return;
+
+    // Ở đây bạn có thể tách tiền thành 2 phần:
+    // - Phần 1: Tiền gói đăng ký (package.base_price)
+    // - Phần 2: Tiền đặt cọc pin (được lấy từ ConfigService)
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + payment.package.duration_days);
+
+    const subscription = await this.prisma.subscription.create({
+      data: {
+        user_id: payment.user_id,
+        package_id: payment.package_id || 0,
+        vehicle_id: payment.vehicle_id,
+        start_date: startDate,
+        end_date: endDate,
+        status: 'active',
+        swap_used: 0,
+      },
+    });
+
+    // Link payment to subscription
+    await this.prisma.payment.update({
+      where: { payment_id: payment.payment_id },
+      data: { subscription_id: subscription.subscription_id },
+    });
+
+    // TODO: Lưu thông tin deposit vào user hoặc bảng khác
+    // await this.prisma.user.update({...})
+
+    return subscription;
+  }
+
+  /**
+   * Create payment URL for battery deposit (no package required)
+   */
+  async createBatteryDepositPaymentUrl(createPaymentDto: CreatePaymentDto, amount: number, ipAddr: string) {
+    // 1. Create payment record with pending status
+    const vnpTxnRef = moment().format('DDHHmmss');
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        user_id: createPaymentDto.user_id,
+        vehicle_id: createPaymentDto.vehicle_id,
+        amount: amount,
+        method: PaymentMethod.vnpay,
+        status: PaymentStatus.pending,
+        payment_type: 'battery_deposit' as any,
+        vnp_txn_ref: vnpTxnRef,
+        order_info: createPaymentDto.orderDescription || 'Nạp tiền cọc pin',
+      },
+    });
+
+    // 2. Build VNPAY payment URL
+    return this._buildVnpayUrl(payment, vnpTxnRef, amount, ipAddr);
+  }
+
+  /**
+   * Create payment URL for custom amount (damage fee, battery replacement, etc.)
+   */
+  async createCustomPaymentUrl(createPaymentDto: CreatePaymentDto, amount: number, ipAddr: string) {
+    // 1. Create payment record with pending status
+    const vnpTxnRef = moment().format('DDHHmmss');
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        user_id: createPaymentDto.user_id,
+        vehicle_id: createPaymentDto.vehicle_id,
+        amount: amount,
+        method: PaymentMethod.vnpay,
+        status: PaymentStatus.pending,
+        payment_type: createPaymentDto.payment_type as any,
+        vnp_txn_ref: vnpTxnRef,
+        order_info: createPaymentDto.orderDescription || `Thanh toán ${createPaymentDto.payment_type}`,
+      },
+    });
+
+    // 2. Build VNPAY payment URL
+    return this._buildVnpayUrl(payment, vnpTxnRef, amount, ipAddr);
+  }
+
+  /**
+   * Helper method to build VNPAY URL
+   */
+  private _buildVnpayUrl(payment: any, vnpTxnRef: string, amount: number, ipAddr: string) {
+    const createDate = moment().format('YYYYMMDDHHmmss');
+    const amountCents = Math.floor(amount * 100);
+
+    let vnpParams: any = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: vnpayConfig.vnp_TmnCode,
+      vnp_Locale: 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: vnpTxnRef,
+      vnp_OrderInfo: payment.order_info,
+      vnp_OrderType: 'other',
+      vnp_Amount: amountCents,
+      vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: createDate,
+    };
+
+    vnpParams = sortObject(vnpParams);
+
+    const signData = qs.stringify(vnpParams, { encode: false });
+    const hmac = crypto.createHmac('sha512', vnpayConfig.vnp_HashSecret);
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+    vnpParams['vnp_SecureHash'] = signed;
+
+    const paymentUrl = vnpayConfig.vnp_Url + '?' + qs.stringify(vnpParams, { encode: false });
+
+    return {
+      paymentUrl,
+      payment_id: payment.payment_id,
+      vnp_txn_ref: vnpTxnRef,
+    };
+  }
+
+
   async handleVnpayIPN(vnpParams: any) {
     try {
-      const result = await this.handleVnpayReturn(vnpParams);
+      await this.handleVnpayReturn(vnpParams);
 
-      if (result.success) {
-        return {
-          RspCode: '00',
-          Message: 'Confirm Success',
-        };
-      } else {
-        return {
-          RspCode: '99',
-          Message: 'Payment failed',
-        };
-      }
+      return {
+        RspCode: '00',
+        Message: 'Confirm Success',
+      };
     } catch (error) {
       return {
         RspCode: '99',

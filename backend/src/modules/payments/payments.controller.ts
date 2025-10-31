@@ -23,13 +23,46 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   /**
-   * Create VNPAY payment URL
+   * ⭐ OLD ENDPOINT - Keep for backward compatibility
+   * Create VNPAY payment URL (subscription only - payment_type will be set to 'subscription')
    * POST /payments/create-vnpay-url
    */
   @Post('create-vnpay-url')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
   async createVnpayUrl(
+    @Body() createPaymentDto: CreatePaymentDto,
+    @Req() req: Request,
+  ) {
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
+    // Force payment_type to 'subscription' for backward compatibility
+    createPaymentDto.payment_type = 'subscription' as any;
+
+    return this.paymentsService.createPaymentUrl(createPaymentDto, ipAddr);
+  }
+
+  /**
+   * ⭐ NEW ENDPOINT - Support multiple payment types
+   * Create VNPAY payment URL with flexible payment types
+   * POST /payments/create-vnpay-url-advanced
+   * 
+   * Supported payment_type:
+   * - subscription (default)
+   * - subscription_with_deposit (first time + deposit)
+   * - battery_deposit (only deposit)
+   * - battery_replacement (replace battery)
+   * - damage_fee (pay damage)
+   * - other (misc)
+   */
+  @Post('create-vnpay-url-advanced')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async createVnpayUrlAdvanced(
     @Body() createPaymentDto: CreatePaymentDto,
     @Req() req: Request,
   ) {
@@ -52,14 +85,14 @@ export class PaymentsController {
       const result = await this.paymentsService.handleVnpayReturn(query);
 
       // Redirect to frontend with result
-      if (result.success) {
-        const subscriptionId = result.subscription?.subscription_id || '';
+      if (result.status === 'success') {
+        const subscriptionId = result.subscription_id || '';
         return res.redirect(
           `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/success?subscription_id=${subscriptionId}`,
         );
       } else {
         return res.redirect(
-          `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/failed?code=${result.responseCode}`,
+          `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/failed?code=${result.vnp_response_code}`,
         );
       }
     } catch (error) {
@@ -129,6 +162,93 @@ export class PaymentsController {
   @Roles('driver', 'admin')
   async mockPayment(@Body() mockPaymentDto: MockPaymentDto) {
     return this.paymentsService.mockPayment(mockPaymentDto);
+  }
+
+  /**
+   * ⭐ NEW ENDPOINT - Create payment for battery deposit only
+   * POST /payments/battery-deposit
+   * 
+   * No subscription created, just save deposit
+   */
+  @Post('battery-deposit')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async createBatteryDepositPayment(
+    @Body() body: { user_id: number; amount: number; vehicle_id?: number },
+    @Req() req: Request,
+  ) {
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
+    // Create payment DTO with battery_deposit type
+    const paymentDto: CreatePaymentDto = {
+      user_id: body.user_id,
+      vehicle_id: body.vehicle_id,
+      payment_type: 'battery_deposit' as any,
+    };
+
+    return this.paymentsService.createBatteryDepositPaymentUrl(paymentDto, body.amount, ipAddr);
+  }
+
+  /**
+   * ⭐ NEW ENDPOINT - Create payment for damage fee
+   * POST /payments/damage-fee
+   * 
+   * Pay for damage without subscription
+   */
+  @Post('damage-fee')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async createDamageFeePayment(
+    @Body() body: { user_id: number; amount: number; vehicle_id?: number; description?: string },
+    @Req() req: Request,
+  ) {
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
+    // Create payment DTO with damage_fee type
+    const paymentDto: CreatePaymentDto = {
+      user_id: body.user_id,
+      vehicle_id: body.vehicle_id,
+      payment_type: 'damage_fee' as any,
+      orderDescription: body.description || 'Thanh toán phí hư hỏng',
+    };
+
+    return this.paymentsService.createCustomPaymentUrl(paymentDto, body.amount, ipAddr);
+  }
+
+  /**
+   * ⭐ NEW ENDPOINT - Create payment for battery replacement
+   * POST /payments/battery-replacement
+   */
+  @Post('battery-replacement')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async createBatteryReplacementPayment(
+    @Body() body: { user_id: number; amount: number; vehicle_id?: number; description?: string },
+    @Req() req: Request,
+  ) {
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
+    // Create payment DTO with battery_replacement type
+    const paymentDto: CreatePaymentDto = {
+      user_id: body.user_id,
+      vehicle_id: body.vehicle_id,
+      payment_type: 'battery_replacement' as any,
+      orderDescription: body.description || 'Thanh toán thay thế pin',
+    };
+
+    return this.paymentsService.createCustomPaymentUrl(paymentDto, body.amount, ipAddr);
   }
 }
 

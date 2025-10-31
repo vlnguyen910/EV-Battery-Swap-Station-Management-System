@@ -81,6 +81,43 @@ async function seedConfigs() {
           is_active: true,
         },
       }),
+      // Progressive overcharge fees - like electricity rates
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier1',
+          value: 10000,
+          description: 'Tier 1 (0-20% over limit): 10,000 VNĐ',
+          is_active: true,
+        },
+      }),
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier2',
+          value: 20000,
+          description: 'Tier 2 (20-40% over limit): 20,000 VNĐ',
+          is_active: true,
+        },
+      }),
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier3',
+          value: 35000,
+          description: 'Tier 3 (40-60% over limit): 35,000 VNĐ',
+          is_active: true,
+        },
+      }),
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier4',
+          value: 50000,
+          description: 'Tier 4 (60%+ over limit): 50,000 VNĐ',
+          is_active: true,
+        },
+      }),
     ]);
 
     console.log(`✓ Seeded ${configs.length} configs successfully`);
