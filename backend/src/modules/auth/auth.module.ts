@@ -3,9 +3,15 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { PassportModule } from '@nestjs/passport';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [UsersModule,
+  imports: [
+    UsersModule,
+    PassportModule,
+    MailModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
@@ -13,6 +19,6 @@ import { UsersModule } from '../users/users.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, GoogleStrategy],
 })
 export class AuthModule { }

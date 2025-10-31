@@ -158,11 +158,13 @@ export class BatteriesService {
     }
   }
 
-  updateBatteryStatus(id: number, status: BatteryStatus) {
-    return this.databaseService.battery.update({
+  async updateBatteryStatus(id: number, status: BatteryStatus, tx?: any) {
+    const prisma = tx ?? this.databaseService;
+    const updatedBattery = await prisma.battery.update({
       where: { battery_id: id },
       data: { status },
     });
+    return updatedBattery;
   }
 
   remove(id: number) {

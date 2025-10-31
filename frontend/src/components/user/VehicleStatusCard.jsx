@@ -78,18 +78,23 @@ export default function VehicleStatusCard({ vehicles = [], onFindStations }) {
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-gray-500 text-sm">Status</span>
-              {currentVehicle.status ? (
-                <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-0.5 rounded">Active</span>
+              {((currentVehicle.status || '').toString().toLowerCase() === 'active') ? (
+                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-[2px] text-sm font-medium text-green-700 border border-green-200">
+                  Active
+                </span>
               ) : (
-                <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">Inactive</span>
+                <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-[2px] text-sm font-medium text-red-700 border border-red-200">
+                  Inactive
+                </span>
               )}
             </div>
+
           </div>
-          
+
           <div className="flex items-center justify-center md:col-span-1">
-            <img 
-              src="/images/xe-may-1.png" 
-              alt="Vehicle" 
+            <img
+              src="/images/xe-may-1.png"
+              alt="Vehicle"
               className="w-full max-w-[300px] h-auto object-contain"
             />
           </div>

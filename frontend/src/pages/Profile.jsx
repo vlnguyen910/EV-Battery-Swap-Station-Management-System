@@ -3,6 +3,7 @@ import ProfileHeader from '../components/profile/ProfileHeader';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import VehiclesList from '../components/profile/VehiclesList';
 import { vehicleService } from '../services/vehicleService';
+import { subscriptionService } from '../services/subscriptionService'
 import { useAuth } from '../hooks/useContext';
 
 export default function Profile() {
@@ -15,8 +16,26 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      const vehicles = await vehicleService.getVehiclesByUserIdWithBattery(user.id);
-      setVehicles(Array.isArray(vehicles) ? vehicles : []);
+      const [vehicles, subscriptions] = await Promise.all([
+        vehicleService.getVehiclesByUserIdWithBattery(user.id),
+        // fetch subscriptions for user once and map by vehicle_id
+        subscriptionService.getSubscriptionsByUserId(user.id).catch(() => []),
+      ])
+
+      const subsByVehicle = (subscriptions || []).reduce((acc, s) => {
+        if (s?.vehicle_id) acc[s.vehicle_id] = acc[s.vehicle_id] || []
+        if (s?.vehicle_id) acc[s.vehicle_id].push(s)
+        return acc
+      }, {})
+
+      const enriched = (vehicles || []).map(v => {
+        const vehicleId = v?.vehicle_id || v?.id || null
+        const subs = vehicleId ? (subsByVehicle[vehicleId] || []) : []
+        const hasActiveSub = subs.some(s => (s.status || '').toLowerCase() === 'active')
+        return { ...v, hasActiveSubscription: hasActiveSub }
+      })
+
+      setVehicles(Array.isArray(enriched) ? enriched : []);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       setVehicles([]);
