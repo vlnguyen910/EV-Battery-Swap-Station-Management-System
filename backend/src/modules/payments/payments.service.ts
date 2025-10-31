@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MockPaymentDto } from './dto/mock-payment.dto';
+import { CreatePaymentWithFeesDto, PaymentWithFeesResponse } from './dto/create-payment-with-fees.dto';
 import { vnpayConfig } from './config/vnpay.config';
 import {
   validateVNPayParams,
@@ -17,10 +19,15 @@ import * as crypto from 'crypto';
 import * as qs from 'qs';
 import moment from 'moment';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { FeeCalculationService } from './services/fee-calculation.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(
+    private prisma: DatabaseService,
+    @Inject(FeeCalculationService)
+    private feeCalculationService: FeeCalculationService,
+  ) {}
 
   /**
    * Create VNPAY payment URL for subscription
@@ -646,5 +653,178 @@ export class PaymentsService {
             : 'Payment failed',
     };
   }
+
+  /**
+   * Create VNPAY payment URL with integrated fee calculation
+   * 
+   * Flow:
+   * 1. Get package base price
+   * 2. Calculate fee amount based on fee type and parameters
+   * 3. Create payment record with total amount (base + fee)
+   * 4. Generate VNPAY URL with calculated total amount
+   * 5. Return payment URL, payment ID, and fee breakdown
+   */
+  async createPaymentUrlWithFees(
+    createPaymentWithFeesDto: CreatePaymentWithFeesDto,
+    ipAddr: string,
+  ): Promise<PaymentWithFeesResponse> {
+    // 1. Get package information
+    const servicePackage = await this.prisma.batteryServicePackage.findUnique({
+      where: { package_id: createPaymentWithFeesDto.package_id },
+    });
+
+    if (!servicePackage) {
+      throw new NotFoundException('Package not found');
+    }
+
+    if (!servicePackage.active) {
+      throw new BadRequestException('Package is not active');
+    }
+
+    // 2. Calculate fee based on fee type
+    let feeAmount = 0;
+    let feeBreakdownText = '';
+    let feeDetails: any = {
+      baseAmount: servicePackage.base_price.toNumber(),
+      totalAmount: 0,
+    };
+
+    // Call appropriate fee calculation method
+    switch (createPaymentWithFeesDto.payment_type) {
+      case 'subscription_with_deposit':
+        const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
+          createPaymentWithFeesDto.package_id,
+        );
+        feeAmount = depositResult.deposit_fee;
+        feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        feeDetails.depositFee = depositResult.deposit_fee;
+        break;
+
+      case 'battery_replacement':
+        // Nếu có distance_traveled, tính overcharge fee
+        if (createPaymentWithFeesDto.distance_traveled) {
+          // Cần subscription_id - nếu không có, skip overcharge
+          // Trong trường hợp này, ta sẽ không tính overcharge vì không có subscription context
+          feeAmount = 0;
+          feeBreakdownText = `Thanh toán thay pin: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+        }
+        break;
+
+      case 'damage_fee':
+        if (createPaymentWithFeesDto.damage_type) {
+          // Map damage_type từ DTO sang service (low->minor, medium->moderate, high->severe)
+          const damageTypeMapping = {
+            'low': 'minor',
+            'medium': 'moderate',
+            'high': 'severe',
+          };
+          const mappedDamageType = damageTypeMapping[createPaymentWithFeesDto.damage_type] as 'minor' | 'moderate' | 'severe';
+          
+          const damageResult = await this.feeCalculationService.calculateDamageFee(mappedDamageType);
+          feeAmount = damageResult.damage_fee;
+          feeBreakdownText = `Phí hư hỏng: ${damageResult.damage_fee.toLocaleString('vi-VN')} VND`;
+          feeDetails.damageFee = damageResult.damage_fee;
+        }
+        break;
+
+      case 'subscription':
+      case 'other':
+      default:
+        // Không tính phí, chỉ dùng giá gói
+        feeAmount = 0;
+        feeBreakdownText = `Tổng tiền: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+        break;
+    }
+
+    // 3. Calculate total amount
+    const totalAmount = servicePackage.base_price.toNumber() + feeAmount;
+    feeDetails.totalAmount = totalAmount;
+    feeDetails.breakdown_text = feeBreakdownText;
+
+    // 4. Create payment record with calculated total amount
+    const vnpTxnRef = moment().format('DDHHmmss');
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        user_id: createPaymentWithFeesDto.user_id,
+        package_id: createPaymentWithFeesDto.package_id,
+        vehicle_id: createPaymentWithFeesDto.vehicle_id,
+        amount: totalAmount, // Total amount including fee
+        method: PaymentMethod.vnpay,
+        status: PaymentStatus.pending,
+        payment_type: createPaymentWithFeesDto.payment_type as any,
+        vnp_txn_ref: vnpTxnRef,
+        order_info:
+          createPaymentWithFeesDto.order_info ||
+          `Thanh toan ${servicePackage.name}${feeAmount > 0 ? ' + phí' : ''}`,
+      },
+    });
+
+    // 5. Build VNPAY payment URL with total amount
+    const createDate = moment().format('YYYYMMDDHHmmss');
+    const vnpAmount = Math.floor(totalAmount * 100); // Convert to VND cents
+
+    let vnpParams: any = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: vnpayConfig.vnp_TmnCode,
+      vnp_Locale: createPaymentWithFeesDto.language || 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: vnpTxnRef,
+      vnp_OrderInfo: payment.order_info,
+      vnp_OrderType: 'other',
+      vnp_Amount: vnpAmount,
+      vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: createDate,
+    };
+
+    // Sort and encode params (VNPAY style)
+    vnpParams = sortObject(vnpParams);
+
+    // Create signature from encoded query string
+    const signData = qs.stringify(vnpParams, { encode: false });
+    const hmac = crypto.createHmac('sha512', vnpayConfig.vnp_HashSecret);
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+    // Add signature to params
+    vnpParams['vnp_SecureHash'] = signed;
+
+    // Log for debugging
+    console.log('========== VNPAY Payment URL with Fees ==========');
+    console.log('Base Amount:', feeDetails.baseAmount);
+    console.log('Fee Amount:', feeAmount);
+    console.log('Total Amount:', totalAmount);
+    console.log('Payment Type:', createPaymentWithFeesDto.payment_type);
+    console.log('Fee Breakdown:', feeBreakdownText);
+    console.log('VNPay Amount (cents):', vnpAmount);
+
+    // Build payment URL
+    const paymentUrl = vnpayConfig.vnp_Url + '?' + qs.stringify(vnpParams, { encode: false });
+
+    return {
+      payment_id: payment.payment_id,
+      paymentUrl,
+      vnp_txn_ref: vnpTxnRef,
+      feeBreakdown: {
+        baseAmount: feeDetails.baseAmount,
+        depositFee: feeDetails.depositFee,
+        overchargeFee: feeDetails.overchargeFee,
+        damageFee: feeDetails.damageFee,
+        totalAmount: feeDetails.totalAmount,
+        breakdown_text: feeDetails.breakdown_text,
+      },
+      paymentInfo: {
+        user_id: payment.user_id,
+        package_id: payment.package_id ?? 0,
+        vehicle_id: payment.vehicle_id ?? 0,
+        payment_type: payment.payment_type,
+        status: payment.status,
+        created_at: payment.created_at.toISOString(),
+      },
+    };
+  }
+
 }
+
 

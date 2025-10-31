@@ -12,15 +12,26 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
+import { FeeCalculationService } from './services/fee-calculation.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MockPaymentDto } from './dto/mock-payment.dto';
+import { CreatePaymentWithFeesDto } from './dto/create-payment-with-fees.dto';
+import {
+  CalculateSubscriptionFeeDto,
+  CalculateOverchargeFeeDto,
+  CalculateDamageFeeDto,
+  CalculateComplexFeeDto,
+} from './dto/fee-calculation.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly feeCalculationService: FeeCalculationService,
+  ) {}
 
   /**
    * ⭐ OLD ENDPOINT - Keep for backward compatibility
@@ -249,6 +260,112 @@ export class PaymentsController {
     };
 
     return this.paymentsService.createCustomPaymentUrl(paymentDto, body.amount, ipAddr);
+  }
+
+  /**
+   * ⭐ FEE CALCULATION ENDPOINTS - Tính phí
+   */
+
+  /**
+   * Calculate subscription + deposit fee (fixed 400,000 VNĐ)
+   * POST /payments/calculate/subscription-fee
+   */
+  @Post('calculate/subscription-fee')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async calculateSubscriptionFee(@Body() dto: CalculateSubscriptionFeeDto) {
+    const fee = await this.feeCalculationService.calculateSubscriptionWithDeposit(
+      dto.packageId,
+    );
+    return {
+      ...fee,
+      breakdown_text: this.feeCalculationService.getBreakdownText(fee),
+    };
+  }
+
+  /**
+   * Calculate overcharge fee (km vượt quá)
+   * POST /payments/calculate/overcharge-fee
+   */
+  @Post('calculate/overcharge-fee')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async calculateOverchargeFee(@Body() dto: CalculateOverchargeFeeDto) {
+    const fee = await this.feeCalculationService.calculateOverchargeFee(
+      dto.subscriptionId,
+      dto.actualDistanceTraveled,
+    );
+    return {
+      ...fee,
+      breakdown_text: this.feeCalculationService.getBreakdownText(fee),
+    };
+  }
+
+  /**
+   * Calculate damage fee
+   * POST /payments/calculate/damage-fee
+   */
+  @Post('calculate/damage-fee')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async calculateDamageFee(@Body() dto: CalculateDamageFeeDto) {
+    const fee = await this.feeCalculationService.calculateDamageFee(dto.damageSeverity);
+    return {
+      ...fee,
+      breakdown_text: this.feeCalculationService.getBreakdownText(fee),
+    };
+  }
+
+  /**
+   * Calculate complex fee (multiple fee types at once)
+   * POST /payments/calculate/complex-fee
+   */
+  @Post('calculate/complex-fee')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async calculateComplexFee(@Body() dto: CalculateComplexFeeDto) {
+    const fee = await this.feeCalculationService.calculateComplexFee(dto);
+    return {
+      ...fee,
+      breakdown_text: this.feeCalculationService.getBreakdownText(fee),
+    };
+  }
+
+  /**
+   * ⭐ NEW ENDPOINT - Integrated Fee Calculation + VNPay Payment URL
+   * Combines fee calculation with VNPAY URL creation in one endpoint
+   * 
+   * Usage Examples:
+   * 1. Subscription with deposit:
+   *    { "user_id": 1, "package_id": 1, "vehicle_id": 1, "payment_type": "subscription_with_deposit" }
+   * 
+   * 2. Damage fee:
+   *    { "user_id": 1, "package_id": 1, "vehicle_id": 1, "payment_type": "damage_fee", "damage_type": "medium" }
+   * 
+   * Response includes:
+   * - paymentUrl: Ready-to-use VNPAY payment URL
+   * - feeBreakdown: Detailed fee calculation breakdown
+   * - payment_id & vnp_txn_ref: For tracking and reconciliation
+   * 
+   * POST /payments/calculate-and-create-vnpay-url
+   */
+  @Post('calculate-and-create-vnpay-url')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin')
+  async createPaymentUrlWithFees(
+    @Body() createPaymentWithFeesDto: CreatePaymentWithFeesDto,
+    @Req() req: Request,
+  ) {
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '0.0.0.0';
+
+    return this.paymentsService.createPaymentUrlWithFees(
+      createPaymentWithFeesDto,
+      ipAddr,
+    );
   }
 }
 

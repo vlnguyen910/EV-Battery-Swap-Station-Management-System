@@ -12,18 +12,9 @@ async function seedConfigs() {
       prisma.config.create({
         data: {
           type: 'deposit',
-          name: 'Student_Initial_Deposit',
-          value: 100000,
-          description: 'Initial deposit required for student accounts',
-          is_active: true,
-        },
-      }),
-      prisma.config.create({
-        data: {
-          type: 'deposit',
-          name: 'Regular_Initial_Deposit',
-          value: 500000,
-          description: 'Initial deposit required for regular user accounts',
+          name: 'Battery_Deposit_Default',
+          value: 400000,
+          description: 'Default battery deposit fee: 400,000 VNĐ',
           is_active: true,
         },
       }),
@@ -86,8 +77,8 @@ async function seedConfigs() {
         data: {
           type: 'penalty',
           name: 'Overcharge_Fee_Tier1',
-          value: 10000,
-          description: 'Tier 1 (0-20% over limit): 10,000 VNĐ',
+          value: 216,
+          description: 'Tier 1 (2000km over limit): 216 VNĐ',
           is_active: true,
         },
       }),
@@ -95,8 +86,8 @@ async function seedConfigs() {
         data: {
           type: 'penalty',
           name: 'Overcharge_Fee_Tier2',
-          value: 20000,
-          description: 'Tier 2 (20-40% over limit): 20,000 VNĐ',
+          value: 195,
+          description: 'Tier 2 (2001 - 4000km over limit): 195 VNĐ',
           is_active: true,
         },
       }),
@@ -104,17 +95,8 @@ async function seedConfigs() {
         data: {
           type: 'penalty',
           name: 'Overcharge_Fee_Tier3',
-          value: 35000,
-          description: 'Tier 3 (40-60% over limit): 35,000 VNĐ',
-          is_active: true,
-        },
-      }),
-      prisma.config.create({
-        data: {
-          type: 'penalty',
-          name: 'Overcharge_Fee_Tier4',
-          value: 50000,
-          description: 'Tier 4 (60%+ over limit): 50,000 VNĐ',
+          value: 173,
+          description: 'Tier 3 (4000km upper over limit): 173 VNĐ',
           is_active: true,
         },
       }),
