@@ -18,6 +18,8 @@ import { SupportsModule } from './modules/supports/supports.module';
 import { ConfigModule } from '@nestjs/config';
 import { BatteryTransferRequestModule } from './modules/battery-transfer-request/battery-transfer-request.module';
 import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/battery-transfer-ticket.module';
+import { MailModule } from './modules/mail/mail.module';
+import { SystemConfigModule } from './modules/config/config.module';
 
 @Module({
   imports: [
@@ -40,7 +42,9 @@ import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/b
     SwappingModule,
     SupportsModule,
     BatteryTransferRequestModule,
-    BatteryTransferTicketModule
+    BatteryTransferTicketModule,
+    MailModule,
+    SystemConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
