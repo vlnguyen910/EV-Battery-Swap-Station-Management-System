@@ -12,18 +12,9 @@ async function seedConfigs() {
       prisma.config.create({
         data: {
           type: 'deposit',
-          name: 'Student_Initial_Deposit',
-          value: 100000,
-          description: 'Initial deposit required for student accounts',
-          is_active: true,
-        },
-      }),
-      prisma.config.create({
-        data: {
-          type: 'deposit',
-          name: 'Regular_Initial_Deposit',
-          value: 500000,
-          description: 'Initial deposit required for regular user accounts',
+          name: 'Battery_Deposit_Default',
+          value: 400000,
+          description: 'Default battery deposit fee: 400,000 VNĐ',
           is_active: true,
         },
       }),
@@ -78,6 +69,34 @@ async function seedConfigs() {
           name: 'Minor_Damage_Fee',
           value: 10000,
           description: 'Fee for minor damage to vehicles',
+          is_active: true,
+        },
+      }),
+      // Progressive overcharge fees - like electricity rates
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier1',
+          value: 216,
+          description: 'Tier 1 (2000km over limit): 216 VNĐ',
+          is_active: true,
+        },
+      }),
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier2',
+          value: 195,
+          description: 'Tier 2 (2001 - 4000km over limit): 195 VNĐ',
+          is_active: true,
+        },
+      }),
+      prisma.config.create({
+        data: {
+          type: 'penalty',
+          name: 'Overcharge_Fee_Tier3',
+          value: 173,
+          description: 'Tier 3 (4000km upper over limit): 173 VNĐ',
           is_active: true,
         },
       }),
