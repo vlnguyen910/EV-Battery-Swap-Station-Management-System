@@ -5,6 +5,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
 import { hashPassword } from 'src/shared/utils/hash-password.util';
 import { $Enums } from '@prisma/client';
+import { UpdateEmailTokenDto } from "./dto/update-email-token.dto";
 
 @Injectable()
 export class UsersService {
@@ -36,13 +37,47 @@ export class UsersService {
 
     const hashedPassword = hashPassword(password);
 
+    const emailVerified = role === $Enums.Role.driver ? false : true;
+
     const newUser = await this.databaseService.user.create({
       data: {
         username,
         password: hashedPassword,
         email: normalizedEmail,
         phone: normalizedPhone,
+        email_verified: emailVerified,
+        email_token: createUserDto.email_token,
+        email_token_expires: createUserDto.email_token_expires,
         role: role,
+      },
+    });
+
+    return newUser;
+  }
+
+  async createGoogleUser(data: { email: string; username: string; role: $Enums.Role }) {
+    const normalizedEmail = normalizeEmail(data.email);
+
+    // Check if email already exists
+    const existingUser = await this.databaseService.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email already in use');
+    }
+
+    // Generate random phone for Google users (they can update later)
+    const randomPhone = `GOOGLE_${Date.now()}`;
+
+    // Create user without password (Google OAuth)
+    const newUser = await this.databaseService.user.create({
+      data: {
+        username: data.username,
+        password: '', // Empty password for Google users
+        email: normalizedEmail,
+        phone: randomPhone,
+        role: data.role,
       },
     });
 
@@ -79,42 +114,75 @@ export class UsersService {
   }
 
   async findOneByEmail(email: string) {
-    return this.databaseService.user.findUnique({
-      where: { email: normalizeEmail(email) }
+    const user = await this.databaseService.user.findUnique({
+      where: { email: normalizeEmail(email) },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        email_verified: true,
+        email_token: true,
+        email_token_expires: true,
+      }
     });
-  }
 
-  async createGoogleUser(data: { email: string; username: string; role: $Enums.Role }) {
-    const normalizedEmail = normalizeEmail(data.email);
-
-    // Check if email already exists
-    const existingUser = await this.databaseService.user.findUnique({
-      where: { email: normalizedEmail },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Email already in use');
+    if (!user) {
+      throw new NotFoundException(`User with email: ${email} not found `);
     }
 
-    // Generate random phone for Google users (they can update later)
-    const randomPhone = `GOOGLE_${Date.now()}`;
+    return user;
+  }
 
-    // Create user without password (Google OAuth)
-    const newUser = await this.databaseService.user.create({
-      data: {
-        username: data.username,
-        password: '', // Empty password for Google users
-        email: normalizedEmail,
-        phone: randomPhone,
-        role: data.role,
-      },
+  async findOneByEmailToken(emailToken: string) {
+    const user = await this.databaseService.user.findFirst({
+      where: { email_token: emailToken }
     });
 
-    return newUser;
+    if (!user) {
+      throw new BadRequestException('Verification token is invalid');
+    }
+
+    return user;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    return "This action updates a #${id} user";
+    const updatedUser = await this.databaseService.user.update({
+      where: { user_id: id },
+      data: updateUserDto,
+    });
+
+    return updatedUser;
+  }
+
+  async markEmailAsVerified(user_id: number) {
+    const verifiedUser = await this.databaseService.user.update({
+      where: { user_id },
+      data: {
+        email_verified: true,
+        email_token: null,
+        email_token_expires: null,
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        email_verified: true,
+      }
+    });
+
+    return verifiedUser;
+  }
+
+  async updateEmailToken(user_id: number, dto: UpdateEmailTokenDto) {
+    await this.databaseService.user.update({
+      where: { user_id },
+      data: {
+        email_token: dto.email_token,
+        email_token_expires: dto.email_token_expires,
+      },
+    });
   }
 
   async updateRefreshToken(user_id: number, refreshToken: string) {

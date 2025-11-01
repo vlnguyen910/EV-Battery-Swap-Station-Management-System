@@ -1,0 +1,23 @@
+enum ConfigType {
+  deposit          // Tiền cọc
+  penalty          // Phí phạt
+  service_fee      // Phí dịch vụ
+  swap_fee         // Phí swap
+  late_fee         // Phí trễ hạn
+  damage_fee       // Phí hư hỏng
+  other            // Khác
+}
+
+model Config {
+  config_id   Int       @id @default(autoincrement())
+  type        ConfigType
+  name        String    @unique @db.VarChar(100)
+  value       Decimal   @db.Decimal(12, 2)
+  description String?   @db.VarChar(500)
+  is_active   Boolean   @default(true) // Enable/disable config
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("configs")
+  @@index([type])
+}
