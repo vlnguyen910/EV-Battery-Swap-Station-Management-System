@@ -56,7 +56,8 @@ export default function User() {
   const headerName = user?.name || 'Driver';
 
   const nearbyStations = useMemo(() => {
-    if (!Array.isArray(stations)) return [];
+    // Wait for stations to be initialized before processing
+    if (!Array.isArray(stations) || stations.length === 0) return [];
     // pick first 3 for preview; could be sorted by distance if available
     return stations.slice(0, 3).map((s) => ({
       id: s.station_id ?? s.id,
@@ -108,7 +109,7 @@ export default function User() {
               {/* Right column */}
               <div className="lg:col-span-1 flex flex-col gap-6 ml-6">
                 {/* <MonthSummaryCard /> */}
-                <PlansCard/>  
+                <PlansCard />
                 <NearbyStationsCard stations={nearbyStations} onViewAll={() => navigate('/driver/map')} />
 
                 <HelpLinksCard

@@ -100,6 +100,9 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
+            // Dispatch custom event to notify other contexts that login succeeded
+            window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
+
             // Navigate dựa vào role
             if (userData.role === "admin") {
                 navigate("/admin");

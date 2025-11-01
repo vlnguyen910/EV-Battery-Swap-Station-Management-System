@@ -9,6 +9,13 @@ const login = async (credentials) => {
   return response.data;
 };
 
+// Login with Google function
+const loginWithGoogle = async (tokenId) => {
+  // Let callers handle errors (they can format and display messages as needed).
+  const response = await api.post(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, { tokenId });
+  return response.data;
+};
+
 //Logout function
 const logout = async () => {
   try {
@@ -113,6 +120,7 @@ const deleteUser = async (userId) => {
 // Legacy authService object for backward compatibility
 export const authService = {
   login,
+  loginWithGoogle,
   logout,
   register,
   getProfile,
