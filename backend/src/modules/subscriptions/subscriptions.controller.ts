@@ -9,8 +9,10 @@ import {
   ParseIntPipe,
   UseGuards,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  Req
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
@@ -44,8 +46,14 @@ export class SubscriptionsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.subscriptionsService.findOne(id);
+  @Roles('driver', 'admin', 'station_staff')
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    // Extract user info from JWT token (attached by AuthGuard)
+    const user = req['user'];
+    return this.subscriptionsService.findOne(id, user);
   }
 
   @Get('user/:userId')
