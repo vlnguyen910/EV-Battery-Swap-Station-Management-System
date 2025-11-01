@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException, Logger,
+  ConflictException,
+  ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
@@ -94,7 +96,7 @@ export class SubscriptionsService {
   }
 
 
-  async findOne(id: number) {
+  async findOne(id: number, user?: any) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { subscription_id: id },
       include: {
@@ -113,6 +115,15 @@ export class SubscriptionsService {
 
     if (!subscription) {
       throw new NotFoundException(`Subscription with ID ${id} not found`);
+    }
+
+    // Authorization check: If user is driver, they can only access their own subscriptions
+    if (user && user.role === 'driver') {
+      if (subscription.user_id !== user.sub) {
+        throw new ForbiddenException(
+          'You do not have permission to access this subscription',
+        );
+      }
     }
 
     return subscription;

@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { Role } from '@prisma/client';
+import { Role, StationStatus } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -79,7 +79,8 @@ export class AuthService {
             name: user.username,
             email: user.email,
             phone: user.phone,
-            role: user.role
+            role: user.role,
+            station_id: user.station_id,
         };
 
         const newAccessToken = await this.jwtService.signAsync(newTokenPayload, {
@@ -106,16 +107,16 @@ export class AuthService {
             role: Role.driver,
         });
 
-        await this.mailService.sendVerificationEmail(newUser.email, emailToken);
+        await this.mailService.sendVerificationEmail(newUser.user.email, emailToken);
 
         return {
             message: 'Registration successful. Please check your email to verify your account.',
             user: {
-                user_id: newUser.user_id,
-                username: newUser.username,
-                email: newUser.email,
-                phone: newUser.phone,
-                role: newUser.role,
+                user_id: newUser.user.user_id,
+                username: newUser.user.username,
+                email: newUser.user.email,
+                phone: newUser.user.phone,
+                role: newUser.user.role,
             }
         };
     }
