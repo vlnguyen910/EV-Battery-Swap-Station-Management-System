@@ -7,6 +7,9 @@ export const API_ENDPOINTS = {
     REGISTER: "/auth/register",
     LOGOUT: "/auth/logout", // backend chưa có
     REFRESH: "/auth/refresh",
+    GOOGLE_LOGIN: "/auth/google",
+    GOOGLE_CALLBACK: "/auth/google/callback",
+    VERIFY_EMAIL: "/auth/verify-email",
   },
 
   USER: {

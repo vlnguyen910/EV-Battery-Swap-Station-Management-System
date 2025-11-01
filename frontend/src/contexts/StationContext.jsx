@@ -40,7 +40,6 @@ export const StationProvider = ({ children }) => {
         }
     };
 
-    // Fetch stations immediately when component mounts
     // Check for token to avoid 401 errors (backend requires auth for stations endpoint)
     useEffect(() => {
         // Wait a bit for token to be set if user is already logged in
