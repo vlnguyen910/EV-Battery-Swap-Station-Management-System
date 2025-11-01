@@ -14,6 +14,7 @@ import { SwapProvider } from './contexts/SwapContext.jsx';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+
       <AuthProvider>
         <StationProvider>
           <BatteryProvider>
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')).render(
           </BatteryProvider>
         </StationProvider>
       </AuthProvider>
+
     </BrowserRouter>
   </StrictMode>,
 )

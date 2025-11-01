@@ -9,6 +9,7 @@ export const StationProvider = ({ children }) => {
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [initialized, setInitialized] = useState(false);
 
     // Function to fetch all stations
     const fetchAllStations = async () => {
@@ -17,14 +18,16 @@ export const StationProvider = ({ children }) => {
         try {
             const data = await getAllStationsService();
             setStations(data);
+            setInitialized(true);
             console.log("Stations data fetched successfully", data);
         } catch (error) {
             setError(error);
+            console.error("Error fetching stations:", error);
         } finally {
             setLoading(false);
         }
-        console.log("Fetched stations:", stations);
     };
+
     // Function to fetch station by ID 
     const getStationById = async (id) => {
         try {
@@ -37,33 +40,61 @@ export const StationProvider = ({ children }) => {
         }
     };
 
-    // Fetch all stations on mount - ONLY if user is logged in
+    // Fetch stations immediately when component mounts
+    // Check for token to avoid 401 errors (backend requires auth for stations endpoint)
     useEffect(() => {
-        // Check if user has token before fetching
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.log('No token found - skipping station fetch on mount');
-            return;
-        }
+        // Wait a bit for token to be set if user is already logged in
+        const checkAndFetch = () => {
+            const token = localStorage.getItem('token');
 
-        (async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await getAllStationsService();
-                setStations(data);
-                console.log("Stations data fetched successfully", data);
-            } catch (err) {
-                console.error("Error fetching stations on mount:", err);
-                setError(err);
-            } finally {
-                setLoading(false);
+            console.log('StationContext mount:', {
+                hasToken: !!token,
+                initialized,
+                loading,
+                stationsCount: stations.length
+            });
+
+            if (!token) {
+                console.log('No token found - stations endpoint requires auth');
+                return;
             }
-        })();
-    }, []);
+
+            // Fetch if not already initialized and not currently loading
+            if (!initialized && !loading) {
+                console.log('Fetching stations...');
+                fetchAllStations().catch(err => {
+                    console.error('Failed to fetch stations:', err);
+                });
+            }
+        };
+
+        // Check immediately
+        checkAndFetch();
+
+        // Also check after a short delay (in case token is set during login)
+        const timer = setTimeout(checkAndFetch, 100);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount
+
+    // Re-fetch when user logs in (listen for custom event from AuthContext)
+    useEffect(() => {
+        const handleLogin = () => {
+            if (!initialized && !loading) {
+                console.log('User logged in - fetching stations');
+                fetchAllStations().catch(err => {
+                    console.error('Failed to fetch stations after login:', err);
+                });
+            }
+        };
+
+        window.addEventListener('userLoggedIn', handleLogin);
+        return () => window.removeEventListener('userLoggedIn', handleLogin);
+    }, [initialized, loading]);
 
     return (
-        <StationContext.Provider value={{ stations, loading, error, fetchAllStations, getStationById }}>
+        <StationContext.Provider value={{ stations, loading, error, initialized, fetchAllStations, getStationById }}>
             {children}
         </StationContext.Provider>
     );
