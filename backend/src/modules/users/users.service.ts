@@ -52,7 +52,15 @@ export class UsersService {
       },
     });
 
-    return newUser;
+    return {
+      user: {
+        user_id: newUser.user_id,
+        username: newUser.username,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+      }
+    }
   }
 
   async createGoogleUser(data: { email: string; username: string; role: $Enums.Role }) {
