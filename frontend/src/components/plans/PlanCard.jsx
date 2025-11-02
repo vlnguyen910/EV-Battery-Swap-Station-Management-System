@@ -20,7 +20,7 @@ export default function PlanCard({ plan, onSubscribe, subscribed, loading }) {
         </div>
         {inUse && (
           <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-xs font-medium text-green-700 mt-3">
-            In use
+            Active subscription
           </span>
         )}
         <ul className="mt-4 space-y-2">
@@ -31,8 +31,13 @@ export default function PlanCard({ plan, onSubscribe, subscribed, loading }) {
       </div>
 
       <div className="mt-6">
-        <Button className="w-full" onClick={() => onSubscribe(plan)} disabled={loading}>
-          {inUse ? 'Subscribe more' : 'Subscribe'}
+        <Button 
+          className="w-full" 
+          onClick={() => onSubscribe(plan)} 
+          disabled={loading || inUse}
+          variant={inUse ? "outline" : "default"}
+        >
+          {inUse ? 'Already subscribed' : 'Subscribe'}
         </Button>
       </div>
     </div>

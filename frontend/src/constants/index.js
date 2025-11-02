@@ -97,6 +97,7 @@ export const API_ENDPOINTS = {
 
   PAYMENT: {
     CREATE_VNPAY_URL: "/payments/create-vnpay-url",
+    CREATE_VNPAY_URL_V2: "/payments/calculate-and-create-vnpay-url",
     VNPAY_RETURN: "/payments/vnpay-return",
     VNPAY_IPN: "/payments/vnpay-ipn",
     GET_PAYMENT: (id) => `/payments/${id}`,
