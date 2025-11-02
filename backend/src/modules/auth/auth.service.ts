@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotImplementedException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { isMatchPassword } from 'src/shared/utils/hash-password.util';
+import { hashPassword, isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -9,6 +9,7 @@ import { Role, StationStatus } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,15 +20,11 @@ export class AuthService {
     ) { }
 
     async login(loginDto: LoginDto) {
-        if (!loginDto.emailOrPhone || !loginDto.password) {
-            throw new NotImplementedException('Email/Phone and password are required');
-        }
-
         const user = await this.usersService.findOneByEmailOrPhone(loginDto.emailOrPhone);
 
 
         if (!user || !(await isMatchPassword(loginDto.password, user.password))) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Your email/phone or password is incorrect!');
         }
 
         if (!user.email_verified) {
@@ -43,13 +40,15 @@ export class AuthService {
         }
 
         const accessToken = await this.jwtService.signAsync(tokenPayload);
-        const refreshToken = await this.jwtService.signAsync(tokenPayload, {
-            secret: process.env.JWT_REFRESH_TOKEN_SECRET,
-            expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
-        });
+        const refreshToken = {
+            refresh_token: await this.jwtService.signAsync(tokenPayload, {
+                secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+                expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
+            })
+        }
 
         //TODO: save refreshToken to db
-        this.usersService.updateRefreshToken(user.user_id, refreshToken);
+        this.usersService.update(user.user_id, refreshToken);
 
         return {
             accessToken,
@@ -121,6 +120,16 @@ export class AuthService {
         };
     }
 
+    async logout(userId: number) {
+        const refreshTokenUpdate = {
+            refresh_token: null
+        };
+        await this.usersService.update(userId, refreshTokenUpdate);
+        return {
+            message: 'Logout successful',
+        };
+    }
+
     async googleLogin(googleUser: any) {
         if (!googleUser) {
             throw new UnauthorizedException('No user from Google');
@@ -148,13 +157,15 @@ export class AuthService {
         };
 
         const accessToken = await this.jwtService.signAsync(tokenPayload);
-        const refreshToken = await this.jwtService.signAsync(tokenPayload, {
-            secret: process.env.JWT_REFRESH_TOKEN_SECRET,
-            expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
-        });
+        const refreshToken = {
+            refresh_token: await this.jwtService.signAsync(tokenPayload, {
+                secret: process.env.JWT_REFRESH_TOKEN_SECRET,
+                expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
+            })
+        }
 
         // Save refreshToken to db
-        await this.usersService.updateRefreshToken(user.user_id, refreshToken);
+        await this.usersService.update(user.user_id, refreshToken);
 
         return {
             accessToken,
@@ -181,7 +192,13 @@ export class AuthService {
             throw new BadRequestException('Email has already been verified');
         }
 
-        const verifiedUser = await this.usersService.markEmailAsVerified(user.user_id);
+        const updateVerifyUser = {
+            email_verified: true,
+            email_token: null,
+            email_token_expires: null
+        }
+
+        const verifiedUser = await this.usersService.update(user.user_id, updateVerifyUser);
 
         return {
             message: 'Email verification successful',
@@ -203,10 +220,6 @@ export class AuthService {
         emailTokenExpires.setHours(emailTokenExpires.getHours() + expireHours);
 
         // Update user with new token
-        await this.usersService.updateEmailToken(user.user_id, {
-            email_token: emailToken,
-            email_token_expires: emailTokenExpires,
-        });
 
         // Send email
         await this.mailService.sendVerificationEmail(email, emailToken);
@@ -215,5 +228,71 @@ export class AuthService {
             message: 'Verification email resent. Please check your email.',
         };
     }
-}
 
+    // User request an email to reset password
+    async forgetPassword(email: string) {
+        try {
+            if (!email) {
+                throw new BadRequestException('Email is required!');
+            }
+
+            const user = await this.usersService.findOneByEmail(email);
+
+            if (user.email_verified === false) {
+                throw new BadRequestException('Email is not verified');
+            }
+
+            // Generate reset token
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            const resetTokenExpires = new Date();
+            const expireMinutes = this.configService.get<number>('FOGET_PASSWORD_TOKEN_EXPIRATION_MINUTES') || 15;
+            resetTokenExpires.setHours(resetTokenExpires.getMinutes() + expireMinutes);
+
+            const updateEmailToken = {
+                email_token: resetToken,
+                email_token_expires: resetTokenExpires
+            }
+
+            // Update user with reset token
+            await this.usersService.update(user.user_id, updateEmailToken);
+
+            await this.mailService.sendPasswordResetEmail(email, resetToken);
+
+            return {
+                message: 'Password reset email sent. Please check your email.',
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async resetPassword(dto: ResetPasswordDto) {
+        try {
+            const user = await this.usersService.findOneByEmailToken(dto.token);
+
+            if (user.email_token_expires && user.email_token_expires < new Date()) {
+                throw new BadRequestException('Password reset token has expired');
+            }
+
+            const hashedPassword = {
+                password: await hashPassword(dto.new_password)
+            }
+
+            await this.usersService.update(user.user_id, hashedPassword);
+
+            //detele email_token after reset password
+            const updateEmailToken = {
+                email_token: null,
+                email_token_expires: null
+            }
+
+            await this.usersService.update(user.user_id, updateEmailToken);
+
+            return {
+                message: 'Password has been reset successfully',
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+}

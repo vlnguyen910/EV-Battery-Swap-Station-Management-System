@@ -8,7 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
-  Request
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,6 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -49,6 +50,14 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch('change-password')
+  changePassword(
+    @Request() req,
+    @Body() dto: ChangePasswordDto
+  ) {
+    return this.usersService.changePassword(req.user.sub, dto);
   }
 
   @Delete(':id')

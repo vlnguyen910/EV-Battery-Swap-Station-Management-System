@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -104,6 +105,18 @@ export class AuthController {
   @Post('resend-verification')
   async resendVerificationEmail(@Body('email') email: string) {
     return this.authService.resendVerificationEmail(email);
+  }
+
+  @Post('forget-password')
+  async sendEmailForgetPassword(@Body('email') email: string) {
+    return this.authService.forgetPassword(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto
+  ) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 }
 
