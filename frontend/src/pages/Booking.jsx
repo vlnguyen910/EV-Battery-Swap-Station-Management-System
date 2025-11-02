@@ -147,9 +147,9 @@ export default function Booking({
   })();
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8">
+    <div className="min-h-screen bg-transparent overflow-y-auto flex items-center justify-center">
+      <div className="max-w-5xl mx-auto p-6 w-full">
+        <div className="bg-white rounded-b-2xl shadow-xl max-w-2xl w-full p-8 mx-auto">
           <BookingHeader stationName={stationInfo.name} stationAddress={stationInfo.address} onBackToMap={onBackToMap} />
 
           <div className="relative px-6 pb-6">

@@ -3,6 +3,7 @@ import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
+import SubscribeModal from '../components/plans/SubscribeModal'
 import { paymentService } from '../services/paymentService'
 
 export default function Plans() {
@@ -135,57 +136,73 @@ export default function Plans() {
     }
   }
 
-  // Previously we preloaded subscriptions from localStorage here which caused
-  // the UI to briefly show stale "subscribed" state on page refresh. Removed
-  // that preload so we only render subscriptions from the backend fetch.
+  // Load subscriptions from localStorage (temporary until backend is ready)
+  useEffect(() => {
+    const savedSubscriptions = localStorage.getItem('subscriptions')
+    if (savedSubscriptions) {
+      try {
+        setSubscriptions(JSON.parse(savedSubscriptions))
+      } catch (err) {
+        console.error('Error parsing subscriptions:', err)
+        setSubscriptions([])
+      }
+    }
+  }, [])
 
   // Fetch packages on component mount
   useEffect(() => {
     fetchAllData()
   }, [user?.id])
 
-  // Handle subscription with backend API
-  const handleSubscribe = async (plan) => {
+  // Handle subscribe action: open modal to start payment flow instead of creating subscription directly
+  const handleSubscribe = (plan) => {
     if (!user?.id) {
       alert('Please login to subscribe to a plan')
       return
     }
 
-    setSubscribing(true)
+    // Open subscribe modal which will handle payment and backend subscription creation after success
+    openSubscribeModal(plan)
+  }
+
+  // Open subscribe modal (choose vehicle, confirm payment)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [paying, setPaying] = useState(false)
+
+  const openSubscribeModal = (plan) => {
+    setSelectedPlan(plan)
+    setModalOpen(true)
+  }
+
+  // Called when user clicks Pay in modal
+  const handlePay = async (vehicleId) => {
+    if (!user?.id || !selectedPlan) {
+      alert('Missing user or package info')
+      return
+    }
+
+    setPaying(true)
     try {
-      // Create payment data for VNPay
-      const paymentData = {
+      const payload = {
         user_id: user.id,
-        package_id: plan.rawData.package_id,
-        orderDescription: `Subscribe to ${plan.name}`,
-        language: 'vn', // or 'en'
+        package_id: selectedPlan.rawData.package_id,
+        vehicle_id: parseInt(vehicleId)
       }
 
-      console.log('Sending payment data:', paymentData)
-
-      // Call createPayment to get VNPay URL
-      const response = await paymentService.createPayment(paymentData)
-      
-      console.log('Payment response:', response)
-
-      if (response.paymentUrl) {
-        // Redirect to VNPay payment page
-        window.location.href = response.paymentUrl
+      const res = await paymentService.createPayment(payload)
+      // Expect backend to return a redirect url to VNPay
+      const redirectUrl = res?.vnpUrl || res?.paymentUrl || res?.url || res?.redirectUrl || res
+      if (redirectUrl) {
+        window.location.href = redirectUrl
       } else {
-        throw new Error('No payment URL received from server')
+        alert('Payment URL not returned by server')
       }
     } catch (err) {
-      console.error('Payment creation failed:', err)
-      console.error('Error response:', err.response?.data)
-      
-      const errorMessage = err.response?.data?.message 
-        || err.response?.data?.error 
-        || err.message 
-        || 'Unable to create payment'
-      
-      alert(`Payment failed: ${errorMessage}`)
+      console.error('Payment creation failed', err)
+      alert('Payment creation failed: ' + (err.message || err))
     } finally {
-      setSubscribing(false)
+      setPaying(false)
     }
   }
 
@@ -255,11 +272,21 @@ export default function Plans() {
           <PlansList
             plans={packages}
             subscriptions={subscriptions}
-            onSubscribe={handleSubscribe}
+            onSubscribe={openSubscribeModal}
             loading={subscribing}
             isUserSubscribed={isUserSubscribed}
           />
         </section>
+
+        {/* Subscribe modal */}
+        <SubscribeModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          plan={selectedPlan}
+          user={user}
+          onPay={handlePay}
+          paying={paying}
+        />
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">Your Subscriptions</h2>

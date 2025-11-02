@@ -76,13 +76,12 @@ export default function Navigation({ type = "main" }) {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-blue-200">VI</span>
-              <span className="text-white">EN</span>
-            </div>
-            <button className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">
-              <Link to="/login">Login</Link>
-            </button>
+            <Link 
+              to="/login"
+              className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors"
+            >
+              Login
+            </Link>
           </div>
         </div>
       </div>

@@ -117,7 +117,7 @@ export default function SupportTicketCard({ stations = [] }) {
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700">Select Type Of Error</span>
+              <span className="text-sm font-medium text-gray-700">What you are having issue with</span>
               <Field
                 as="select"
                 name="category"
