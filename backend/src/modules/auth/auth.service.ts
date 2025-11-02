@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotImplementedException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, NotImplementedException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
@@ -191,6 +191,10 @@ export class AuthService {
 
     async resendVerificationEmail(email: string) {
         const user = await this.usersService.findOneByEmail(email);
+
+        if (!user) {
+            throw new NotFoundException(`User with email: ${email} not found `);
+        }
 
         if (user.email_verified) {
             throw new BadRequestException('Email is already verified');
