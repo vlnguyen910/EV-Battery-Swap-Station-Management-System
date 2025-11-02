@@ -10,10 +10,25 @@ const login = async (credentials) => {
 };
 
 // Login with Google function
-const loginWithGoogle = async (tokenId) => {
-  // Let callers handle errors (they can format and display messages as needed).
-  const response = await api.post(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, { tokenId });
-  return response.data;
+const redirectToGoogleLogin = () => {
+  // Construct full backend URL for Google OAuth
+  const backendUrl =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+  const googleAuthUrl = `${backendUrl}${API_ENDPOINTS.AUTH.GOOGLE_LOGIN}`;
+
+  console.log("Redirecting to Google OAuth:", googleAuthUrl);
+  window.location.href = googleAuthUrl;
+};
+
+// Function to handle Google login callback
+const handleGoogleCallback = async () => {
+  try {
+    const response = await api.get(API_ENDPOINTS.AUTH.GOOGLE_CALLBACK);
+    return response.data;
+  } catch (error) {
+    console.error("Login with Google error:", error);
+    throw error;
+  }
 };
 
 //Logout function
@@ -120,7 +135,8 @@ const deleteUser = async (userId) => {
 // Legacy authService object for backward compatibility
 export const authService = {
   login,
-  loginWithGoogle,
+  redirectToGoogleLogin,
+  handleGoogleCallback,
   logout,
   register,
   getProfile,

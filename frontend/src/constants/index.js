@@ -5,11 +5,12 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout", // backend chưa có
+    LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     GOOGLE_LOGIN: "/auth/google",
     GOOGLE_CALLBACK: "/auth/google/callback",
     VERIFY_EMAIL: "/auth/verify-email",
+    RESEND_VERIFICATION: "/auth/resend-verification",
   },
 
   USER: {

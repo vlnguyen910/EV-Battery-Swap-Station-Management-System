@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import GuestPage from './pages/GuestPage'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import GoogleCallback from './components/auth/GoogleCallback'
 import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
 import NotFound from './pages/NotFound'
@@ -31,6 +32,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/callback" element={<GoogleCallback />} />
 
         <Route path="/admin" element={<AdminPage />} />
 
