@@ -41,7 +41,6 @@ export default function Plans() {
       pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
       pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${pkg.phi_phat}` : 'No extra fee',
       'Access to all stations',
-      'Mobile app access',
       '24/7 customer support'
     ],
     details: pkg.description,
@@ -188,9 +187,7 @@ export default function Plans() {
       const payload = {
         user_id: user.id,
         package_id: selectedPlan.rawData.package_id,
-        vehicle_id: vehicleId || null,
-        // optionally backend may accept a return url, adjust if needed
-        return_url: window.location.origin + '/payment/success'
+        vehicle_id: parseInt(vehicleId)
       }
 
       const res = await paymentService.createPayment(payload)
