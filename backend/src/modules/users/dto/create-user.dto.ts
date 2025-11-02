@@ -6,6 +6,8 @@ import {
   IsPhoneNumber,
   IsOptional,
   IsString,
+  IsDate,
+  IsInt,
 } from 'class-validator';
 import { Role } from '@prisma/client';
 
@@ -27,11 +29,20 @@ export class CreateUserDto {
   email: string;
 
   @IsOptional()
-  @IsString()
-  email_token?: string;
+  @IsInt()
+  station_id?: number | null;
 
   @IsOptional()
-  email_token_expires?: Date;
+  @IsString()
+  refresh_token?: string | null;
+
+  @IsOptional()
+  @IsString()
+  email_token?: string | null;
+
+  @IsOptional()
+  @IsDate()
+  email_token_expires?: Date | null;
 
   @IsNotEmpty({ message: 'Role is required' })
   @IsEnum(Role, { message: 'Role must be driver, station_staff, or admin' })

@@ -34,8 +34,31 @@ export class MailService {
           </a>
           <p>Or copy and paste this link into your browser:</p>
           <p>${url}</p>
-          <p>This link will expire in 24 hours.</p>
+          <p>This link will expire in ${this.configService.get('EMAIL_VERIFICATION_TOKEN_EXPIRATION_HOURS')} hours.</p>
           <p>If you didn't create an account, please ignore this email.</p>
+        </div>
+      `,
+    });
+  }
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    const frontend_url = `${this.configService.get('FRONENT_RESET_PASSWORD_URL')}?token=${token}`;
+
+    await this.transporter.sendMail({
+      from: `"No Reply" <${this.configService.get('MAIL_FROM')}>`,
+      to: email,
+      subject: 'EV SWAP - Password Reset',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Password Reset</h2>
+          <p>You requested a password reset. Please click the button below to reset your password:</p>
+          <a href="${frontend_url}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+            Reset Password
+          </a>
+          <p>Or copy and paste this link into your browser:</p>
+          <p>${frontend_url}</p>
+          <p>This link will expire in ${this.configService.get('FOGET_PASSWORD_TOKEN_EXPIRATION_MINUTES')} minutes.</p>
+          <p>If you didn't request a password reset, please ignore this email.</p>
         </div>
       `,
     });

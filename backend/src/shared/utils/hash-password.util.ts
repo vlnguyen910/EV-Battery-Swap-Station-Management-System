@@ -4,7 +4,7 @@ const saltRounds = process.env.SALT_ROUNDS
   ? parseInt(process.env.SALT_ROUNDS, 10)
   : 10;
 
-export const hashPassword = (password: string): string => {
+export const hashPassword = async (password: string) => {
   const salt = genSaltSync(saltRounds);
   return hashSync(password, salt);
 };

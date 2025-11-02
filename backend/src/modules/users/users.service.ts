@@ -1,11 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
-import { hashPassword } from 'src/shared/utils/hash-password.util';
+import { hashPassword, isMatchPassword } from 'src/shared/utils/hash-password.util';
 import { $Enums } from '@prisma/client';
-import { UpdateEmailTokenDto } from "./dto/update-email-token.dto";
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -18,8 +18,8 @@ export class UsersService {
       throw new BadRequestException('Email and phone number are required');
     }
 
-    const normalizedEmail = normalizeEmail(email);
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedEmail = await normalizeEmail(email);
+    const normalizedPhone = await normalizePhone(phone);
 
     const existingEmailUser = await this.databaseService.user.findUnique({
       where: { email: normalizedEmail },
@@ -35,7 +35,7 @@ export class UsersService {
       throw new ConflictException('Phone number already in use');
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     const emailVerified = role === $Enums.Role.driver ? false : true;
 
@@ -64,7 +64,7 @@ export class UsersService {
   }
 
   async createGoogleUser(data: { email: string; username: string; role: $Enums.Role }) {
-    const normalizedEmail = normalizeEmail(data.email);
+    const normalizedEmail = await normalizeEmail(data.email);
 
     // Check if email already exists
     const existingUser = await this.databaseService.user.findUnique({
@@ -111,19 +111,26 @@ export class UsersService {
   async findOneByEmailOrPhone(emailOrPhone: string) {
     const isEmail = emailOrPhone.includes('@');
 
+
     if (isEmail) {
       return this.databaseService.user.findUnique({
-        where: { email: normalizeEmail(emailOrPhone) }
+        where: { email: await normalizeEmail(emailOrPhone) }
       });
     }
     return this.databaseService.user.findUnique({
-      where: { phone: normalizePhone(emailOrPhone) }
+      where: { phone: await normalizePhone(emailOrPhone) }
     });
   }
 
   async findOneByEmail(email: string) {
+    if (!email) {
+      throw new BadRequestException('Email is required!');
+    }
+
+    const normalizedEmail = await normalizeEmail(email)
+
     const user = await this.databaseService.user.findUnique({
-      where: { email: normalizeEmail(email) },
+      where: { email: normalizedEmail },
       select: {
         user_id: true,
         username: true,
@@ -140,6 +147,10 @@ export class UsersService {
   }
 
   async findOneByEmailToken(emailToken: string) {
+    if (!emailToken) {
+      throw new BadRequestException('Email token is required!')
+    }
+
     const user = await this.databaseService.user.findFirst({
       where: { email_token: emailToken }
     });
@@ -155,45 +166,46 @@ export class UsersService {
     const updatedUser = await this.databaseService.user.update({
       where: { user_id: id },
       data: updateUserDto,
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        status: true
+      }
     });
 
     return updatedUser;
   }
 
-  async markEmailAsVerified(user_id: number) {
-    const verifiedUser = await this.databaseService.user.update({
-      where: { user_id },
-      data: {
-        email_verified: true,
-        email_token: null,
-        email_token_expires: null,
-      },
-      select: {
-        user_id: true,
-        username: true,
-        email: true,
-        email_verified: true,
+  async changePassword(user_id: number, dto: ChangePasswordDto) {
+    try {
+      //validate is user exist
+      const user = await this.findOneById(user_id);
+
+      if (dto.old_password === dto.new_password) {
+        throw new BadRequestException('Your new password cannot be the same with the current');
       }
-    });
 
-    return verifiedUser;
-  }
+      //check is user input correct current password
+      const isOldPasswordValid = await isMatchPassword(dto.old_password, user.password);
 
-  async updateEmailToken(user_id: number, dto: UpdateEmailTokenDto) {
-    await this.databaseService.user.update({
-      where: { user_id },
-      data: {
-        email_token: dto.email_token,
-        email_token_expires: dto.email_token_expires,
-      },
-    });
-  }
+      if (!isOldPasswordValid) {
+        throw new UnauthorizedException('Your old password is incorrect!');
+      }
 
-  async updateRefreshToken(user_id: number, refreshToken: string) {
-    await this.databaseService.user.update({
-      where: { user_id },
-      data: { refresh_token: refreshToken },
-    });
+      //hash new password and update to db
+      const hashedNewPassword = await hashPassword(dto.new_password);
+      const passwordUpdate = {
+        password: hashedNewPassword
+      }
+      await this.update(user.user_id, passwordUpdate);
+
+      return {
+        message: 'Change password successfully!'
+      }
+    } catch (error) {
+      throw error;
+    }
   }
 
   async remove(id: number) {
