@@ -242,8 +242,8 @@ export class AuthService {
 
             const user = await this.usersService.findOneByEmail(email);
 
-            if (user.email_verified === false) {
-                throw new BadRequestException('Email is not verified');
+            if (!user.email_verified && user.email_verified === false) {
+                throw new BadRequestException('Email not verified. Cannot reset password.');
             }
 
             // Generate reset token
