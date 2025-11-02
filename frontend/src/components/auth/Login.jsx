@@ -192,9 +192,6 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Google OAuth temporarily disabled - requires Google Cloud Console configuration */}
-            {/* To enable: Add http://localhost:8080/api/v1/auth/google/callback to Authorized redirect URIs in Google Cloud Console */}
-
             <div className="text-center mt-6">
               <button
                 onClick={() => redirectToGoogleLogin()}
