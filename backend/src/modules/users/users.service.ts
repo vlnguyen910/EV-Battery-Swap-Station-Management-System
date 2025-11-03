@@ -174,7 +174,7 @@ export class UsersService {
         user_id: true,
         username: true,
         email: true,
-        status: true
+        //status: true
       }
     });
 
