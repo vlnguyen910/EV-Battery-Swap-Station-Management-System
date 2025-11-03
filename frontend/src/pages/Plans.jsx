@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
+import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
 import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
+import SubscribeModal from '../components/plans/SubscribeModal'
 import { paymentService } from '../services/paymentService'
 
 export default function Plans() {
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
+  const [activeSubscriptions, setActiveSubscriptions] = useState([])
+  const [cancelledSubscriptions, setCancelledSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState(null)
+
+  // Format number with commas (e.g., 300000 -> 300,000)
+  const formatCurrency = (amount) => {
+    if (!amount || isNaN(amount)) return amount
+    return Number(amount).toLocaleString('en-US')
+  }
 
   // Get user from localStorage
   const getUser = () => {
@@ -30,15 +40,15 @@ export default function Plans() {
     id: String(pkg.package_id),
     name: pkg.name,
     description: pkg.description,
-    price: pkg.base_price && pkg.base_price > 0 ? `${pkg.base_price} vnd` : 'Contact sales',
+    price: pkg.base_price && pkg.base_price > 0 ? `${formatCurrency(pkg.base_price)} VND` : 'Contact sales',
     period: pkg.duration_days && pkg.duration_days > 0
       ? pkg.duration_days === 30
         ? 'per month'
         : `per ${pkg.duration_days} days`
       : 'per swap',
     features: [
-      pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
-      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${pkg.phi_phat}` : 'No extra fee',
+      pkg.base_distance && pkg.base_distance > 0 ? `${formatCurrency(pkg.base_distance)} km included` : 'Flexible swaps',
+      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${formatCurrency(pkg.phi_phat)} VNĐ` : 'No extra fee',
       'Access to all stations',
       '24/7 customer support'
     ],
@@ -74,7 +84,7 @@ export default function Plans() {
   const fetchUserSubscriptions = async () => {
     if (!user?.id) {
       console.warn('No user ID found')
-      return
+      return []
     }
 
     try {
@@ -84,16 +94,6 @@ export default function Plans() {
       return Array.isArray(subscriptionsData) ? subscriptionsData : []
     } catch (err) {
       console.error('Error fetching subscriptions:', err)
-      // If API fails, fallback to localStorage for now
-      const savedSubscriptions = localStorage.getItem('subscriptions')
-      if (savedSubscriptions) {
-        try {
-          return JSON.parse(savedSubscriptions)
-        } catch (parseErr) {
-          console.error('Error parsing local subscriptions:', parseErr)
-          return []
-        }
-      }
       return []
     }
   }
@@ -127,7 +127,21 @@ export default function Plans() {
         }
       })
 
+      // Separate active and cancelled subscriptions
+      const active = enrichedSubs.filter(sub => 
+        sub.status !== 'cancelled' && 
+        sub.status !== 'CANCELLED' && 
+        sub.status !== 'canceled'
+      )
+      const cancelled = enrichedSubs.filter(sub => 
+        sub.status === 'cancelled' || 
+        sub.status === 'CANCELLED' || 
+        sub.status === 'canceled'
+      )
+
       setSubscriptions(enrichedSubs)
+      setActiveSubscriptions(active)
+      setCancelledSubscriptions(cancelled)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -135,63 +149,66 @@ export default function Plans() {
     }
   }
 
-  // Previously we preloaded subscriptions from localStorage here which caused
-  // the UI to briefly show stale "subscribed" state on page refresh. Removed
-  // that preload so we only render subscriptions from the backend fetch.
-
   // Fetch packages on component mount
   useEffect(() => {
     fetchAllData()
   }, [user?.id])
 
-  // Handle subscription with backend API
-  const handleSubscribe = async (plan) => {
+  // Handle subscribe action: open modal to start payment flow instead of creating subscription directly
+  const handleSubscribe = (plan) => {
     if (!user?.id) {
       alert('Please login to subscribe to a plan')
       return
     }
 
-    setSubscribing(true)
+    // Open subscribe modal which will handle payment and backend subscription creation after success
+    openSubscribeModal(plan)
+  }
+
+  // Open subscribe modal (choose vehicle, confirm payment)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [paying, setPaying] = useState(false)
+
+  const openSubscribeModal = (plan) => {
+    setSelectedPlan(plan)
+    setModalOpen(true)
+  }
+
+  // Called when user clicks Pay in modal
+  const handlePay = async (vehicleId) => {
+    if (!user?.id || !selectedPlan) {
+      alert('Missing user or package info')
+      return
+    }
+
+    setPaying(true)
     try {
-      // Create payment data for VNPay
-      const paymentData = {
+      const payload = {
         user_id: user.id,
-        package_id: plan.rawData.package_id,
-        orderDescription: `Subscribe to ${plan.name}`,
-        language: 'vn', // or 'en'
+        package_id: selectedPlan.rawData.package_id,
+        vehicle_id: parseInt(vehicleId)
       }
 
-      console.log('Sending payment data:', paymentData)
-
-      // Call createPayment to get VNPay URL
-      const response = await paymentService.createPayment(paymentData)
-      
-      console.log('Payment response:', response)
-
-      if (response.paymentUrl) {
-        // Redirect to VNPay payment page
-        window.location.href = response.paymentUrl
+      const res = await paymentService.createPayment(payload)
+      // Expect backend to return a redirect url to VNPay
+      const redirectUrl = res?.vnpUrl || res?.paymentUrl || res?.url || res?.redirectUrl || res
+      if (redirectUrl) {
+        window.location.href = redirectUrl
       } else {
-        throw new Error('No payment URL received from server')
+        alert('Payment URL not returned by server')
       }
     } catch (err) {
-      console.error('Payment creation failed:', err)
-      console.error('Error response:', err.response?.data)
-      
-      const errorMessage = err.response?.data?.message 
-        || err.response?.data?.error 
-        || err.message 
-        || 'Unable to create payment'
-      
-      alert(`Payment failed: ${errorMessage}`)
+      console.error('Payment creation failed', err)
+      alert('Payment creation failed: ' + (err.message || err))
     } finally {
-      setSubscribing(false)
+      setPaying(false)
     }
   }
 
-  // Check if user is already subscribed to a package
+  // Check if user is already subscribed to a package (excluding cancelled subscriptions)
   const isUserSubscribed = (packageId) => {
-    return subscriptions.some(sub => 
+    return activeSubscriptions.some(sub => 
       String(sub.package_id) === String(packageId)
     )
   }
@@ -254,19 +271,36 @@ export default function Plans() {
         <section className="mb-8">
           <PlansList
             plans={packages}
-            subscriptions={subscriptions}
-            onSubscribe={handleSubscribe}
+            subscriptions={activeSubscriptions}
+            onSubscribe={openSubscribeModal}
             loading={subscribing}
             isUserSubscribed={isUserSubscribed}
           />
         </section>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Your Subscriptions</h2>
+        {/* Subscribe modal */}
+        <SubscribeModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          plan={selectedPlan}
+          user={user}
+          onPay={handlePay}
+          paying={paying}
+          subscriptions={activeSubscriptions}
+        />
+
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Active Subscriptions</h2>
           <SubscribedList 
-            subscriptions={subscriptions}
-            onRefresh={fetchUserSubscriptions}
+            subscriptions={activeSubscriptions}
+            onRefresh={fetchAllData}
           />
+        </section>
+
+        {/* Cancelled Subscriptions Dropdown */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Cancelled Subscriptions</h2>
+          <CancelledSubscriptions subscriptions={cancelledSubscriptions} />
         </section>
       </div>
     </div>

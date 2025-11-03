@@ -5,12 +5,13 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     GOOGLE_LOGIN: "/auth/google",
     GOOGLE_CALLBACK: "/auth/google/callback",
-    VERIFY_EMAIL: "/auth/verify-email",
+    VERIFY_EMAIL: "/auth/verify-email", // GET with ?token=xxx query param
     RESEND_VERIFICATION: "/auth/resend-verification",
+    FORGET_PASSWORD: "/auth/forget-password",
+    RESET_PASSWORD: "/auth/reset-password",
   },
 
   USER: {
@@ -18,6 +19,7 @@ export const API_ENDPOINTS = {
     GET_ALL_USERS: "/users",
     GET_USER: (id) => `/users/${id}`,
     UPDATE_USER: (id) => `/users/${id}`,
+    CHANGE_PASSWORD: "/users/change-password",
     DELETE_USER: (id) => `/users/${id}`,
   },
 
@@ -28,6 +30,7 @@ export const API_ENDPOINTS = {
     GET_VEHICLES_BY_USER: (userId) => `/vehicles/user/${userId}`,
     GET_VEHICLE: (id) => `/vehicles/${id}`,
     UPDATE_VEHICLE: (id) => `/vehicles/${id}`,
+    ASSIGN_VEHICLE: "/vehicles/add-vehicle",
     DELETE_VEHICLE: (id) => `/vehicles/${id}`,
   },
 
@@ -45,7 +48,7 @@ export const API_ENDPOINTS = {
   BATTERY: {
     CREATE_BATTERY: "/batteries",
     GET_ALL_BATTERIES: "/batteries",
-    GET_BEST_BATTERIES: "/batteries/best",
+    GET_BEST_BATTERY: "/batteries/best",
     GET_BATTERY: (id) => `/batteries/${id}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
   },
@@ -65,10 +68,9 @@ export const API_ENDPOINTS = {
   },
 
   RESERVATION: {
-    GET_RESERVATION_BY_STATION_ID: (stationId) =>
-      `/reservations/station/${stationId}`,
     CREATE_RESERVATION: "/reservations",
     GET_BY_USER: (userId) => `/reservations/user/${userId}`,
+    GET_BY_STATION: (stationId) => `/reservations/station/${stationId}`,
     GET_RESERVATION: (id) => `/reservations/${id}`,
     UPDATE_RESERVATION: (id) => `/reservations/${id}`,
     DELETE_RESERVATION: (id) => `/reservations/${id}`,
@@ -76,11 +78,11 @@ export const API_ENDPOINTS = {
 
   SUBSCRIPTION: {
     CREATE_SUBSCRIPTION: "/subscriptions",
+    EXPIRE_SUBSCRIPTIONS: "/subscriptions/expire-subscriptions",
     GET_ALL_SUBSCRIPTIONS: "/subscriptions",
     GET_SUBSCRIPTION: (id) => `/subscriptions/${id}`,
     GET_BY_USER: (userId) => `/subscriptions/user/${userId}`,
     GET_ACTIVE_BY_USER: (userId) => `/subscriptions/user/${userId}/active`,
-    CHECK_EXPIRED: "/subscriptions/check-expired",
     UPDATE_SUBSCRIPTION: (id) => `/subscriptions/${id}`,
     CANCEL_SUBSCRIPTION: (id) => `/subscriptions/${id}/cancel`,
     INCREMENT_SWAP: (id) => `/subscriptions/${id}/increment-swap`,
@@ -97,14 +99,30 @@ export const API_ENDPOINTS = {
   },
 
   PAYMENT: {
-    CREATE_VNPAY_URL: "/payments/create-vnpay-url",
+    // Basic VNPAY endpoints
+    CREATE_VNPAY_URL: "/payments/create-vnpay-url", // Legacy - subscription only - CŨ
+    CREATE_VNPAY_URL_ADVANCED: "/payments/create-vnpay-url-advanced", // Multi-type support 
+    CREATE_VNPAY_URL_WITH_FEES: "/payments/calculate-and-create-vnpay-url", // Integrated calculation - MỚI
     VNPAY_RETURN: "/payments/vnpay-return",
     VNPAY_IPN: "/payments/vnpay-ipn",
+
+    // Payment queries
     GET_PAYMENT: (id) => `/payments/${id}`,
-    GET_PAYMENTS_BY_USER: (userId) => `/payments/user/${userId}`,
     GET_BY_TXN_REF: (vnpTxnRef) => `/payments/txn/${vnpTxnRef}`,
+    GET_PAYMENTS_BY_USER: (userId) => `/payments/user/${userId}`,
     GET_ALL_PAYMENTS: "/payments",
+
+    // Specialized payment types
     MOCK_PAYMENT: "/payments/mock-payment",
+    BATTERY_DEPOSIT: "/payments/battery-deposit",
+    DAMAGE_FEE: "/payments/damage-fee",
+    BATTERY_REPLACEMENT: "/payments/battery-replacement",
+
+    // Fee calculation endpoints
+    CALCULATE_SUBSCRIPTION_FEE: "/payments/calculate/subscription-fee",
+    CALCULATE_OVERCHARGE_FEE: "/payments/calculate/overcharge-fee",
+    CALCULATE_DAMAGE_FEE: "/payments/calculate/damage-fee",
+    CALCULATE_COMPLEX_FEE: "/payments/calculate/complex-fee",
   },
 
   SWAPPING: {
@@ -124,6 +142,32 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (id) => `/supports/${id}/status`,
     UPDATE_RATING: (id) => `/supports/${id}/rating`,
     DELETE_SUPPORT: (id) => `/supports/${id}`,
+  },
+
+  BATTERY_TRANSFER_REQUEST: {
+    CREATE_REQUEST: "/battery-transfer-request",
+    GET_ALL_REQUESTS: "/battery-transfer-request",
+    GET_REQUEST: (id) => `/battery-transfer-request/${id}`,
+    UPDATE_REQUEST: (id) => `/battery-transfer-request/${id}`,
+  },
+
+  BATTERY_TRANSFER_TICKET: {
+    CREATE_TICKET: "/battery-transfer-ticket",
+    GET_ALL_TICKETS: "/battery-transfer-ticket",
+    GET_TICKET: (id) => `/battery-transfer-ticket/${id}`,
+    UPDATE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
+    DELETE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
+  },
+
+  CONFIG: {
+    CREATE_CONFIG: "/config",
+    GET_ALL_CONFIGS: "/config", // Supports ?type=xxx&activeOnly=true query params
+    GET_CONFIG: (id) => `/config/${id}`,
+    GET_BY_NAME: (name) => `/config/by-name/${name}`,
+    GET_VALUE: (name) => `/config/value/${name}`,
+    UPDATE_CONFIG: (id) => `/config/${id}`,
+    TOGGLE_ACTIVE: (id) => `/config/${id}/toggle`,
+    DELETE_CONFIG: (id) => `/config/${id}`,
   },
 };
 

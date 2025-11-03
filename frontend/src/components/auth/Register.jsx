@@ -220,7 +220,7 @@ export default function Register() {
                   Registration successful!
                 </span>
               ) : (
-                "📝 Register"
+                "Register"
               )}
             </button>
           </form>

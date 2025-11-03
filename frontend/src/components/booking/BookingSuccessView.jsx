@@ -14,7 +14,7 @@ export default function BookingSuccessView({
 }) {
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8">
+      <div className="bg-transparent rounded-2xl shadow-xl max-w-2xl w-full p-8">
         <BookingSuccessHeader />
         
         {/* Station Info & Instructions in 2 columns */}
