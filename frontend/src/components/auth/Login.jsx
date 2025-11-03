@@ -202,7 +202,7 @@ export default function Login() {
 
             <div className="text-center mt-6">
               <button
-                onClick={() => redirectToGoogleLogin()}
+                onClick={() => handleGoogleLogin()}
                 disabled={loading || success}
                 className="w-full py-3 px-4 rounded-lg font-semibold bg-red-500 hover:bg-red-600 text-white"
               >

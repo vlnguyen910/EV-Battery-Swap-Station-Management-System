@@ -1,63 +1,73 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
+import { reservationService } from "../services/reservationService";
 
 export const SwapRequestContext = createContext();
 
 export const SwapRequestProvider = ({ children }) => {
-    // Load from localStorage on mount
-    const [swapRequests, setSwapRequests] = useState(() => {
-        const saved = localStorage.getItem('swapRequests');
-        return saved ? JSON.parse(saved) : [];
-    });
+    // Swap requests = reservations with status "scheduled" for staff's station
+    const [swapRequests, setSwapRequests] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     const [notifications, setNotifications] = useState(() => {
         const saved = localStorage.getItem('swapNotifications');
         return saved ? JSON.parse(saved) : [];
     });
-
-    // Save to localStorage whenever swapRequests changes
-    useEffect(() => {
-        localStorage.setItem('swapRequests', JSON.stringify(swapRequests));
-    }, [swapRequests]);
 
     // Save to localStorage whenever notifications changes
     useEffect(() => {
         localStorage.setItem('swapNotifications', JSON.stringify(notifications));
     }, [notifications]);
 
-    // Create a new manual swap request
-    // Hardcoded: Staff OK (user_id=17) works at Station 1
-    const createSwapRequest = (driverData) => {
-        const newRequest = {
-            request_id: Date.now(),
-            user_id: driverData.user_id, // Real user from login
-            user_name: driverData.user_name, // Real user name
-            vehicle_id: driverData.vehicle_id, // Real vehicle from user
-            vin: driverData.vin, // Real VIN from user
-            subscription_id: driverData.subscription_id, // Real subscription
-            subscription_name: driverData.subscription_name, // Real subscription name
-            created_at: new Date().toISOString(),
-            status: 'pending', // pending, processing, completed
-            staff_id: 17, // Hardcode: Staff OK (user_id=17)
-            station_id: 1, // Hardcode: Station 1
-        };
+    // Fetch scheduled reservations for a specific station (staff's station_id)
+    const fetchSwapRequestsForStation = useCallback(async (stationId) => {
+        if (!stationId) {
+            console.warn('No station_id provided to fetch swap requests');
+            return;
+        }
 
-        setSwapRequests(prev => [...prev, newRequest]);
-        return newRequest;
-    };
+        setLoading(true);
+        setError(null);
 
-    // Get pending requests for a specific staff
-    const getPendingRequestsForStaff = (staffId) => {
-        return swapRequests.filter(req => req.staff_id === staffId && req.status === 'pending');
-    };
+        try {
+            const allReservations = await reservationService.getReservationsByStationId(stationId);
+            // Filter only "scheduled" reservations = swap requests for staff
+            const scheduledReservations = allReservations.filter(res => res.status === 'scheduled');
+            setSwapRequests(scheduledReservations);
+        } catch (err) {
+            console.error('Error fetching swap requests:', err);
+            setError(err.message || 'Failed to fetch swap requests');
+            setSwapRequests([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    // Update request status
-    const updateRequestStatus = (requestId, status) => {
-        setSwapRequests(prev =>
-            prev.map(req => req.request_id === requestId ? { ...req, status } : req)
-        );
-    };
+    // Get pending requests for a specific staff based on their station
+    const getPendingRequestsForStaff = useCallback((stationId) => {
+        // Return scheduled reservations for staff's station
+        return swapRequests.filter(req => req.station_id === stationId && req.status === 'scheduled');
+    }, [swapRequests]);
+
+    // Update request status (update reservation status via API)
+    const updateRequestStatus = useCallback(async (reservationId, userId, status) => {
+        try {
+            const updatedReservation = await reservationService.updateReservationStatus(reservationId, userId, status);
+
+            // Update local state
+            setSwapRequests(prev =>
+                prev.map(req => req.reservation_id === reservationId ? { ...req, status } : req)
+            );
+
+            return updatedReservation;
+        } catch (err) {
+            console.error('Error updating reservation status:', err);
+            throw err;
+        }
+    }, []);
 
     // Add notification for driver
-    const addNotification = (userId, message, type = 'info') => {
+    const addNotification = useCallback((userId, message, type = 'info') => {
         const newNotification = {
             notification_id: Date.now(),
             user_id: userId,
@@ -67,26 +77,28 @@ export const SwapRequestProvider = ({ children }) => {
             read: false,
         };
         setNotifications(prev => [...prev, newNotification]);
-    };
+    }, []);
 
     // Get notifications for user
-    const getNotificationsForUser = (userId) => {
+    const getNotificationsForUser = useCallback((userId) => {
         return notifications.filter(notif => notif.user_id === userId);
-    };
+    }, [notifications]);
 
     // Mark notification as read
-    const markAsRead = (notificationId) => {
+    const markAsRead = useCallback((notificationId) => {
         setNotifications(prev =>
             prev.map(notif => notif.notification_id === notificationId ? { ...notif, read: true } : notif)
         );
-    };
+    }, []);
 
     return (
         <SwapRequestContext.Provider
             value={{
                 swapRequests,
+                loading,
+                error,
                 notifications,
-                createSwapRequest,
+                fetchSwapRequestsForStation,
                 getPendingRequestsForStaff,
                 updateRequestStatus,
                 addNotification,

@@ -1,60 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reservationService } from '../../services/reservationService';
-import { useAuth } from '../../hooks/useContext';
+import { useAuth, useSubscription } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
-import { useSubscription } from '../../hooks/useContext';
+import { SwapRequestContext } from '../../contexts/SwapRequestContext';
 
 export default function StaffSwapRequests() {
     const { getSubscriptionsByUserId } = useSubscription();
     const navigate = useNavigate();
-    const [scheduledReservations, setScheduledReservations] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const { user } = useAuth();
 
-    // Fetch scheduled reservations for the staff's assigned station
+    // Use SwapRequestContext instead of local state
+    const {
+        swapRequests,
+        loading,
+        error,
+        fetchSwapRequestsForStation
+    } = useContext(SwapRequestContext);
+
+    // Fetch scheduled reservations when component mounts or user changes
     useEffect(() => {
-        const fetchScheduledReservations = async () => {
-            try {
-                setLoading(true);
-
-                // Debug: log entire user object
-                console.log('Current logged-in user:', user);
-                console.log('User station_id:', user?.station_id);
-
-                const stationId = user?.station_id ? parseInt(user.station_id) : null;
-                console.log('Parsed stationId:', stationId);
-
-                // If staff isn't assigned to a station, show none
-                if (!stationId) {
-                    console.warn('Staff has no station_id assigned - showing empty list');
-                    setScheduledReservations([]);
-                    setError(null);
-                    setLoading(false);
-                    return;
-                }
-
-                console.log('Calling API: GET /reservations/station/' + stationId);
-                // Backend endpoint already filters by station_id AND status='scheduled'
-                const reservations = await reservationService.getReservationsByStationId(stationId);
-                console.log('API Response - Fetched scheduled reservations for station', stationId, ':', reservations);
-                console.log('Number of reservations:', reservations?.length || 0);
-
-                setScheduledReservations(reservations || []);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching scheduled reservations:', err);
-                console.error('Error details:', err.response?.data || err.message);
-                setError('Failed to load swap requests');
-                setScheduledReservations([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchScheduledReservations();
-    }, [user]);
+        if (user?.station_id) {
+            fetchSwapRequestsForStation(user.station_id);
+        }
+    }, [user?.station_id, fetchSwapRequestsForStation]);
 
     const handleProcessRequest = async (reservation) => {
         try {
@@ -127,7 +95,7 @@ export default function StaffSwapRequests() {
                 <p className="text-gray-600">Các booking đã được xác nhận và đang chờ xử lý</p>
             </div>
 
-            {scheduledReservations.length === 0 ? (
+            {swapRequests.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-8 text-center">
                     <span className="material-icons text-gray-300 text-6xl mb-4">inbox</span>
                     <p className="text-gray-500 text-lg">Không có yêu cầu đổi pin nào</p>
@@ -135,7 +103,7 @@ export default function StaffSwapRequests() {
                 </div>
             ) : (
                 <div className="grid gap-4">
-                    {scheduledReservations.map((reservation) => (
+                    {swapRequests.map((reservation) => (
                         <div
                             key={reservation.reservation_id}
                             className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"

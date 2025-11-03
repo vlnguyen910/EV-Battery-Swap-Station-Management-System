@@ -35,6 +35,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/auth/callback" element={<GoogleCallback />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/auth/verify-email" element={<VerifyEmail />} />

@@ -101,7 +101,7 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     // Basic VNPAY endpoints
     CREATE_VNPAY_URL: "/payments/create-vnpay-url", // Legacy - subscription only - CŨ
-    CREATE_VNPAY_URL_ADVANCED: "/payments/create-vnpay-url-advanced", // Multi-type support 
+    CREATE_VNPAY_URL_ADVANCED: "/payments/create-vnpay-url-advanced", // Multi-type support
     CREATE_VNPAY_URL_WITH_FEES: "/payments/calculate-and-create-vnpay-url", // Integrated calculation - MỚI
     VNPAY_RETURN: "/payments/vnpay-return",
     VNPAY_IPN: "/payments/vnpay-ipn",

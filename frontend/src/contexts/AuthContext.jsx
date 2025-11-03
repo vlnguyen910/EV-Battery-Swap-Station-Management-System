@@ -10,8 +10,7 @@ const {
     logout: logoutService,
     register: registerService,
     createStaffAccount: createStaffAccountService,
-    getAllUsers: getAllUsersService,
-    getProfile: getProfileService
+    getAllUsers: getAllUsersService
 } = authService;
 
 export const AuthContext = createContext();
@@ -68,38 +67,17 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
+            // Take from response.user
             const response = await loginService(credentials);
             console.log('Login response:', response);
 
-            const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
-            console.log('Decoded token payload:', tokenPayload);
+            const userData = response.user;
+
+            setUser(userData);
+            setToken(response.accessToken);
 
             localStorage.setItem("token", response.accessToken);
             localStorage.setItem("refreshToken", response.refreshToken);
-            setToken(response.accessToken);
-
-            const userData = {
-                id: tokenPayload.sub,
-                name: tokenPayload.username,
-                email: tokenPayload.email,
-                phone: tokenPayload.phone,
-                role: tokenPayload.role,
-                station_id: tokenPayload.station_id || tokenPayload.stationId || null
-            };
-
-            // Fetch station_id if not in token
-            if (!userData.station_id && userData.id) {
-                try {
-                    const profileResponse = await getProfileService(userData.id);
-                    if (profileResponse?.station_id) {
-                        userData.station_id = profileResponse.station_id;
-                    }
-                } catch (profileError) {
-                    console.error('Failed to fetch profile for station_id:', profileError);
-                }
-            }
-
-            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
             // Dispatch custom event to notify other contexts that login succeeded
@@ -215,23 +193,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Function to get user profile
-    const getProfile = async (userId) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await getProfileService(userId);
-            return response;
-        } catch (err) {
-            const errorMessage = formatErrorMessage(err);
-            setError(errorMessage);
-            throw new Error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Function to create staff account
     const createStaffAccount = async (staffInfo) => {
         setLoading(true);
@@ -293,7 +254,6 @@ export const AuthProvider = ({ children }) => {
                 register,
                 createStaffAccount,
                 getAllUsers,
-                getProfile,
                 clearError,
                 setUser,
                 setToken
