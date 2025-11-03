@@ -21,6 +21,8 @@ import StaffSwapRequests from './components/swap/StaffSwapRequests'
 import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
 import Payment from './pages/Payment'
 import VerifyEmail from './pages/VerifyEmail'
+import ResetPassword from './pages/ResetPassword'
+import ForgetPassword from './pages/ForgetPassword'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -36,6 +38,10 @@ function App() {
         <Route path="/auth/callback" element={<GoogleCallback />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/auth/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
 
         <Route path="/admin" element={<AdminPage />} />
 

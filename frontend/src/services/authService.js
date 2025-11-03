@@ -153,6 +153,31 @@ const changePassword = async (passwordData) => {
   }
 };
 
+// Forget password function - request password reset email
+const forgetPassword = async (email) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.AUTH.FORGET_PASSWORD, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting password reset:', error);
+    throw error;
+  }
+};
+
+// Reset password function - set new password with token
+const resetPassword = async ({ token, new_password }) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { 
+      token, 
+      new_password 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error;
+  }
+};
+
 // Legacy authService object for backward compatibility
 export const authService = {
   login,
@@ -167,4 +192,6 @@ export const authService = {
   createStaffAccount,
   verifyEmail,
   changePassword,
+  forgetPassword,
+  resetPassword,
 };
