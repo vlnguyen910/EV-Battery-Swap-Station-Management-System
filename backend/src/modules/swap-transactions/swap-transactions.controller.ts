@@ -29,6 +29,12 @@ export class SwapTransactionsController {
     return this.swapTransactionsService.findAllByUserId(user_id);
   }
 
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
+  @Get('station/:station_id')
+  findByStation(@Param('station_id', ParseIntPipe) station_id: number) {
+    return this.swapTransactionsService.findByStation(station_id);
+  }
+
   @Roles($Enums.Role.admin)
   @Get('transaction/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
