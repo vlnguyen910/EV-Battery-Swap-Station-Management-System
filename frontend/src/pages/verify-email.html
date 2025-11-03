@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Email Verified Successfully</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="font-display">
+    <div
+        class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+        <div class="layout-container flex h-full grow flex-col">
+            <div class="flex flex-1 justify-center items-center p-4">
+                <div
+                    class="flex flex-col max-w-md w-full bg-white dark:bg-background-dark dark:border dark:border-slate-800 rounded-xl shadow-sm p-8 text-center items-center">
+                    <div class="flex justify-center items-center mb-6 h-16 w-16 bg-primary/20 rounded-full">
+                        <span class="material-symbols-outlined text-primary text-4xl"
+                            data-icon="check_circle">check_circle</span>
+                    </div>
+                    <div class="layout-content-container flex flex-col w-full">
+                        <h1
+                            class="text-slate-900 dark:text-slate-50 tracking-tight text-[32px] font-bold leading-tight pb-3">
+                            Email Verified!</h1>
+                        <p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal pb-6">
+                            Your account is now active. You can proceed to log in and set up your EV profile.
+                        </p>
+                        <div class="flex w-full">
+                            <button
+                                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 flex-1 bg-primary text-slate-50 text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-colors duration-300">
+                                <span class="truncate">Continue to Login</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
