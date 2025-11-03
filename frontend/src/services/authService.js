@@ -119,7 +119,7 @@ const deleteUser = async (userId) => {
 
 const verifyEmail = async (token) => {
   try {
-    const response = await api.get(API_ENDPOINTS.AUTH.VERIFY_EMAIL(token));
+    const response = await api.get(`${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`);
     return response.data;
   } catch (error) {
     console.error('Error verifying email:', error);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Info, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { subscriptionService } from '../../services/subscriptionService';
 
 // Helper function to format currency
 const formatPrice = (price) => {
@@ -68,7 +69,10 @@ const DetailRow = ({ label, value, tooltip, highlight }) => (
   </div>
 );
 
-export default function SubscriptionDetailModal({ subscription, open, onClose }) {
+export default function SubscriptionDetailModal({ subscription, open, onClose, onSubscriptionCancelled }) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   if (!subscription) return null;
 
   const pkg = subscription.package;
@@ -113,9 +117,37 @@ export default function SubscriptionDetailModal({ subscription, open, onClose })
     );
   };
 
+  // Handle cancel subscription
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      await subscriptionService.cancelSubscription(subscription.subscription_id);
+      
+      // Close confirmation dialog
+      setShowCancelConfirm(false);
+      
+      // Show success message
+      alert('Subscription cancelled successfully');
+      
+      // Notify parent to refresh data
+      if (onSubscriptionCancelled) {
+        onSubscriptionCancelled();
+      }
+      
+      // Close main modal
+      onClose();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      alert(error.response?.data?.message || 'Failed to cancel subscription. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
@@ -222,10 +254,7 @@ export default function SubscriptionDetailModal({ subscription, open, onClose })
                 variant="destructive"
                 size="sm"
                 className="flex items-center gap-2"
-                onClick={() => {
-                  // TODO: Implement cancel subscription logic
-                  console.log('Cancel subscription:', subscription.subscription_id);
-                }}
+                onClick={() => setShowCancelConfirm(true)}
               >
                 <AlertTriangle className="w-4 h-4" />
                 Cancel Subscription
@@ -246,5 +275,52 @@ export default function SubscriptionDetailModal({ subscription, open, onClose })
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Confirmation Dialog */}
+    <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+            <AlertTriangle className="w-5 h-5" />
+            Cancel Subscription?
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="py-4">
+          <p className="text-slate-700 dark:text-slate-300 text-sm mb-3">
+            Are you sure you want to cancel this subscription?
+          </p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+            <p className="text-red-800 dark:text-red-200 text-xs font-medium mb-1">
+              Important Notice:
+            </p>
+            <ul className="text-red-700 dark:text-red-300 text-xs space-y-1 list-disc list-inside">
+              <li>Your subscription will be cancelled immediately</li>
+              <li>You will lose access to all subscription benefits</li>
+              <li>Unused swaps and distance will be forfeited</li>
+              <li>This action cannot be undone</li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCancelConfirm(false)}
+            disabled={cancelling}
+          >
+            Keep Subscription
+          </Button>
+          <Button 
+            variant="destructive"
+            onClick={handleCancelSubscription}
+            disabled={cancelling}
+          >
+            {cancelling ? 'Cancelling...' : 'Yes, Cancel Subscription'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }
