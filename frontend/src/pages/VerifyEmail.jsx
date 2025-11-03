@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -9,10 +9,19 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('loading'); // loading, success, error
   const [message, setMessage] = useState('');
+  const hasVerifiedRef = useRef(false); // Use ref to persist across renders
 
   useEffect(() => {
     const verifyEmail = async () => {
+      // Prevent running twice in strict mode or on re-renders
+      if (hasVerifiedRef.current) {
+        console.log('⚠️ Already verified, skipping...');
+        return;
+      }
+
       const token = searchParams.get('token');
+      
+      console.log('🔍 Verifying email with token:', token);
 
       if (!token) {
         setStatus('error');
@@ -20,29 +29,39 @@ export default function VerifyEmail() {
         return;
       }
 
+      hasVerifiedRef.current = true; // Mark as verified attempt (will persist across renders)
+
       try {
         // Call backend API to verify email
+        console.log('📤 Sending verify request to backend...');
         const response = await authService.verifyEmail(token);
+        
+        console.log('Verify email response:', response);
 
-        if (response.success) {
+        // Backend returns { message: '...', user: {...} } on success
+        if (response && response.message) {
           setStatus('success');
-          setMessage('Your account is now active. You can proceed to log in and set up your EV profile.');
+          setMessage(response.message || 'Your account is now active. You can proceed to log in and set up your EV profile.');
         } else {
           setStatus('error');
-          setMessage(response.message || 'Verification failed. Please try again or contact support.');
+          setMessage('Verification failed. Please try again or contact support.');
         }
       } catch (error) {
         console.error('Email verification error:', error);
+        console.error('Error response:', error.response);
+        console.error('Error data:', error.response?.data);
+        
         setStatus('error');
         setMessage(
           error.response?.data?.message ||
+          error.message ||
           'An error occurred during verification. Please try again later.'
         );
       }
     };
 
     verifyEmail();
-  }, [searchParams]);
+  }, [searchParams]); // Remove hasVerified from dependencies
 
   const handleContinue = () => {
     navigate('/login');

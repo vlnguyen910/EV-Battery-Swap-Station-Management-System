@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
+import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
 import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
 import SubscribeModal from '../components/plans/SubscribeModal'
@@ -9,6 +10,8 @@ import { paymentService } from '../services/paymentService'
 export default function Plans() {
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
+  const [activeSubscriptions, setActiveSubscriptions] = useState([])
+  const [cancelledSubscriptions, setCancelledSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState(null)
@@ -124,7 +127,21 @@ export default function Plans() {
         }
       })
 
+      // Separate active and cancelled subscriptions
+      const active = enrichedSubs.filter(sub => 
+        sub.status !== 'cancelled' && 
+        sub.status !== 'CANCELLED' && 
+        sub.status !== 'canceled'
+      )
+      const cancelled = enrichedSubs.filter(sub => 
+        sub.status === 'cancelled' || 
+        sub.status === 'CANCELLED' || 
+        sub.status === 'canceled'
+      )
+
       setSubscriptions(enrichedSubs)
+      setActiveSubscriptions(active)
+      setCancelledSubscriptions(cancelled)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -189,9 +206,9 @@ export default function Plans() {
     }
   }
 
-  // Check if user is already subscribed to a package
+  // Check if user is already subscribed to a package (excluding cancelled subscriptions)
   const isUserSubscribed = (packageId) => {
-    return subscriptions.some(sub => 
+    return activeSubscriptions.some(sub => 
       String(sub.package_id) === String(packageId)
     )
   }
@@ -254,7 +271,7 @@ export default function Plans() {
         <section className="mb-8">
           <PlansList
             plans={packages}
-            subscriptions={subscriptions}
+            subscriptions={activeSubscriptions}
             onSubscribe={openSubscribeModal}
             loading={subscribing}
             isUserSubscribed={isUserSubscribed}
@@ -269,15 +286,21 @@ export default function Plans() {
           user={user}
           onPay={handlePay}
           paying={paying}
-          subscriptions={subscriptions}
+          subscriptions={activeSubscriptions}
         />
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Your Subscriptions</h2>
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Active Subscriptions</h2>
           <SubscribedList 
-            subscriptions={subscriptions}
-            onRefresh={fetchUserSubscriptions}
+            subscriptions={activeSubscriptions}
+            onRefresh={fetchAllData}
           />
+        </section>
+
+        {/* Cancelled Subscriptions Dropdown */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Cancelled Subscriptions</h2>
+          <CancelledSubscriptions subscriptions={cancelledSubscriptions} />
         </section>
       </div>
     </div>
