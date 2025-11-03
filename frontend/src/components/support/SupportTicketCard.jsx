@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useContext';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { Button } from '../../components/ui/button';
+import { Search, Star } from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -14,13 +15,36 @@ import {
 import { supportService } from '../../services/supportService';
 
 export default function SupportTicketCard({ stations = [] }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const dropdownRef = useRef(null);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
   const stationOptions = useMemo(() => {
     if (!Array.isArray(stations)) return [];
-    return stations.map((s) => ({
+    const allStations = stations.map((s) => ({
       value: s.station_id ?? s.id,
       label: s.name ? `${s.name}${s.address ? ` - ${s.address}` : ''}` : `${s.address || 'Unknown station'}`,
+      name: s.name || '',
     }));
-  }, [stations]);
+    
+    // Filter by search query
+    if (!searchQuery.trim()) return allStations;
+    const query = searchQuery.toLowerCase();
+    return allStations.filter(st => st.label.toLowerCase().includes(query));
+  }, [stations, searchQuery]);
 
 
   // get current user id
@@ -54,6 +78,7 @@ export default function SupportTicketCard({ stations = [] }) {
       .typeError('Please select a station')
       .required('Station is required'),
     category: Yup.string().oneOf(categories.map((c) => c.value), 'Invalid category').required('Category is required'),
+    rating: Yup.number().min(1, 'Please select a rating').max(5).required('Rating is required'),
     message: Yup.string().min(10, 'Please provide more details (at least 10 characters)').required('Description is required'),
   });
 
@@ -68,6 +93,7 @@ export default function SupportTicketCard({ stations = [] }) {
         user_id: Number(userId),
         station_id: Number(values.stationId),
         type: values.category,
+        rating: Number(values.rating),
         description: values.message,
       };
 
@@ -93,31 +119,67 @@ export default function SupportTicketCard({ stations = [] }) {
       </CardHeader>
 
       <Formik
-        initialValues={{ stationId: '', category: '', message: '' }}
+        initialValues={{ stationId: '', category: '', rating: 0, message: '' }}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, values, setFieldValue }) => (
           <Form>
         <CardContent className="py-2">
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-gray-700">Select Charging Station</span>
-              <Field
-                as="select"
-                name="stationId"
-                className="form-select w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-gray-900 shadow-xs outline-none focus:ring-2 focus:ring-blue-500/50"
-              >
-                <option value="">Select</option>
-                {stationOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </Field>
+              
+              {/* Search/Select Combined */}
+              <div className="relative" ref={dropdownRef}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                <input
+                  type="text"
+                  placeholder="Search and select station..."
+                  value={selectedStation ? selectedStation.label : searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSelectedStation(null);
+                    setFieldValue('stationId', '');
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  className="w-full h-10 rounded-md border border-gray-300 bg-white pl-10 pr-3 text-gray-900 shadow-xs outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+                
+                {/* Dropdown Results */}
+                {showDropdown && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {stationOptions.length > 0 ? (
+                      stationOptions.map((station) => (
+                        <button
+                          key={station.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedStation(station);
+                            setSearchQuery('');
+                            setFieldValue('stationId', station.value);
+                            setShowDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors"
+                        >
+                          <div className="text-sm text-gray-900">{station.label}</div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500">No stations found</div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Hidden field for Formik */}
+                <Field type="hidden" name="stationId" />
+              </div>
               <ErrorMessage name="stationId" component="div" className="text-sm text-red-600 mt-1" />
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700">Select Type Of Error</span>
+              <span className="text-sm font-medium text-gray-700">What you are having issue with</span>
               <Field
                 as="select"
                 name="category"
@@ -131,6 +193,33 @@ export default function SupportTicketCard({ stations = [] }) {
               <ErrorMessage name="category" component="div" className="text-sm text-red-600 mt-1" />
             </label>
           </div>
+
+          {/* Rating Section */}
+          <label className="flex flex-col gap-2 mt-6">
+            <span className="text-sm font-medium text-gray-700">Rate your experience</span>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setFieldValue('rating', star)}
+                  className="focus:outline-none transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`w-8 h-8 ${
+                      star <= values.rating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                </button>
+              ))}
+              <span className="ml-2 text-sm text-gray-600">
+                {values.rating > 0 ? `${values.rating} star${values.rating > 1 ? 's' : ''}` : 'No rating'}
+              </span>
+            </div>
+            <ErrorMessage name="rating" component="div" className="text-sm text-red-600 mt-1" />
+          </label>
 
           <label className="flex flex-col gap-2 mt-6">
             <span className="text-sm font-medium text-gray-700">Please describe your issue or feedback</span>
@@ -150,6 +239,7 @@ export default function SupportTicketCard({ stations = [] }) {
                 <div className="mt-2 text-sm text-gray-800">
                   <p className="font-medium">Ticket ID: {createdTicket.support_id}</p>
                   <p>Type: {createdTicket.type}</p>
+                  <p>Rating: {createdTicket.rating ? `${createdTicket.rating} star${createdTicket.rating > 1 ? 's' : ''}` : 'N/A'}</p>
                   <p>Station: {createdTicket.station?.name || createdTicket.station_id}</p>
                   <p className="text-xs text-gray-600">Created at: {createdTicket.created_at ? new Date(createdTicket.created_at).toLocaleString() : ''}</p>
                 </div>

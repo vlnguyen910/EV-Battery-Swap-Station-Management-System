@@ -1,4 +1,4 @@
-import { IsNotEmpty, MinLength } from 'class-validator';
+import { IsNotEmpty, IsPhoneNumber, MinLength } from 'class-validator';
 
 export class RegisterDto {
     @IsNotEmpty({ message: 'Username is required' })
@@ -10,7 +10,6 @@ export class RegisterDto {
 
     @IsNotEmpty({ message: 'Phone number is required' })
     phone: string;
-
 
     @IsNotEmpty({ message: 'Password is required' })
     @MinLength(6, { message: 'Password must be at least 6 characters long' })

@@ -132,6 +132,27 @@ const deleteUser = async (userId) => {
   }
 };
 
+const verifyEmail = async (token) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.AUTH.VERIFY_EMAIL(token));
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    throw error;
+  }
+};
+
+//Change password function
+const changePassword = async (passwordData) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData);
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+};
+
 // Legacy authService object for backward compatibility
 export const authService = {
   login,
@@ -144,4 +165,6 @@ export const authService = {
   updateProfile,
   deleteUser,
   createStaffAccount,
+  verifyEmail,
+  changePassword,
 };
