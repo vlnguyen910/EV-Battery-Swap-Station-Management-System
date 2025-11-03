@@ -17,7 +17,7 @@ const getPaymentByUserId = async (userId) => {
 
 const createPayment = async (paymentData) => {
   try {
-    const response = await api.post(API_ENDPOINTS.PAYMENT.CREATE_VNPAY_URL_V2, paymentData);
+    const response = await api.post(API_ENDPOINTS.PAYMENT.CREATE_VNPAY_URL_WITH_FEES, paymentData);
     console.log("Created payment:", response.data);
     return response.data;
   } catch (error) {
