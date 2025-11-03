@@ -10,6 +10,7 @@ import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { stat } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -59,6 +60,7 @@ export class AuthService {
                 email: user.email,
                 phone: user.phone,
                 role: user.role,
+                station_id: user.station_id,
             }
         }
     }
