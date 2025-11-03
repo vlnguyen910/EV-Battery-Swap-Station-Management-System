@@ -67,26 +67,17 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
+            // Take from response.user
             const response = await loginService(credentials);
             console.log('Login response:', response);
 
-            const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
-            console.log('Decoded token payload:', tokenPayload);
+            const userData = response.user;
+
+            setUser(userData);
+            setToken(response.accessToken);
 
             localStorage.setItem("token", response.accessToken);
             localStorage.setItem("refreshToken", response.refreshToken);
-            setToken(response.accessToken);
-
-            const userData = {
-                id: tokenPayload.sub,
-                name: tokenPayload.username,
-                email: tokenPayload.email,
-                phone: tokenPayload.phone,
-                role: tokenPayload.role,
-                station_id: tokenPayload.station_id || tokenPayload.stationId || null
-            };
-
-            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
             // Dispatch custom event to notify other contexts that login succeeded
