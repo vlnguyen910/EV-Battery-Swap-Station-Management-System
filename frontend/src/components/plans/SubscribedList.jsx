@@ -49,8 +49,8 @@ export default function SubscribedList({ subscriptions }) {
         text: 'text-red-800 dark:text-red-300',
       },
       cancelled: {
-        bg: 'bg-gray-100 dark:bg-gray-900',
-        text: 'text-gray-800 dark:text-gray-300',
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-800 dark:text-red-300',
       }
     };
 

@@ -13,6 +13,12 @@ export default function Plans() {
   const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState(null)
 
+  // Format number with commas (e.g., 300000 -> 300,000)
+  const formatCurrency = (amount) => {
+    if (!amount || isNaN(amount)) return amount
+    return Number(amount).toLocaleString('en-US')
+  }
+
   // Get user from localStorage
   const getUser = () => {
     try {
@@ -31,15 +37,15 @@ export default function Plans() {
     id: String(pkg.package_id),
     name: pkg.name,
     description: pkg.description,
-    price: pkg.base_price && pkg.base_price > 0 ? `${pkg.base_price} vnd` : 'Contact sales',
+    price: pkg.base_price && pkg.base_price > 0 ? `${formatCurrency(pkg.base_price)} VND` : 'Contact sales',
     period: pkg.duration_days && pkg.duration_days > 0
       ? pkg.duration_days === 30
         ? 'per month'
         : `per ${pkg.duration_days} days`
       : 'per swap',
     features: [
-      pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
-      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${pkg.phi_phat}` : 'No extra fee',
+      pkg.base_distance && pkg.base_distance > 0 ? `${formatCurrency(pkg.base_distance)} km included` : 'Flexible swaps',
+      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${formatCurrency(pkg.phi_phat)} VNĐ` : 'No extra fee',
       'Access to all stations',
       '24/7 customer support'
     ],
@@ -75,7 +81,7 @@ export default function Plans() {
   const fetchUserSubscriptions = async () => {
     if (!user?.id) {
       console.warn('No user ID found')
-      return
+      return []
     }
 
     try {
@@ -85,16 +91,6 @@ export default function Plans() {
       return Array.isArray(subscriptionsData) ? subscriptionsData : []
     } catch (err) {
       console.error('Error fetching subscriptions:', err)
-      // If API fails, fallback to localStorage for now
-      const savedSubscriptions = localStorage.getItem('subscriptions')
-      if (savedSubscriptions) {
-        try {
-          return JSON.parse(savedSubscriptions)
-        } catch (parseErr) {
-          console.error('Error parsing local subscriptions:', parseErr)
-          return []
-        }
-      }
       return []
     }
   }
@@ -135,19 +131,6 @@ export default function Plans() {
       setLoading(false)
     }
   }
-
-  // Load subscriptions from localStorage (temporary until backend is ready)
-  useEffect(() => {
-    const savedSubscriptions = localStorage.getItem('subscriptions')
-    if (savedSubscriptions) {
-      try {
-        setSubscriptions(JSON.parse(savedSubscriptions))
-      } catch (err) {
-        console.error('Error parsing subscriptions:', err)
-        setSubscriptions([])
-      }
-    }
-  }, [])
 
   // Fetch packages on component mount
   useEffect(() => {
@@ -286,6 +269,7 @@ export default function Plans() {
           user={user}
           onPay={handlePay}
           paying={paying}
+          subscriptions={subscriptions}
         />
 
         <section>
