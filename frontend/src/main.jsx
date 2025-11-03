@@ -10,6 +10,7 @@ import { ReservationProvider } from './contexts/ReservationContext.jsx';
 import { SubscriptionProvider } from './contexts/SubscriptionContext.jsx';
 import { PackageProvider } from './contexts/PackageContext.jsx';
 import { SwapProvider } from './contexts/SwapContext.jsx';
+import { SwapRequestProvider } from './contexts/SwapRequestContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -22,7 +23,9 @@ createRoot(document.getElementById('root')).render(
               <SubscriptionProvider>
                 <ReservationProvider>
                   <SwapProvider>
-                    <App />
+                    <SwapRequestProvider>
+                      <App />
+                    </SwapRequestProvider>
                   </SwapProvider>
                 </ReservationProvider>
               </SubscriptionProvider>
