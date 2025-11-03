@@ -23,9 +23,10 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { login, loading, error, clearError } = useAuth();
+  const { login, loading, error, clearError, redirectToGoogleLogin } = useAuth();
   const [success, setSuccess] = useState(false);
   const [localError, setLocalError] = useState(null);
+
 
   // Clear error on mount
   useEffect(() => {
@@ -51,6 +52,21 @@ export default function Login() {
 
     try {
       const user = await login(data);
+      if (user) {
+        setSuccess(true);
+      }
+    } catch {
+      // Errors are set in AuthContext (error state). No need to log here.
+    }
+  };
+
+  // Google OAuth login handler - disabled until Google Cloud Console is configured
+  const handleGoogleLogin = async () => {
+    clearError();
+    setSuccess(false);
+
+    try {
+      const user = await redirectToGoogleLogin();
       if (user) {
         setSuccess(true);
       }
@@ -175,6 +191,17 @@ export default function Login() {
                 )}
               </button>
             </form>
+
+            <div className="text-center mt-6">
+              <button
+                onClick={() => redirectToGoogleLogin()}
+                disabled={loading || success}
+                className="w-full py-3 px-4 rounded-lg font-semibold bg-red-500 hover:bg-red-600 text-white"
+              >
+                Sign in with Google
+              </button>
+            </div>
+
 
             <div className="text-center mt-6">
               <p className="text-sm text-gray-600">

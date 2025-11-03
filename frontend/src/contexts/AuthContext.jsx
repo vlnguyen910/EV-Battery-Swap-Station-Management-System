@@ -1,10 +1,12 @@
 // Auth context - Simplified
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { authService } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { redirect, useNavigate } from "react-router-dom";
 
 const {
     login: loginService,
+    redirectToGoogleLogin: redirectToGoogleLoginService,
+    handleGoogleCallback: handleGoogleCallbackService,
     logout: logoutService,
     register: registerService,
     createStaffAccount: createStaffAccountService,
@@ -41,23 +43,23 @@ export const AuthProvider = ({ children }) => {
             const message = error.response.data?.message;
 
             if (status === 401 || status === 400) {
-                return "Tên đăng nhập hoặc mật khẩu không hợp lệ";
+                return "Email or username or password is invalid";
             }
             if (status === 409) {
-                return "Email hoặc số điện thoại đã được sử dụng";
+                return "Email or phone number has been used";
             }
             if (status === 403) {
-                return "Bạn không có quyền thực hiện thao tác này";
+                return "You do not have permission to perform this action";
             }
 
-            return message || "Đã xảy ra lỗi. Vui lòng thử lại";
+            return message || "An error occurred. Please try again";
         }
 
         if (error.request) {
-            return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng";
+            return "Unable to connect to the server. Please check your network connection";
         }
 
-        return error.message || "Đã xảy ra lỗi không xác định";
+        return error.message || "An unknown error occurred";
     };
 
     // Function to handle login
@@ -119,6 +121,33 @@ export const AuthProvider = ({ children }) => {
             setError(errorMessage);
             // Return null to indicate login failure. Callers should check the return value.
             return null;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to handle Google login
+    const redirectToGoogleLogin = async () => {
+        try {
+            await redirectToGoogleLoginService();
+        } catch (error) {
+            setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
+            console.error("Login with Google error:", error);
+        }
+    }
+
+    // Function to handle Google login callback
+    const handleGoogleCallback = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await handleGoogleCallbackService();
+            console.log('Google callback response:', response);
+            // Handle successful login here
+        } catch (error) {
+            setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
+            console.error("Login with Google error:", error);
         } finally {
             setLoading(false);
         }
@@ -258,12 +287,16 @@ export const AuthProvider = ({ children }) => {
                 error,
                 isAuthenticated,
                 login,
+                redirectToGoogleLogin,
+                handleGoogleCallback,
                 logout,
                 register,
                 createStaffAccount,
                 getAllUsers,
                 getProfile,
-                clearError
+                clearError,
+                setUser,
+                setToken
             }}
         >
             {children}
