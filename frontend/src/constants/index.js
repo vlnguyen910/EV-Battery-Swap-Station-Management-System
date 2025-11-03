@@ -9,7 +9,7 @@ export const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
     GOOGLE_LOGIN: "/auth/google",
     GOOGLE_CALLBACK: "/auth/google/callback",
-    VERIFY_EMAIL: "/auth/verify-email",
+    VERIFY_EMAIL: (token) => `/auth/verify-email/${token}`,
   },
 
   USER: {

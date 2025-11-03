@@ -19,6 +19,7 @@ import User from './pages/User'
 import StaffSwapRequests from './components/swap/StaffSwapRequests'
 import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
 import Payment from './pages/Payment'
+import VerifyEmail from './pages/VerifyEmail'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         <Route path="/admin" element={<AdminPage />} />
 
