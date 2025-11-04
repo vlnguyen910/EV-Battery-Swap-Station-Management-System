@@ -20,7 +20,7 @@ export default function PersonalInfoCard({ user }) {
       <div className="grid grid-cols-2 sm:grid-cols-2 gap-x-6 gap-y-4">
         <div>
           <label className="text-sm font-medium text-gray-500">Full Name</label>
-          <p className="text-gray-800 mt-1">{user?.name || '—'}</p>
+          <p className="text-gray-800 mt-1">{user?.username || '—'}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">Email Address</label>

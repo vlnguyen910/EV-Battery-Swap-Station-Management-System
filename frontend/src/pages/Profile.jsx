@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import VehiclesList from '../components/profile/VehiclesList';
 import { vehicleService } from '../services/vehicleService';
-import { subscriptionService } from '../services/subscriptionService'
-import { useAuth } from '../hooks/useContext';
+import { subscriptionService } from '../services/subscriptionService';
 
 export default function Profile() {
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext();
   const [vehicles, setVehicles] = useState([]);
-  const { user } = useAuth();
 
   // Fetch enriched vehicles (with batteryLevel & soh) from service
   // Extract fetch function so child components can trigger refresh
   const fetchVehicles = async () => {
-    if (!user?.id) return;
+    if (!user?.user_id) return;
 
     try {
       const [vehicles, subscriptions] = await Promise.all([
-        vehicleService.getVehiclesByUserIdWithBattery(user.id),
+        vehicleService.getVehiclesByUserIdWithBattery(user.user_id),
         // fetch subscriptions for user once and map by vehicle_id
-        subscriptionService.getSubscriptionsByUserId(user.id).catch(() => []),
+        subscriptionService.getSubscriptionsByUserId(user.user_id).catch(() => []),
       ])
 
       const subsByVehicle = (subscriptions || []).reduce((acc, s) => {

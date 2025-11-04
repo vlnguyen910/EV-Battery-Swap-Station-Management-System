@@ -122,7 +122,22 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await handleGoogleCallbackService();
             console.log('Google callback response:', response);
-            // Handle successful login here
+
+            const userData = response.user;
+
+            setUser(userData);
+            setToken(response.accessToken);
+            localStorage.setItem("token", response.accessToken);
+            localStorage.setItem("user", JSON.stringify(userData));
+
+            // Navigate based on role
+            if (userData.role === "admin") {
+                navigate("/admin");
+            } else if (userData.role === "station_staff") {
+                navigate("/staff");
+            } else {
+                navigate("/driver");
+            }
         } catch (error) {
             setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
             console.error("Login with Google error:", error);
@@ -235,7 +250,14 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const savedUser = localStorage.getItem("user");
         if (savedUser) {
-            setUser(JSON.parse(savedUser));
+            const userData = JSON.parse(savedUser);
+
+            // Normalize user data: ensure 'id' field exists
+            if (!userData.id && userData.user_id) {
+                userData.id = userData.user_id;
+            }
+
+            setUser(userData);
         }
     }, []);
 

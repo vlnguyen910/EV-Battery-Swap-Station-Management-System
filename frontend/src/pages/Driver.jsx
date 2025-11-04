@@ -42,8 +42,8 @@ export default function Driver() {
         <Sidebar />
         <main className="ml-64 px-6 py-4">
           <div className="max-w-7xl mx-auto">
-            {/* Trang con sẽ render ở đây */}
-            <Outlet />
+            {/* Trang con sẽ render ở đây - pass user context */}
+            <Outlet context={{ user }} />
           </div>
         </main>
       </div>

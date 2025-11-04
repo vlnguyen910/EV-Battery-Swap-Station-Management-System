@@ -22,7 +22,7 @@ export default function SubscriptionCard() {
 
   useEffect(() => {
     const fetchSubscriptions = async () => {
-      if (!user?.id) {
+      if (!user?.user_id) {
         setSubscriptions([]);
         setLoading(false);
         return;
@@ -30,11 +30,11 @@ export default function SubscriptionCard() {
 
       try {
         setLoading(true);
-        
+
         // Fetch subscriptions and vehicles in parallel
         const [subsData, vehiclesData] = await Promise.all([
-          subscriptionService.getSubscriptionsByUserId(user.id),
-          vehicleService.getVehicleByUserId(user.id)
+          subscriptionService.getSubscriptionsByUserId(user.user_id),
+          vehicleService.getVehicleByUserId(user.user_id)
         ]);
 
         const subscriptionsArray = subsData.data || subsData || [];
@@ -62,16 +62,16 @@ export default function SubscriptionCard() {
     };
 
     fetchSubscriptions();
-  }, [user?.id]);
+  }, [user?.user_id]);
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => 
+    setCurrentIndex((prev) =>
       prev === 0 ? subscriptions.length - 1 : prev - 1
     );
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => 
+    setCurrentIndex((prev) =>
       prev === subscriptions.length - 1 ? 0 : prev + 1
     );
   };
@@ -126,8 +126,8 @@ export default function SubscriptionCard() {
   }
 
   const currentSubscription = subscriptions[currentIndex];
-  const vehicle = currentSubscription.vehicle_id 
-    ? vehiclesMap[currentSubscription.vehicle_id] 
+  const vehicle = currentSubscription.vehicle_id
+    ? vehiclesMap[currentSubscription.vehicle_id]
     : null;
 
   return (
@@ -167,9 +167,9 @@ export default function SubscriptionCard() {
               <p className="text-xs text-gray-600 font-medium">Package</p>
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {currentSubscription.package?.name || 
-               currentSubscription.name || 
-               `Package #${currentSubscription.package_id}`}
+              {currentSubscription.package?.name ||
+                currentSubscription.name ||
+                `Package #${currentSubscription.package_id}`}
             </p>
           </div>
 
@@ -181,7 +181,7 @@ export default function SubscriptionCard() {
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatPrice(
-                currentSubscription.package?.base_price || 
+                currentSubscription.package?.base_price ||
                 currentSubscription.price
               )}
             </p>
@@ -194,7 +194,7 @@ export default function SubscriptionCard() {
               <p className="text-xs text-gray-600 font-medium">Vehicle</p>
             </div>
             <p className="text-lg font-bold text-gray-900">
-              {vehicle 
+              {vehicle
                 ? `${vehicle.brand || ''} ${vehicle.model || ''} (${vehicle.license_plate || 'N/A'})`
                 : 'No vehicle assigned'
               }
@@ -235,7 +235,7 @@ export default function SubscriptionCard() {
                 <p className="text-sm text-gray-600">Swaps Used</p>
                 <p className="text-lg font-bold text-blue-600">
                   {currentSubscription.swap_used}
-                  {currentSubscription.package?.swap_count && 
+                  {currentSubscription.package?.swap_count &&
                     <span className="text-sm text-gray-500 font-normal">
                       {' '}/ {currentSubscription.package.swap_count}
                     </span>
@@ -243,7 +243,7 @@ export default function SubscriptionCard() {
                 </p>
               </div>
             )}
-            
+
             {/* Distance Traveled */}
             {currentSubscription.distance_traveled !== undefined && (
               <div className="flex items-center justify-between pt-2 border-t border-gray-200">
@@ -253,7 +253,7 @@ export default function SubscriptionCard() {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 1
                   })} km
-                  {currentSubscription.package?.base_distance && 
+                  {currentSubscription.package?.base_distance &&
                     <span className="text-sm text-gray-500 font-normal">
                       {' '}/ {currentSubscription.package.base_distance.toLocaleString('en-US')} km
                     </span>
@@ -261,33 +261,32 @@ export default function SubscriptionCard() {
                 </p>
               </div>
             )}
-            
+
             {/* Distance Progress Bar */}
-            {currentSubscription.package?.base_distance && 
-             currentSubscription.distance_traveled !== undefined && (
-              <div className="pt-1">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all ${
-                      (currentSubscription.distance_traveled / currentSubscription.package.base_distance) > 1
-                        ? 'bg-red-500'
-                        : (currentSubscription.distance_traveled / currentSubscription.package.base_distance) > 0.8
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500'
-                    }`}
-                    style={{ 
-                      width: `${Math.min(
-                        (currentSubscription.distance_traveled / currentSubscription.package.base_distance) * 100,
-                        100
-                      )}%` 
-                    }}
-                  />
+            {currentSubscription.package?.base_distance &&
+              currentSubscription.distance_traveled !== undefined && (
+                <div className="pt-1">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${(currentSubscription.distance_traveled / currentSubscription.package.base_distance) > 1
+                          ? 'bg-red-500'
+                          : (currentSubscription.distance_traveled / currentSubscription.package.base_distance) > 0.8
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                        }`}
+                      style={{
+                        width: `${Math.min(
+                          (currentSubscription.distance_traveled / currentSubscription.package.base_distance) * 100,
+                          100
+                        )}%`
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 text-right">
+                    {((currentSubscription.distance_traveled / currentSubscription.package.base_distance) * 100).toFixed(1)}% used
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  {((currentSubscription.distance_traveled / currentSubscription.package.base_distance) * 100).toFixed(1)}% used
-                </p>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </CardContent>

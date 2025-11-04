@@ -86,9 +86,9 @@ export default function AddVehicleDialog({ onAdded }) {
         // navigate to plans and pass vehicle id
         setOpen(false)
         if (createdVehicle?.vehicle_id) {
-            navigate('/plans', { state: { vehicle_id: createdVehicle.vehicle_id } })
+            navigate('/driver/plans', { state: { vehicle_id: createdVehicle.vehicle_id } })
         } else {
-            navigate('/plans')
+            navigate('/driver/plans')
         }
     }
 
@@ -99,8 +99,6 @@ export default function AddVehicleDialog({ onAdded }) {
         // reset form
         setStep(1)
         setVin('')
-        setBatteryModel('')
-        setBatteryType('')
         setCreatedVehicle(null)
     }
 
@@ -121,41 +119,6 @@ export default function AddVehicleDialog({ onAdded }) {
                             <div>
                                 <label className="text-sm text-gray-700">VIN</label>
                                 <Input value={vin} onChange={(e) => setVin(e.target.value)} placeholder="Enter VIN" />
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-gray-700">Battery Module</label>
-                                <select
-                                    className="w-full border rounded px-2 py-1"
-                                    value={selectedModuleKey ?? ''}
-                                    onChange={(e) => {
-                                        const key = e.target.value || ''
-                                        setSelectedModuleKey(key)
-                                        const mod = modules.find(m => m.key === key)
-                                        if (mod) {
-                                            setBatteryModel(mod.model || '')
-                                            setBatteryType(mod.type || '')
-                                        } else {
-                                            setBatteryModel('')
-                                            setBatteryType('')
-                                        }
-                                    }}
-                                >
-                                    <option value="">Select battery module</option>
-                                    {(modules || []).map(m => (
-                                        <option key={m.key} value={m.key}>{`${m.model}`}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-gray-700">Battery Type</label>
-                                <select className="w-full border rounded px-2 py-1" value={batteryType} onChange={(e) => setBatteryType(e.target.value)}>
-                                    <option value="">Select battery type</option>
-                                    {(batteryTypes || []).map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
                             </div>
 
                             {error && <div className="text-sm text-red-600">{error}</div>}

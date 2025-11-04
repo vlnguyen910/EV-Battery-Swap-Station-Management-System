@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
-import { useStation, useAuth, useSubscription } from '../hooks/useContext';
+import { useStation, useSubscription } from '../hooks/useContext';
 import { vehicleService } from '../services/vehicleService';
 import DashboardHeader from '../components/user/DashboardHeader';
 import VehicleStatusCard from '../components/user/VehicleStatusCard';
@@ -13,8 +13,9 @@ import SwapSuccessDialog from '../components/dashboard/SwapSuccessDialog';
 
 export default function User() {
   const navigate = useNavigate();
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext();
   const { stations } = useStation();
-  const { user } = useAuth();
   const { activeSubscription, getActiveSubscription } = useSubscription();
   const [vehicleData, setVehicleData] = useState([]);
   const [showSwapSuccess, setShowSwapSuccess] = useState(false);
@@ -22,26 +23,26 @@ export default function User() {
   // Fetch user's active subscription on component mount
   useEffect(() => {
     const fetchActiveSubscription = async () => {
-      if (!user?.id) return;
+      if (!user?.user_id) return;
 
       try {
-        await getActiveSubscription(user.id);
+        await getActiveSubscription(user.user_id);
       } catch (error) {
         console.error('Error fetching active subscription:', error);
       }
     };
 
     fetchActiveSubscription();
-  }, [user?.id, getActiveSubscription]);
+  }, [user?.user_id, getActiveSubscription]);
 
   // Fetch vehicle data by user ID
   useEffect(() => {
     const fetchVehicleData = async () => {
-      if (!user?.id) return;
+      if (!user?.user_id) return;
 
       try {
-        console.log('Fetching enriched vehicles for user ID:', user.id);
-        const vehicles = await vehicleService.getVehiclesByUserIdWithBattery(user.id);
+        console.log('Fetching enriched vehicles for user ID:', user.user_id);
+        const vehicles = await vehicleService.getVehiclesByUserIdWithBattery(user.user_id);
         console.log('Enriched vehicle data fetched:', vehicles);
         setVehicleData(Array.isArray(vehicles) ? vehicles : []);
       } catch (error) {
@@ -51,9 +52,7 @@ export default function User() {
     };
 
     fetchVehicleData();
-  }, [user?.id]);
-
-  const headerName = user?.name || 'Driver';
+  }, [user?.user_id]);
 
   const nearbyStations = useMemo(() => {
     // Wait for stations to be initialized before processing
@@ -94,7 +93,7 @@ export default function User() {
         <main className="px-16 py-5 overflow-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-6">
-              <DashboardHeader name={headerName} onAutoSwap={handleAutoSwap} />
+              <DashboardHeader name={user?.username || 'Driver'} onAutoSwap={handleAutoSwap} />
             </div>
 
             {/* Grid */}
