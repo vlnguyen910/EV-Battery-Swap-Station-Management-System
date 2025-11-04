@@ -1,10 +1,8 @@
 import { useContext } from "react";
 import { AuthContext } from "../contexts/AuthContext";
-import { StationContext } from "../contexts/StationContext";
-import { BatteryContext } from "../contexts/BatteryContext";
-import { ReservationContext } from "../contexts/ReservationContext";
-import { PackageContext } from "../contexts/PackageContext";
-import { SubscriptionContext } from "../contexts/SubscriptionContext";
+import { InventoryContext } from "../contexts/InventoryContext";
+import { ServiceContext } from "../contexts/ServiceContext";
+import { BookingContext } from "../contexts/BookingContext";
 import { VehicleContext } from "../contexts/VehicleContext";
 import { SwapContext } from "../contexts/SwapContext";
 
@@ -12,23 +10,120 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// ============ STATION (from InventoryContext) ============
 export function useStation() {
-  return useContext(StationContext);
+  const context = useContext(InventoryContext);
+  if (!context) {
+    throw new Error("useStation must be used within InventoryProvider");
+  }
+
+  return {
+    stations: context.stations,
+    initialized: context.initialized,
+    fetchAllStations: context.fetchAllStations,
+    getStationById: context.getStationById,
+    loading: context.stationLoading,
+    error: context.stationError,
+  };
 }
 
+// ============ BATTERY (from InventoryContext) ============
 export function useBattery() {
-  return useContext(BatteryContext);
+  const context = useContext(InventoryContext);
+  if (!context) {
+    throw new Error("useBattery must be used within InventoryProvider");
+  }
+
+  return {
+    batteries: context.batteries,
+    getAllBatteries: context.getAllBatteries,
+    getBatteryById: context.getBatteryById,
+    countAvailableBatteriesByStation: context.countAvailableBatteriesByStation,
+    loading: context.batteryLoading,
+    error: context.batteryError,
+  };
 }
 
+// ============ RESERVATION (from BookingContext) ============
 export function useReservation() {
-  return useContext(ReservationContext);
+  const context = useContext(BookingContext);
+  if (!context) {
+    throw new Error("useReservation must be used within BookingProvider");
+  }
+
+  return {
+    reservations: context.reservations,
+    activeReservation: context.activeReservation,
+    createReservation: context.createReservation,
+    getAllReservationsByStationId: context.getAllReservationsByStationId,
+    getReservationById: context.getReservationById,
+    getReservationsByUserId: context.getReservationsByUserId,
+    updateReservationStatus: context.updateReservationStatus,
+    clearActiveReservation: context.clearActiveReservation,
+    loading: context.reservationLoading,
+    error: context.reservationError,
+  };
 }
 
+// ============ PACKAGE (from ServiceContext) ============
 export function usePackage() {
-  return useContext(PackageContext);
+  const context = useContext(ServiceContext);
+  if (!context) {
+    throw new Error("usePackage must be used within ServiceProvider");
+  }
+
+  return {
+    packages: context.packages,
+    getAllPackages: context.getAllPackages,
+    getPackageById: context.getPackageById,
+    loading: context.packageLoading,
+    error: context.packageError,
+  };
 }
+
+// ============ SUBSCRIPTION (from ServiceContext) ============
 export function useSubscription() {
-  return useContext(SubscriptionContext);
+  const context = useContext(ServiceContext);
+  if (!context) {
+    throw new Error("useSubscription must be used within ServiceProvider");
+  }
+
+  return {
+    subscriptions: context.subscriptions,
+    activeSubscription: context.activeSubscription,
+    fetchAllSubscriptions: context.fetchAllSubscriptions,
+    getSubscriptionById: context.getSubscriptionById,
+    getSubscriptionsByUserId: context.getSubscriptionsByUserId,
+    getActiveSubscription: context.getActiveSubscription,
+    createSubscription: context.createSubscription,
+    updateSubscription: context.updateSubscription,
+    cancelSubscription: context.cancelSubscription,
+    checkExpiredSubscriptions: context.checkExpiredSubscriptions,
+    incrementSwapCount: context.incrementSwapCount,
+    loading: context.subscriptionLoading,
+    error: context.subscriptionError,
+  };
+}
+
+// ============ SWAP REQUEST (from BookingContext) ============
+export function useSwapRequest() {
+  const context = useContext(BookingContext);
+  if (!context) {
+    throw new Error("useSwapRequest must be used within BookingProvider");
+  }
+
+  return {
+    swapRequests: context.swapRequests,
+    fetchSwapRequestsForStation: context.fetchSwapRequestsForStation,
+    getPendingRequestsForStaff: context.getPendingRequestsForStaff,
+    updateRequestStatus: context.updateRequestStatus,
+    notifications: context.notifications,
+    addNotification: context.addNotification,
+    getNotificationsForUser: context.getNotificationsForUser,
+    markAsRead: context.markAsRead,
+    loading: context.swapRequestLoading,
+    error: context.swapRequestError,
+  };
 }
 
 export function useVehicle() {

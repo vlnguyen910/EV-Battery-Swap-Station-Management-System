@@ -1,21 +1,20 @@
-import { useEffect, useContext } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, useSubscription } from '../../hooks/useContext';
+import { useAuth, useSubscription, useSwapRequest } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
-import { SwapRequestContext } from '../../contexts/SwapRequestContext';
 
 export default function StaffSwapRequests() {
     const { getSubscriptionsByUserId } = useSubscription();
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    // Use SwapRequestContext instead of local state
+    // Use useSwapRequest hook to get swap requests data
     const {
         swapRequests,
         loading,
         error,
         fetchSwapRequestsForStation
-    } = useContext(SwapRequestContext);
+    } = useSwapRequest();
 
     // Fetch scheduled reservations when component mounts or user changes
     useEffect(() => {

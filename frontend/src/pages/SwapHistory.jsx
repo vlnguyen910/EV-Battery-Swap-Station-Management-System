@@ -1,51 +1,45 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { paymentService } from '../services/paymentService';
 import { swapService } from '../services/swapService';
 import SwapHistoryCard from '../components/history/SwapHistoryCard';
 import PaymentHistoryCard from '../components/history/PaymentHistoryCard';
 
 export default function SwapHistory() {
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext();
+
   // Pagination state for swaps
   const [swapCurrentPage, setSwapCurrentPage] = useState(1);
   const [swapResultsPerPage, setSwapResultsPerPage] = useState(20);
   const [swapTotalResults, setSwapTotalResults] = useState(0);
-  
+
   // Pagination state for payments
   const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
   const [paymentResultsPerPage, setPaymentResultsPerPage] = useState(20);
   const [paymentTotalResults, setPaymentTotalResults] = useState(0);
-  
+
   // Sorting state
   const [sortBy, setSortBy] = useState('date'); // 'date' or 'amount'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
-  
+
   // Filter state for swaps
   const [swapTimePeriod, setSwapTimePeriod] = useState('week'); // 'week', 'month', 'year'
-  
+
   // Filter state for payments
   const [paymentTimePeriod, setPaymentTimePeriod] = useState('week'); // 'week', 'month', 'year'
-  
+
   // Data state
   const [swapHistory, setSwapHistory] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // Get user from localStorage
-  const user = useMemo(() => {
-    try {
-      const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
-    } catch {
-      return null;
-    }
-  }, []);
 
   // Filter data by time period
   const filterByTimePeriod = (data, timePeriod) => {
     const now = new Date();
     const filtered = data.filter(item => {
       const itemDate = new Date(item.date);
-      
+
       if (timePeriod === 'week') {
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         return itemDate >= oneWeekAgo;
@@ -58,18 +52,19 @@ export default function SwapHistory() {
       }
       return true;
     });
-    
+
     return filtered;
   };
 
   // Fetch data
   useEffect(() => {
     const fetchSwapHistory = async () => {
-      if (!user?.id) {
+      if (!user?.user_id) {
         console.warn('No user ID found');
         setSwapHistory([]);
         setPaymentHistory([]);
-        setTotalResults(0);
+        setSwapTotalResults(0);
+        setPaymentTotalResults(0);
         return;
       }
 
@@ -77,29 +72,29 @@ export default function SwapHistory() {
       try {
         // Fetch both swap transactions and payments in parallel
         const [swapTransactions, payments] = await Promise.all([
-          swapService.getAllSwapTransactionsByUserId(user.id),
-          paymentService.getPaymentByUserId(user.id)
+          swapService.getAllSwapTransactionsByUserId(user.user_id),
+          paymentService.getPaymentByUserId(user.user_id)
         ]);
-        
+
         console.log('Swap transactions from API:', swapTransactions);
         console.log('Payments from API:', payments);
-        
+
         // Transform swap transactions to UI format
         const transformedSwaps = (swapTransactions || []).map(transaction => ({
           id: `swap-${transaction.transaction_id}`,
           type: 'swap',
-          date: transaction.createAt 
-            ? new Date(transaction.createAt).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              })
+          date: transaction.createAt
+            ? new Date(transaction.createAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
             : 'N/A',
-          time: transaction.createAt 
-            ? new Date(transaction.createAt).toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })
+          time: transaction.createAt
+            ? new Date(transaction.createAt).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
             : 'N/A',
           location: `Station ${transaction.station_id}`,
           amount: 1, // Each transaction is 1 battery swap
@@ -114,18 +109,18 @@ export default function SwapHistory() {
         const transformedPayments = (payments || []).map(payment => ({
           id: `payment-${payment.payment_id}`,
           type: 'payment',
-          date: payment.created_at 
-            ? new Date(payment.created_at).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              })
+          date: payment.created_at
+            ? new Date(payment.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
             : 'N/A',
-          time: payment.created_at 
-            ? new Date(payment.created_at).toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })
+          time: payment.created_at
+            ? new Date(payment.created_at).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
             : 'N/A',
           location: payment.package?.name || payment.order_info || 'Payment',
           amount: parseFloat(payment.amount || 0),
@@ -139,7 +134,7 @@ export default function SwapHistory() {
         // Apply time period filter to both
         const filteredSwaps = filterByTimePeriod(transformedSwaps, swapTimePeriod);
         const filteredPayments = filterByTimePeriod(transformedPayments, paymentTimePeriod);
-        
+
         // Apply sorting to swaps
         const sortedSwaps = [...filteredSwaps].sort((a, b) => {
           if (sortBy === 'date') {
@@ -161,11 +156,11 @@ export default function SwapHistory() {
           }
           return 0;
         });
-        
+
         // Update total results
         setSwapTotalResults(sortedSwaps.length);
         setPaymentTotalResults(sortedPayments.length);
-        
+
         // Apply pagination to swaps
         const swapStartIndex = (swapCurrentPage - 1) * swapResultsPerPage;
         const swapEndIndex = swapStartIndex + swapResultsPerPage;
@@ -175,7 +170,7 @@ export default function SwapHistory() {
         const paymentStartIndex = (paymentCurrentPage - 1) * paymentResultsPerPage;
         const paymentEndIndex = paymentStartIndex + paymentResultsPerPage;
         const paginatedPayments = sortedPayments.slice(paymentStartIndex, paymentEndIndex);
-        
+
         setSwapHistory(paginatedSwaps);
         setPaymentHistory(paginatedPayments);
       } catch (error) {
@@ -190,7 +185,7 @@ export default function SwapHistory() {
     };
 
     fetchSwapHistory();
-  }, [swapCurrentPage, swapResultsPerPage, paymentCurrentPage, paymentResultsPerPage, sortBy, sortOrder, swapTimePeriod, paymentTimePeriod, user?.id]);
+  }, [swapCurrentPage, swapResultsPerPage, paymentCurrentPage, paymentResultsPerPage, sortBy, sortOrder, swapTimePeriod, paymentTimePeriod, user?.user_id]);
 
   // Calculate pagination info for swaps
   const swapTotalPages = Math.ceil(swapTotalResults / swapResultsPerPage);

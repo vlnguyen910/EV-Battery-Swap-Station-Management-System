@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
@@ -8,6 +9,9 @@ import SubscribeModal from '../components/plans/SubscribeModal'
 import { paymentService } from '../services/paymentService'
 
 export default function Plans() {
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext()
+
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
   const [activeSubscriptions, setActiveSubscriptions] = useState([])
@@ -21,19 +25,6 @@ export default function Plans() {
     if (!amount || isNaN(amount)) return amount
     return Number(amount).toLocaleString('en-US')
   }
-
-  // Get user from localStorage
-  const getUser = () => {
-    try {
-      const userData = localStorage.getItem('user')
-      return userData ? JSON.parse(userData) : null
-    } catch (err) {
-      console.error('Error parsing user data:', err)
-      return null
-    }
-  }
-
-  const user = getUser()
 
   // Transform package data from backend to UI format
   const transformPackageToUI = (pkg) => ({
@@ -82,13 +73,13 @@ export default function Plans() {
 
   // Fetch user subscriptions from backend
   const fetchUserSubscriptions = async () => {
-    if (!user?.id) {
+    if (!user?.user_id) {
       console.warn('No user ID found')
       return []
     }
 
     try {
-      const response = await subscriptionService.getSubscriptionsByUserId(user.id)
+      const response = await subscriptionService.getSubscriptionsByUserId(user.user_id)
       const subscriptionsData = response.data || response
       console.log('Fetched subscriptions:', subscriptionsData)
       return Array.isArray(subscriptionsData) ? subscriptionsData : []
@@ -102,7 +93,7 @@ export default function Plans() {
   const fetchAllData = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // fetch packages and subscriptions in parallel and return results
       const [fetchedPackages, fetchedSubscriptions] = await Promise.all([
@@ -128,15 +119,11 @@ export default function Plans() {
       })
 
       // Separate active and cancelled subscriptions
-      const active = enrichedSubs.filter(sub => 
-        sub.status !== 'cancelled' && 
-        sub.status !== 'CANCELLED' && 
-        sub.status !== 'canceled'
+      const active = enrichedSubs.filter(sub =>
+        sub.status !== 'cancelled'
       )
-      const cancelled = enrichedSubs.filter(sub => 
-        sub.status === 'cancelled' || 
-        sub.status === 'CANCELLED' || 
-        sub.status === 'canceled'
+      const cancelled = enrichedSubs.filter(sub =>
+        sub.status === 'cancelled'
       )
 
       setSubscriptions(enrichedSubs)
@@ -152,18 +139,8 @@ export default function Plans() {
   // Fetch packages on component mount
   useEffect(() => {
     fetchAllData()
-  }, [user?.id])
+  }, [user?.user_id])
 
-  // Handle subscribe action: open modal to start payment flow instead of creating subscription directly
-  const handleSubscribe = (plan) => {
-    if (!user?.id) {
-      alert('Please login to subscribe to a plan')
-      return
-    }
-
-    // Open subscribe modal which will handle payment and backend subscription creation after success
-    openSubscribeModal(plan)
-  }
 
   // Open subscribe modal (choose vehicle, confirm payment)
   const [modalOpen, setModalOpen] = useState(false)
@@ -177,7 +154,7 @@ export default function Plans() {
 
   // Called when user clicks Pay in modal
   const handlePay = async (vehicleId) => {
-    if (!user?.id || !selectedPlan) {
+    if (!user?.user_id || !selectedPlan) {
       alert('Missing user or package info')
       return
     }
@@ -185,7 +162,7 @@ export default function Plans() {
     setPaying(true)
     try {
       const payload = {
-        user_id: user.id,
+        user_id: user.user_id,
         package_id: selectedPlan.rawData.package_id,
         vehicle_id: parseInt(vehicleId)
       }
@@ -208,7 +185,7 @@ export default function Plans() {
 
   // Check if user is already subscribed to a package (excluding cancelled subscriptions)
   const isUserSubscribed = (packageId) => {
-    return activeSubscriptions.some(sub => 
+    return activeSubscriptions.some(sub =>
       String(sub.package_id) === String(packageId)
     )
   }
@@ -265,7 +242,7 @@ export default function Plans() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Plans & Subscriptions</h1>
-          <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+          <p className="text-gray-600 mt-2">Welcome back, {user.username}!</p>
         </div>
 
         <section className="mb-8">
@@ -291,7 +268,7 @@ export default function Plans() {
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Your Active Subscriptions</h2>
-          <SubscribedList 
+          <SubscribedList
             subscriptions={activeSubscriptions}
             onRefresh={fetchAllData}
           />

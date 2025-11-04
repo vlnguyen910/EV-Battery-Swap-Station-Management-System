@@ -3,37 +3,32 @@ import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom';
+
+// Core contexts
 import { AuthProvider } from './contexts/AuthContext.jsx';
-import { StationProvider } from './contexts/StationContext.jsx';
-import { BatteryProvider } from './contexts/BatteryContext.jsx';
-import { ReservationProvider } from './contexts/ReservationContext.jsx';
-import { SubscriptionProvider } from './contexts/SubscriptionContext.jsx';
-import { PackageProvider } from './contexts/PackageContext.jsx';
+
+// Combined contexts (reduces nesting from 8 to 5)
+import { InventoryProvider } from './contexts/InventoryContext.jsx';  // Station + Battery
+import { ServiceProvider } from './contexts/ServiceContext.jsx';      // Package + Subscription
+import { BookingProvider } from './contexts/BookingContext.jsx';      // Reservation + SwapRequest
+
+// Standalone contexts
 import { SwapProvider } from './contexts/SwapContext.jsx';
-import { SwapRequestProvider } from './contexts/SwapRequestContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-
       <AuthProvider>
-        <StationProvider>
-          <BatteryProvider>
-            <PackageProvider>
-              <SubscriptionProvider>
-                <ReservationProvider>
-                  <SwapProvider>
-                    <SwapRequestProvider>
-                      <App />
-                    </SwapRequestProvider>
-                  </SwapProvider>
-                </ReservationProvider>
-              </SubscriptionProvider>
-            </PackageProvider>
-          </BatteryProvider>
-        </StationProvider>
+        <InventoryProvider>
+          <ServiceProvider>
+            <BookingProvider>
+              <SwapProvider>
+                <App />
+              </SwapProvider>
+            </BookingProvider>
+          </ServiceProvider>
+        </InventoryProvider>
       </AuthProvider>
-
     </BrowserRouter>
   </StrictMode>,
 )
