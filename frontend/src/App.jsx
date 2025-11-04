@@ -71,7 +71,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
           <Route path="payment/success" element={<Payment />} />
-          <Route path="payment/failure" element={<Payment />} />
+          <Route path="payment/failed" element={<Payment />} />
           <Route path="payment/error" element={<Payment />} />
         </Route>
       </Routes>

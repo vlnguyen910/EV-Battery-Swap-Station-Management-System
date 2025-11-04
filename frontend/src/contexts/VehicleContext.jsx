@@ -19,8 +19,11 @@ export const VehicleProvider = ({ children }) => {
     const [error, setError] = useState(null);
 
     //function to fetch all vehicles (for current user)
-    const fetchAllVehicles = async () => {
-        if (!user?.user_id) {
+    const fetchAllVehicles = async (userId = null) => {
+        // Use parameter if provided, otherwise fall back to context user
+        const targetUserId = userId || user?.user_id;
+        
+        if (!targetUserId) {
             console.warn('No user logged in, skipping vehicle fetch');
             setVehicles([]);
             return;
@@ -29,7 +32,7 @@ export const VehicleProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await getVehicleByUserIdService(user.user_id);
+            const response = await getVehicleByUserIdService(targetUserId);
             // Handle different response structures
             const vehiclesData = response?.data || response || [];
             setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
