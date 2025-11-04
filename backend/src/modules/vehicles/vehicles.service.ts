@@ -16,19 +16,11 @@ export class VehiclesService {
 
   async create(createVehicleDto: CreateVehicleDto) {
     try {
-      return await this.databaseService.vehicle.create({
+      const vehicle = await this.databaseService.vehicle.create({
         data: createVehicleDto,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              username: true,
-              email: true,
-              role: true,
-            },
-          },
-        },
       });
+
+      return vehicle;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('VIN already exists');
