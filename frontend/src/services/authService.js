@@ -94,6 +94,20 @@ const updateProfile = async (profileData) => {
   }
 };
 
+//get current user profile
+const getProfile = async (userId) => {
+  try {
+    const response = await api.get(API_ENDPOINTS.USER.GET_USER(userId));
+    return response.data;
+  } catch (error) {
+    console.error("Get profile error:", error);
+    if (error.response) console.log(error.response.data, error.response.status);
+    else if (error.request) console.log(error.request);
+    else console.log(error.message);
+    throw error;
+  }
+};
+
 //Get all users
 const getAllUsers = async () => {
   try {
@@ -120,12 +134,10 @@ const deleteUser = async (userId) => {
 
 const verifyEmail = async (token) => {
   try {
-    const response = await api.get(
-      `${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`
-    );
+    const response = await api.get(`${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`);
     return response.data;
   } catch (error) {
-    console.error("Error verifying email:", error);
+    console.error('Error verifying email:', error);
     throw error;
   }
 };
@@ -133,13 +145,10 @@ const verifyEmail = async (token) => {
 //Change password function
 const changePassword = async (passwordData) => {
   try {
-    const response = await api.post(
-      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
-      passwordData
-    );
+    const response = await api.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData);
     return response.data;
   } catch (error) {
-    console.error("Error changing password:", error);
+    console.error('Error changing password:', error);
     throw error;
   }
 };
@@ -176,6 +185,7 @@ export const authService = {
   handleGoogleCallback,
   logout,
   register,
+  getProfile,
   getAllUsers,
   updateProfile,
   deleteUser,
