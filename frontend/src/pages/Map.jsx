@@ -3,13 +3,16 @@ import 'trackasia-gl/dist/trackasia-gl.css';
 import MapSearchBar from '../components/map/MapSearchBar';
 import MapContainer from '../components/map/MapContainer';
 import StationsList from '../components/map/StationsList';
-import { useStation } from '../hooks/useContext';
+import { useStation, useBattery, useVehicle } from '../hooks/useContext';
 
 // Take real station data from StationContext
 
 export default function MapPage() {
   const { stations } = useStation();
+  const { batteries } = useBattery();
+  const { vehicles } = useVehicle();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [filteredStations, setFilteredStations] = useState(stations);
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -48,12 +51,46 @@ export default function MapPage() {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    const base = computeWithDistance(stations || [], userLocation);
+    applyFilters(query, selectedVehicleId);
+  };
+
+  const handleVehicleFilter = (vehicleId) => {
+    setSelectedVehicleId(vehicleId);
+    applyFilters(searchQuery, vehicleId);
+  };
+
+  const applyFilters = (query, vehicleId) => {
+    let base = computeWithDistance(stations || [], userLocation);
+    
+    // Filter by search query
     const q = (query || '').toLowerCase();
-    const filtered = base.filter((station) =>
-      station.name?.toLowerCase().includes(q) || station.address?.toLowerCase().includes(q)
-    );
-    setFilteredStations(filtered);
+    if (q) {
+      base = base.filter((station) =>
+        station.name?.toLowerCase().includes(q) || station.address?.toLowerCase().includes(q)
+      );
+    }
+
+    // Filter by vehicle's battery model
+    if (vehicleId && vehicleId !== 'all') {
+      const selectedVehicle = vehicles?.find(v => String(v.vehicle_id) === String(vehicleId));
+      if (selectedVehicle?.battery_model) {
+        const vehicleBatteryModel = selectedVehicle.battery_model;
+        
+        // Filter stations that have batteries matching the vehicle's battery model
+        base = base.filter((station) => {
+          const stationBatteries = batteries?.filter(b => 
+            b.station_id === station.station_id && 
+            (b.status === 'full' || b.status === 'charging')
+          ) || [];
+          
+          return stationBatteries.some(battery => 
+            battery.model?.toLowerCase() === vehicleBatteryModel?.toLowerCase()
+          );
+        });
+      }
+    }
+
+    setFilteredStations(base);
   };
 
   const handleStationClick = (station) => {
@@ -73,18 +110,8 @@ export default function MapPage() {
 
   // Keep filteredStations in sync when stations change (async fetch)
   useEffect(() => {
-    const base = computeWithDistance(stations || [], userLocation);
-    if (!searchQuery) {
-      setFilteredStations(base);
-    } else {
-      const q = searchQuery.toLowerCase();
-      setFilteredStations(
-        base.filter((station) =>
-          station.name?.toLowerCase().includes(q) || station.address?.toLowerCase().includes(q)
-        )
-      );
-    }
-  }, [stations, userLocation, searchQuery]);
+    applyFilters(searchQuery, selectedVehicleId);
+  }, [stations, batteries, userLocation, searchQuery, selectedVehicleId]);
 
   // Locate user using browser geolocation
   const locateUser = () => {
@@ -113,6 +140,9 @@ export default function MapPage() {
       <MapSearchBar
         searchQuery={searchQuery}
         onSearch={handleSearch}
+        vehicles={vehicles}
+        selectedVehicleId={selectedVehicleId}
+        onVehicleFilterChange={handleVehicleFilter}
       />
 
       {/* Main content area with Map and Stations side by side */}
@@ -120,7 +150,7 @@ export default function MapPage() {
         {/* Left side - Map */}
         <div className="flex-1 h-full">
           <MapContainer
-            stations={stations}
+            stations={filteredStations}
             onMapReady={handleMapReady}
             userLocation={userLocation}
             onLocate={locateUser}

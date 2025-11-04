@@ -13,6 +13,7 @@ import { ServiceProvider } from './contexts/ServiceContext.jsx';      // Package
 import { BookingProvider } from './contexts/BookingContext.jsx';      // Reservation + SwapRequest
 
 // Standalone contexts
+import { VehicleProvider } from './contexts/VehicleContext.jsx';
 import { SwapProvider } from './contexts/SwapContext.jsx';
 
 createRoot(document.getElementById('root')).render(
@@ -22,9 +23,11 @@ createRoot(document.getElementById('root')).render(
         <InventoryProvider>
           <ServiceProvider>
             <BookingProvider>
-              <SwapProvider>
-                <App />
-              </SwapProvider>
+              <VehicleProvider>
+                <SwapProvider>
+                  <App />
+                </SwapProvider>
+              </VehicleProvider>
             </BookingProvider>
           </ServiceProvider>
         </InventoryProvider>

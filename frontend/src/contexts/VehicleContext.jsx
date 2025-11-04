@@ -1,29 +1,41 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 //import service tùy theo dịch vụ
 import { vehicleService } from "../services/vehicleService";
-import { useNavigate } from "react-router-dom";
+import { AuthContext } from "./AuthContext";
 
 const { getAllVehicles: getAllVehiclesService,
     getVehicleById: getVehicleByIdService,
-    getVehicleByVin: getVehicleByVinService
+    getVehicleByVin: getVehicleByVinService,
+    getVehicleByUserId: getVehicleByUserIdService
 } = vehicleService;
 
 export const VehicleContext = createContext();
 
 export const VehicleProvider = ({ children }) => {
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    //function to fetch all vehicles
+    //function to fetch all vehicles (for current user)
     const fetchAllVehicles = async () => {
+        if (!user?.user_id) {
+            console.warn('No user logged in, skipping vehicle fetch');
+            setVehicles([]);
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
-            const response = await getAllVehiclesService();
-            setVehicles(response.data);
+            const response = await getVehicleByUserIdService(user.user_id);
+            // Handle different response structures
+            const vehiclesData = response?.data || response || [];
+            setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
         } catch (err) {
             setError(err.message);
+            setVehicles([]);
         } finally {
             setLoading(false);
         }
@@ -45,10 +57,14 @@ export const VehicleProvider = ({ children }) => {
         }
     };
 
-    // Fetch all vehicles on mount
+    // Fetch user's vehicles when user changes
     useEffect(() => {
-        fetchAllVehicles();
-    }, []);
+        if (user?.user_id) {
+            fetchAllVehicles();
+        } else {
+            setVehicles([]);
+        }
+    }, [user?.user_id]);
 
     return (
         <VehicleContext.Provider value={{ vehicles, loading, error, fetchAllVehicles, fetchVehicleByVin }}>
