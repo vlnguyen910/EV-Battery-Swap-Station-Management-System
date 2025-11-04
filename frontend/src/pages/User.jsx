@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
-import { useStation, useAuth, useSubscription } from '../hooks/useContext';
+import { useStation, useSubscription } from '../hooks/useContext';
 import { vehicleService } from '../services/vehicleService';
 import DashboardHeader from '../components/user/DashboardHeader';
 import VehicleStatusCard from '../components/user/VehicleStatusCard';
@@ -13,8 +13,9 @@ import SwapSuccessDialog from '../components/dashboard/SwapSuccessDialog';
 
 export default function User() {
   const navigate = useNavigate();
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext();
   const { stations } = useStation();
-  const { user } = useAuth();
   const { activeSubscription, getActiveSubscription } = useSubscription();
   const [vehicleData, setVehicleData] = useState([]);
   const [showSwapSuccess, setShowSwapSuccess] = useState(false);

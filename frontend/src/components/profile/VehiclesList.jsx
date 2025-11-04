@@ -28,7 +28,7 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
 
       {showSuggestion && (
         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded text-sm">
-          Vehicle added. Bạn có thể <a className="text-blue-600 underline" href="/plans">đăng ký gói thuê pin</a> cho xe này sau.
+          Vehicle added. Bạn có thể <a className="text-blue-600 underline" href="/driver/plans">đăng ký gói thuê pin</a> cho xe này sau.
         </div>
       )}
 

@@ -171,6 +171,12 @@ export default function BookingContainer() {
       return;
     }
 
+    // Check if user has selected a vehicle
+    if (!selectedVehicleId) {
+      alert('Please select a vehicle first');
+      return;
+    }
+
     // Check if user has active subscription (for selected vehicle)
     if (!subscriptionToUse) {
       alert('You need an active subscription for the selected vehicle to book a battery swap. Please subscribe to a plan first.');
@@ -185,19 +191,20 @@ export default function BookingContainer() {
       return;
     }
 
-    // Backend DTO only requires: user_id, station_id, scheduled_time
+    // Backend DTO requires: user_id, vehicle_id, station_id, scheduled_time
     try {
       // Schedule time must be in the future - add 5 minutes from now
       const scheduledTime = new Date();
       scheduledTime.setMinutes(scheduledTime.getMinutes() + 5);
 
-      // Do NOT send vehicle_id in payload — backend will use server-side active vehicle
       const payload = {
         user_id: user?.id ?? user?.user_id,
+        vehicle_id: selectedVehicleId,
         station_id,
         scheduled_time: scheduledTime.toISOString(),
       };
 
+      console.log('Creating reservation with payload:', payload);
       const created = await createReservation(payload);
       console.log('Reservation created successfully:', created);
       console.log('Reservation status should be: scheduled');

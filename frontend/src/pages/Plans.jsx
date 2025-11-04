@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
@@ -8,6 +9,9 @@ import SubscribeModal from '../components/plans/SubscribeModal'
 import { paymentService } from '../services/paymentService'
 
 export default function Plans() {
+  // Get user from parent (Driver.jsx) via Outlet context
+  const { user } = useOutletContext()
+
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
   const [activeSubscriptions, setActiveSubscriptions] = useState([])
@@ -21,19 +25,6 @@ export default function Plans() {
     if (!amount || isNaN(amount)) return amount
     return Number(amount).toLocaleString('en-US')
   }
-
-  // Get user from localStorage
-  const getUser = () => {
-    try {
-      const userData = localStorage.getItem('user')
-      return userData ? JSON.parse(userData) : null
-    } catch (err) {
-      console.error('Error parsing user data:', err)
-      return null
-    }
-  }
-
-  const user = getUser()
 
   // Transform package data from backend to UI format
   const transformPackageToUI = (pkg) => ({
@@ -150,16 +141,6 @@ export default function Plans() {
     fetchAllData()
   }, [user?.user_id])
 
-  // Handle subscribe action: open modal to start payment flow instead of creating subscription directly
-  const handleSubscribe = (plan) => {
-    if (!user?.user_id) {
-      alert('Please login to subscribe to a plan')
-      return
-    }
-
-    // Open subscribe modal which will handle payment and backend subscription creation after success
-    openSubscribeModal(plan)
-  }
 
   // Open subscribe modal (choose vehicle, confirm payment)
   const [modalOpen, setModalOpen] = useState(false)
