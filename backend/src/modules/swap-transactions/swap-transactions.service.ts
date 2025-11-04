@@ -114,6 +114,59 @@ export class SwapTransactionsService {
     });
   }
 
+  async findByStation(station_id: number) {
+    return await this.databaseService.swapTransaction.findMany({
+      where: { station_id },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            email: true,
+            username: true,
+            phone: true
+          }
+        },
+        vehicle: {
+          select: {
+            vehicle_id: true,
+            vin: true,
+            battery_model: true,
+            battery_type: true,
+            status: true
+          }
+        },
+        station: {
+          select: {
+            station_id: true,
+            name: true,
+            address: true,
+            latitude: true,
+            longitude: true
+          }
+        },
+        battery_taken: {
+          select: {
+            battery_id: true,
+            current_charge: true,
+            status: true,
+            model: true,
+            type: true
+          }
+        },
+        battery_returned: {
+          select: {
+            battery_id: true,
+            current_charge: true,
+            status: true,
+            model: true,
+            type: true
+          }
+        }
+      },
+      orderBy: { createAt: 'desc' }
+    });
+  }
+
   findOne(id: number) {
     return this.databaseService.swapTransaction.findUnique({
       where: { transaction_id: id },

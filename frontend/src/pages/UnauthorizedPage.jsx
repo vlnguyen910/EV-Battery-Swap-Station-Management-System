@@ -57,7 +57,7 @@ export default function UnauthorizedPage() {
                             fontWeight: '500'
                         }}
                     >
-                        🏠 Go Home
+                        Go Home
                     </button>
 
                     <button
@@ -73,7 +73,7 @@ export default function UnauthorizedPage() {
                             fontWeight: '500'
                         }}
                     >
-                        🔐 Login
+                        Login
                     </button>
                 </div>
             </div>

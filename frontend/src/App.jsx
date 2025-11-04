@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import GuestPage from './pages/GuestPage'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import GoogleCallback from './components/auth/GoogleCallback'
 import AdminPage from './pages/AdminPage'
 import StaffPage from './pages/StaffPage'
 import NotFound from './pages/NotFound'
@@ -19,6 +20,9 @@ import User from './pages/User'
 import StaffSwapRequests from './components/swap/StaffSwapRequests'
 import ManualSwapTransaction from './components/swap/ManualSwapTransaction'
 import Payment from './pages/Payment'
+import VerifyEmail from './pages/VerifyEmail'
+import ResetPassword from './pages/ResetPassword'
+import ForgetPassword from './pages/ForgetPassword'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -31,6 +35,14 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/auth/callback" element={<GoogleCallback />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/auth/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
 
         <Route path="/admin" element={<AdminPage />} />
 

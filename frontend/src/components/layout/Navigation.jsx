@@ -76,7 +76,7 @@ export default function Navigation({ type = "main" }) {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            <Link 
+            <Link
               to="/login"
               className="bg-white text-blue-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors"
             >
@@ -110,14 +110,6 @@ export default function Navigation({ type = "main" }) {
             >
               <i className="ri-layout-grid-line mr-2 text-blue-500"></i>
               Overview
-            </Link>
-
-            <Link
-              to="/staff/inspection"
-              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
-            >
-              <i className="ri-search-line mr-2 text-blue-500"></i>
-              Battery Inspection
             </Link>
 
             <Link

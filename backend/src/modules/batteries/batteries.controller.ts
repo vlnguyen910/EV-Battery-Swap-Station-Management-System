@@ -25,6 +25,10 @@ export class BatteriesController {
     return this.batteriesService.findBestBatteryForVehicle(input.vehicle_id, input.station_id);
   }
 
+  @Get('station/:station_id')
+  findByStation(@Param('station_id') station_id: string) {
+    return this.batteriesService.findAllByStationId(+station_id);
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

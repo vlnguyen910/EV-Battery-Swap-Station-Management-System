@@ -3,7 +3,7 @@ import { Eye, Calendar, CreditCard, Car, MapPin, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import SubscriptionDetailModal from './SubscriptionDetailModal';
 
-export default function SubscribedList({ subscriptions }) {
+export default function SubscribedList({ subscriptions, onRefresh }) {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -15,6 +15,13 @@ export default function SubscribedList({ subscriptions }) {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedSubscription(null);
+  };
+
+  const handleSubscriptionCancelled = () => {
+    // Refresh subscription list after cancellation
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   // Calculate days remaining
@@ -49,8 +56,8 @@ export default function SubscribedList({ subscriptions }) {
         text: 'text-red-800 dark:text-red-300',
       },
       cancelled: {
-        bg: 'bg-gray-100 dark:bg-gray-900',
-        text: 'text-gray-800 dark:text-gray-300',
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-800 dark:text-red-300',
       }
     };
 
@@ -220,6 +227,7 @@ export default function SubscribedList({ subscriptions }) {
         subscription={selectedSubscription}
         open={isModalOpen}
         onClose={handleCloseModal}
+        onSubscriptionCancelled={handleSubscriptionCancelled}
       />
     </>
   )

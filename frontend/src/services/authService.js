@@ -10,10 +10,25 @@ const login = async (credentials) => {
 };
 
 // Login with Google function
-const loginWithGoogle = async (tokenId) => {
-  // Let callers handle errors (they can format and display messages as needed).
-  const response = await api.post(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, { tokenId });
-  return response.data;
+const redirectToGoogleLogin = () => {
+  // Construct full backend URL for Google OAuth
+  const backendUrl =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+  const googleAuthUrl = `${backendUrl}${API_ENDPOINTS.AUTH.GOOGLE_LOGIN}`;
+
+  console.log("Redirecting to Google OAuth:", googleAuthUrl);
+  window.location.href = googleAuthUrl;
+};
+
+// Function to handle Google login callback
+const handleGoogleCallback = async () => {
+  try {
+    const response = await api.get(API_ENDPOINTS.AUTH.GOOGLE_CALLBACK);
+    return response.data;
+  } catch (error) {
+    console.error("Login with Google error:", error);
+    throw error;
+  }
 };
 
 //Logout function
@@ -79,20 +94,6 @@ const updateProfile = async (profileData) => {
   }
 };
 
-//get current user profile
-const getProfile = async (userId) => {
-  try {
-    const response = await api.get(API_ENDPOINTS.USER.GET_USER(userId));
-    return response.data;
-  } catch (error) {
-    console.error("Get profile error:", error);
-    if (error.response) console.log(error.response.data, error.response.status);
-    else if (error.request) console.log(error.request);
-    else console.log(error.message);
-    throw error;
-  }
-};
-
 //Get all users
 const getAllUsers = async () => {
   try {
@@ -117,15 +118,70 @@ const deleteUser = async (userId) => {
   }
 };
 
+const verifyEmail = async (token) => {
+  try {
+    const response = await api.get(
+      `${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    throw error;
+  }
+};
+
+//Change password function
+const changePassword = async (passwordData) => {
+  try {
+    const response = await api.post(
+      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+      passwordData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error changing password:", error);
+    throw error;
+  }
+};
+
+// Forget password function - request password reset email
+const forgetPassword = async (email) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.AUTH.FORGET_PASSWORD, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting password reset:', error);
+    throw error;
+  }
+};
+
+// Reset password function - set new password with token
+const resetPassword = async ({ token, new_password }) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { 
+      token, 
+      new_password 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error;
+  }
+};
+
 // Legacy authService object for backward compatibility
 export const authService = {
   login,
-  loginWithGoogle,
+  redirectToGoogleLogin,
+  handleGoogleCallback,
   logout,
   register,
-  getProfile,
   getAllUsers,
   updateProfile,
   deleteUser,
   createStaffAccount,
+  verifyEmail,
+  changePassword,
+  forgetPassword,
+  resetPassword,
 };

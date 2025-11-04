@@ -1,15 +1,16 @@
 // Auth context - Simplified
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { authService } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { redirect, useNavigate } from "react-router-dom";
 
 const {
     login: loginService,
+    redirectToGoogleLogin: redirectToGoogleLoginService,
+    handleGoogleCallback: handleGoogleCallbackService,
     logout: logoutService,
     register: registerService,
     createStaffAccount: createStaffAccountService,
-    getAllUsers: getAllUsersService,
-    getProfile: getProfileService
+    getAllUsers: getAllUsersService
 } = authService;
 
 export const AuthContext = createContext();
@@ -41,23 +42,23 @@ export const AuthProvider = ({ children }) => {
             const message = error.response.data?.message;
 
             if (status === 401 || status === 400) {
-                return "Tên đăng nhập hoặc mật khẩu không hợp lệ";
+                return "Email or username or password is invalid";
             }
             if (status === 409) {
-                return "Email hoặc số điện thoại đã được sử dụng";
+                return "Email or phone number has been used";
             }
             if (status === 403) {
-                return "Bạn không có quyền thực hiện thao tác này";
+                return "You do not have permission to perform this action";
             }
 
-            return message || "Đã xảy ra lỗi. Vui lòng thử lại";
+            return message || "An error occurred. Please try again";
         }
 
         if (error.request) {
-            return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng";
+            return "Unable to connect to the server. Please check your network connection";
         }
 
-        return error.message || "Đã xảy ra lỗi không xác định";
+        return error.message || "An unknown error occurred";
     };
 
     // Function to handle login
@@ -66,38 +67,17 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
+            // Take from response.user
             const response = await loginService(credentials);
             console.log('Login response:', response);
 
-            const tokenPayload = JSON.parse(atob(response.accessToken.split('.')[1]));
-            console.log('Decoded token payload:', tokenPayload);
+            const userData = response.user;
+
+            setUser(userData);
+            setToken(response.accessToken);
 
             localStorage.setItem("token", response.accessToken);
             localStorage.setItem("refreshToken", response.refreshToken);
-            setToken(response.accessToken);
-
-            const userData = {
-                id: tokenPayload.sub,
-                name: tokenPayload.username,
-                email: tokenPayload.email,
-                phone: tokenPayload.phone,
-                role: tokenPayload.role,
-                station_id: tokenPayload.station_id || tokenPayload.stationId || null
-            };
-
-            // Fetch station_id if not in token
-            if (!userData.station_id && userData.id) {
-                try {
-                    const profileResponse = await getProfileService(userData.id);
-                    if (profileResponse?.station_id) {
-                        userData.station_id = profileResponse.station_id;
-                    }
-                } catch (profileError) {
-                    console.error('Failed to fetch profile for station_id:', profileError);
-                }
-            }
-
-            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
             // Dispatch custom event to notify other contexts that login succeeded
@@ -119,6 +99,33 @@ export const AuthProvider = ({ children }) => {
             setError(errorMessage);
             // Return null to indicate login failure. Callers should check the return value.
             return null;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to handle Google login
+    const redirectToGoogleLogin = async () => {
+        try {
+            await redirectToGoogleLoginService();
+        } catch (error) {
+            setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
+            console.error("Login with Google error:", error);
+        }
+    }
+
+    // Function to handle Google login callback
+    const handleGoogleCallback = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await handleGoogleCallbackService();
+            console.log('Google callback response:', response);
+            // Handle successful login here
+        } catch (error) {
+            setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
+            console.error("Login with Google error:", error);
         } finally {
             setLoading(false);
         }
@@ -186,23 +193,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Function to get user profile
-    const getProfile = async (userId) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await getProfileService(userId);
-            return response;
-        } catch (err) {
-            const errorMessage = formatErrorMessage(err);
-            setError(errorMessage);
-            throw new Error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Function to create staff account
     const createStaffAccount = async (staffInfo) => {
         setLoading(true);
@@ -258,12 +248,15 @@ export const AuthProvider = ({ children }) => {
                 error,
                 isAuthenticated,
                 login,
+                redirectToGoogleLogin,
+                handleGoogleCallback,
                 logout,
                 register,
                 createStaffAccount,
                 getAllUsers,
-                getProfile,
-                clearError
+                clearError,
+                setUser,
+                setToken
             }}
         >
             {children}

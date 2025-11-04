@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
+import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
 import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
 import SubscribeModal from '../components/plans/SubscribeModal'
@@ -9,9 +10,17 @@ import { paymentService } from '../services/paymentService'
 export default function Plans() {
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
+  const [activeSubscriptions, setActiveSubscriptions] = useState([])
+  const [cancelledSubscriptions, setCancelledSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState(null)
+
+  // Format number with commas (e.g., 300000 -> 300,000)
+  const formatCurrency = (amount) => {
+    if (!amount || isNaN(amount)) return amount
+    return Number(amount).toLocaleString('en-US')
+  }
 
   // Get user from localStorage
   const getUser = () => {
@@ -31,15 +40,15 @@ export default function Plans() {
     id: String(pkg.package_id),
     name: pkg.name,
     description: pkg.description,
-    price: pkg.base_price && pkg.base_price > 0 ? `${pkg.base_price} vnd` : 'Contact sales',
+    price: pkg.base_price && pkg.base_price > 0 ? `${formatCurrency(pkg.base_price)} VND` : 'Contact sales',
     period: pkg.duration_days && pkg.duration_days > 0
       ? pkg.duration_days === 30
         ? 'per month'
         : `per ${pkg.duration_days} days`
       : 'per swap',
     features: [
-      pkg.base_distance && pkg.base_distance > 0 ? `${pkg.base_distance} km included` : 'Flexible swaps',
-      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${pkg.phi_phat}` : 'No extra fee',
+      pkg.base_distance && pkg.base_distance > 0 ? `${formatCurrency(pkg.base_distance)} km included` : 'Flexible swaps',
+      pkg.phi_phat && pkg.phi_phat > 0 ? `Extra fee: ${formatCurrency(pkg.phi_phat)} VNĐ` : 'No extra fee',
       'Access to all stations',
       '24/7 customer support'
     ],
@@ -75,7 +84,7 @@ export default function Plans() {
   const fetchUserSubscriptions = async () => {
     if (!user?.id) {
       console.warn('No user ID found')
-      return
+      return []
     }
 
     try {
@@ -85,16 +94,6 @@ export default function Plans() {
       return Array.isArray(subscriptionsData) ? subscriptionsData : []
     } catch (err) {
       console.error('Error fetching subscriptions:', err)
-      // If API fails, fallback to localStorage for now
-      const savedSubscriptions = localStorage.getItem('subscriptions')
-      if (savedSubscriptions) {
-        try {
-          return JSON.parse(savedSubscriptions)
-        } catch (parseErr) {
-          console.error('Error parsing local subscriptions:', parseErr)
-          return []
-        }
-      }
       return []
     }
   }
@@ -128,26 +127,27 @@ export default function Plans() {
         }
       })
 
+      // Separate active and cancelled subscriptions
+      const active = enrichedSubs.filter(sub => 
+        sub.status !== 'cancelled' && 
+        sub.status !== 'CANCELLED' && 
+        sub.status !== 'canceled'
+      )
+      const cancelled = enrichedSubs.filter(sub => 
+        sub.status === 'cancelled' || 
+        sub.status === 'CANCELLED' || 
+        sub.status === 'canceled'
+      )
+
       setSubscriptions(enrichedSubs)
+      setActiveSubscriptions(active)
+      setCancelledSubscriptions(cancelled)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
-
-  // Load subscriptions from localStorage (temporary until backend is ready)
-  useEffect(() => {
-    const savedSubscriptions = localStorage.getItem('subscriptions')
-    if (savedSubscriptions) {
-      try {
-        setSubscriptions(JSON.parse(savedSubscriptions))
-      } catch (err) {
-        console.error('Error parsing subscriptions:', err)
-        setSubscriptions([])
-      }
-    }
-  }, [])
 
   // Fetch packages on component mount
   useEffect(() => {
@@ -206,9 +206,9 @@ export default function Plans() {
     }
   }
 
-  // Check if user is already subscribed to a package
+  // Check if user is already subscribed to a package (excluding cancelled subscriptions)
   const isUserSubscribed = (packageId) => {
-    return subscriptions.some(sub => 
+    return activeSubscriptions.some(sub => 
       String(sub.package_id) === String(packageId)
     )
   }
@@ -271,7 +271,7 @@ export default function Plans() {
         <section className="mb-8">
           <PlansList
             plans={packages}
-            subscriptions={subscriptions}
+            subscriptions={activeSubscriptions}
             onSubscribe={openSubscribeModal}
             loading={subscribing}
             isUserSubscribed={isUserSubscribed}
@@ -286,14 +286,21 @@ export default function Plans() {
           user={user}
           onPay={handlePay}
           paying={paying}
+          subscriptions={activeSubscriptions}
         />
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Your Subscriptions</h2>
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Active Subscriptions</h2>
           <SubscribedList 
-            subscriptions={subscriptions}
-            onRefresh={fetchUserSubscriptions}
+            subscriptions={activeSubscriptions}
+            onRefresh={fetchAllData}
           />
+        </section>
+
+        {/* Cancelled Subscriptions Dropdown */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Cancelled Subscriptions</h2>
+          <CancelledSubscriptions subscriptions={cancelledSubscriptions} />
         </section>
       </div>
     </div>

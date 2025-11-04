@@ -5,7 +5,7 @@ import { API_ENDPOINTS } from "../constants";
 const getReservationsByStationId = async (stationId) => {
   try {
     const response = await api.get(
-      API_ENDPOINTS.RESERVATION.GET_RESERVATION_BY_STATION_ID(stationId)
+      API_ENDPOINTS.RESERVATION.GET_BY_STATION(stationId)
     );
     return response.data;
   } catch (error) {
@@ -51,8 +51,13 @@ const updateReservationStatus = async (reservationId, userId, status) => {
     );
     return response.data;
   } catch (error) {
-    const msg = error?.response?.data?.message || error?.message || 'Unknown error';
-    console.error("Error updating reservation status:", msg, error?.response?.data || '');
+    const msg =
+      error?.response?.data?.message || error?.message || "Unknown error";
+    console.error(
+      "Error updating reservation status:",
+      msg,
+      error?.response?.data || ""
+    );
     throw error;
   }
 };
@@ -61,7 +66,7 @@ const updateReservationStatus = async (reservationId, userId, status) => {
 const getReservationsByUserId = async (userId, options = {}) => {
   try {
     const { signal } = options;
-    const response = await api.get(`/reservations/user/${userId}`,{ signal });
+    const response = await api.get(`/reservations/user/${userId}`, { signal });
     return response.data;
   } catch (error) {
     console.error("Error fetching user reservations:", error);
