@@ -21,7 +21,7 @@ export default function MapSearchBar({ searchQuery, onSearch, vehicles, selected
         </div>
 
         {/* Vehicle Filter Dropdown */}
-        <div className="relative">
+        {/* <div className="relative">
           <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
           <select
             value={selectedVehicleId || 'all'}
@@ -40,7 +40,7 @@ export default function MapSearchBar({ searchQuery, onSearch, vehicles, selected
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
     </div>
