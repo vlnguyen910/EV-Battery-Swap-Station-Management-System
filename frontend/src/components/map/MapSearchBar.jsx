@@ -1,21 +1,46 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
 
-export default function MapSearchBar({ searchQuery, onSearch }) {
+export default function MapSearchBar({ searchQuery, onSearch, vehicles, selectedVehicleId, onVehicleFilterChange }) {
   return (
     <div className="bg-white-800">
     <div className="bg-blue-800 px-4 py-3 rounded-lg shadow-md">
-      <div className="flex items-center relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-        <input 
-          type="text"
-          placeholder="Search stations..."
-          value={searchQuery}
-          onChange={(e) => onSearch(e.target.value)}
-          className="w-full pl-9 pr-16 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-900 placeholder-gray-500 text-sm"
-        />
+      <div className="flex items-center gap-3">
+        {/* Search Input */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text"
+            placeholder="Search stations..."
+            value={searchQuery}
+            onChange={(e) => onSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-900 placeholder-gray-500 text-sm"
+          />
+        </div>
+
+        {/* Vehicle Filter Dropdown */}
+        <div className="relative">
+          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+          <select
+            value={selectedVehicleId || 'all'}
+            onChange={(e) => onVehicleFilterChange(e.target.value)}
+            className="pl-9 pr-8 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-900 text-sm appearance-none cursor-pointer min-w-[200px]"
+          >
+            <option value="all">All Stations</option>
+            {vehicles && vehicles.length > 0 && vehicles.map((vehicle) => (
+              <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
+                {vehicle.brand} {vehicle.model} ({vehicle.vin})
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
     </div>
