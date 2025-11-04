@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { hashPassword, isMatchPassword } from 'src/shared/utils/hash-password.util';
+import { hashPassword, isMatchPassword } from 'src/common/utils/hash-password.util';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -252,7 +252,7 @@ export class AuthService {
             // Generate reset token
             const resetToken = crypto.randomBytes(32).toString('hex');
             const resetTokenExpires = new Date();
-            const expireMinutes = this.configService.get<number>('FOGET_PASSWORD_TOKEN_EXPIRATION_MINUTES') || 15;
+            const expireMinutes = this.configService.get<number>('FORGET_PASSWORD_TOKEN_EXPIRATION_MINUTES') || 15;
             resetTokenExpires.setHours(resetTokenExpires.getMinutes() + expireMinutes);
 
             const updateEmailToken = {

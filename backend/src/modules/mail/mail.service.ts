@@ -42,7 +42,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    const frontend_url = `${this.configService.get('FRONENT_RESET_PASSWORD_URL')}?token=${token}`;
+    const frontend_url = `${this.configService.get('FRONTEND_URL')}?token=${token}`;
 
     await this.transporter.sendMail({
       from: `"No Reply" <${this.configService.get('MAIL_FROM')}>`,
@@ -57,7 +57,7 @@ export class MailService {
           </a>
           <p>Or copy and paste this link into your browser:</p>
           <p>${frontend_url}</p>
-          <p>This link will expire in ${this.configService.get('FOGET_PASSWORD_TOKEN_EXPIRATION_MINUTES')} minutes.</p>
+          <p>This link will expire in ${this.configService.get('FORGET_PASSWORD_TOKEN_EXPIRATION_MINUTES')} minutes.</p>
           <p>If you didn't request a password reset, please ignore this email.</p>
         </div>
       `,

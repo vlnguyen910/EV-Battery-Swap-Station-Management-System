@@ -1,14 +1,14 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
   ParseIntPipe,
-  ParseFloatPipe, 
+  ParseFloatPipe,
   UseGuards
 } from '@nestjs/common';
 import { BatteryServicePackagesService } from './battery-service-packages.service';
@@ -17,12 +17,12 @@ import { UpdateBatteryServicePackageDto } from './dto/update-battery-service-pac
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums } from '.prisma/client/default.js';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('battery-service-packages')
 export class BatteryServicePackagesController {
-  constructor(private readonly batteryServicePackagesService: BatteryServicePackagesService) {}
+  constructor(private readonly batteryServicePackagesService: BatteryServicePackagesService) { }
 
   @Roles($Enums.Role.admin)
   @Post()
@@ -67,7 +67,7 @@ export class BatteryServicePackagesController {
   @Roles($Enums.Role.admin)
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: number, 
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateBatteryServicePackageDto: UpdateBatteryServicePackageDto
   ) {
     return this.batteryServicePackagesService.update(id, updateBatteryServicePackageDto);
