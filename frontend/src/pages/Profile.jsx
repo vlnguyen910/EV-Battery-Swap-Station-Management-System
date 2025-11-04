@@ -13,13 +13,13 @@ export default function Profile() {
   // Fetch enriched vehicles (with batteryLevel & soh) from service
   // Extract fetch function so child components can trigger refresh
   const fetchVehicles = async () => {
-    if (!user?.id) return;
+    if (!user?.user_id) return;
 
     try {
       const [vehicles, subscriptions] = await Promise.all([
-        vehicleService.getVehiclesByUserIdWithBattery(user.id),
+        vehicleService.getVehiclesByUserIdWithBattery(user.user_id),
         // fetch subscriptions for user once and map by vehicle_id
-        subscriptionService.getSubscriptionsByUserId(user.id).catch(() => []),
+        subscriptionService.getSubscriptionsByUserId(user.user_id).catch(() => []),
       ])
 
       const subsByVehicle = (subscriptions || []).reduce((acc, s) => {
