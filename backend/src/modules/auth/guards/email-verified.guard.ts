@@ -6,7 +6,7 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { REQUIRE_EMAIL_VERIFIED_KEY } from '../decorators/email-verified.decorator';
+import { REQUIRE_EMAIL_VERIFIED_KEY } from '../../../common/decorators/email-verified.decorator';
 import { DatabaseService } from 'src/modules/database/database.service';
 
 @Injectable()

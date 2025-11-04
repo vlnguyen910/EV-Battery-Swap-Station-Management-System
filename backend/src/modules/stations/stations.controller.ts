@@ -5,10 +5,11 @@ import { UpdateStationDto } from './dto/update-station.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums, StationStatus } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UseGuards as UserGuards } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
-import { ParseDecimalPipe } from '../../shared/pipes/parse-decimal.pipe';
+import { findAvailibaleStationsDto } from './dto/find-availiable-station.dto'
+import { ParseDecimalPipe } from 'src/common/pipes/parse-decimal.pipe';
 
 @Controller('stations')
 @UserGuards(AuthGuard, RolesGuard)
@@ -37,13 +38,13 @@ export class StationsController {
   }
 
   @Roles($Enums.Role.driver)
-  @Get('available')
+  @Post('available')
   async findAllAvailable(
-    @Query('userId', ParseIntPipe) userId: number,
-    @Query('latitude', ParseDecimalPipe) latitude: Decimal,
-    @Query('longitude', ParseDecimalPipe) longitude: Decimal
+    @Body() dto: findAvailibaleStationsDto,
+    @Query('longitude', ParseDecimalPipe) longitude: Decimal | undefined,
+    @Query('latitude', ParseDecimalPipe) latitude: Decimal | undefined
   ) {
-    return this.stationsService.findAllAvailable(userId, latitude, longitude);
+    return this.stationsService.findAllAvailable(dto, longitude, latitude);
   }
 
   @Get(':id')
