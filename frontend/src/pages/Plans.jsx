@@ -183,12 +183,9 @@ export default function Plans() {
     }
   }
 
-  // Check if user is already subscribed to a package (excluding cancelled subscriptions)
-  const isUserSubscribed = (packageId) => {
-    return activeSubscriptions.some(sub =>
-      String(sub.package_id) === String(packageId)
-    )
-  }
+  // Note: User can now subscribe to the same package multiple times
+  // as long as they use different vehicles. Validation is done in SubscribeModal
+  // by checking if the selected vehicle already has an active subscription.
 
   // Loading state
   if (loading) {
@@ -251,7 +248,6 @@ export default function Plans() {
             subscriptions={activeSubscriptions}
             onSubscribe={openSubscribeModal}
             loading={subscribing}
-            isUserSubscribed={isUserSubscribed}
           />
         </section>
 
