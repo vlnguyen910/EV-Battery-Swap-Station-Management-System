@@ -4,7 +4,7 @@ import { CreateSwapTransactionDto } from './dto/create-swap-transaction.dto';
 import { UpdateSwapTransactionDto } from './dto/update-swap-transaction.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { $Enums } from '@prisma/client';
 
 @Controller('swap-transactions')

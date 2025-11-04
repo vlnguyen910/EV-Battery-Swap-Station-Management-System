@@ -2,8 +2,8 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { normalizeEmail, normalizePhone } from 'src/shared/utils/normalization.util';
-import { hashPassword, isMatchPassword } from 'src/shared/utils/hash-password.util';
+import { normalizeEmail, normalizePhone } from 'src/common/utils/normalization.util';
+import { hashPassword, isMatchPassword } from 'src/common/utils/hash-password.util';
 import { $Enums } from '@prisma/client';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
@@ -174,7 +174,6 @@ export class UsersService {
         user_id: true,
         username: true,
         email: true,
-        status: true
       }
     });
 

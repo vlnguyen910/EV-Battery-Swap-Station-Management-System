@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsInt, IsNotEmpty } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsInt()
@@ -9,8 +9,8 @@ export class CreateSubscriptionDto {
   @IsNotEmpty()
   package_id: number;
 
+  @IsNotEmpty()
   @IsInt()
-  @IsOptional()
-  vehicle_id?: number;
+  vehicle_id: number;
 }
 

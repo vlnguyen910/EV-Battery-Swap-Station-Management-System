@@ -5,12 +5,14 @@ import { Type } from 'class-transformer';
 export class CreateReservationDto {
   @IsNotEmpty({ message: 'User ID is required' })
   @IsInt({ message: 'User ID must be an integer' })
-  @Type(() => Number)
   user_id: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  vehicle_id: number;
 
   @IsNotEmpty({ message: 'Station ID is required' })
   @IsInt({ message: 'Station ID must be an integer' })
-  @Type(() => Number)
   station_id: number;
 
   @IsNotEmpty({ message: 'Scheduled time is required' })

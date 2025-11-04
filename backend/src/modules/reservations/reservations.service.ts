@@ -26,7 +26,7 @@ export class ReservationsService {
 
 
   async create(dto: CreateReservationDto) {
-    const { user_id, station_id, scheduled_time } = dto;
+    const { user_id, vehicle_id, station_id, scheduled_time } = dto;
 
     try {
       //1. Check user có tồn tại
@@ -34,7 +34,10 @@ export class ReservationsService {
 
       await this.stationsService.findOne(station_id);
 
-      const vehicle = await this.vehicleService.findOneActiveByUserId(user_id);
+      const vehicle = await this.vehicleService.findOne(vehicle_id);
+      if (vehicle.user_id !== user_id) {
+        throw new BadRequestException('This vehicle does not belong to the user');
+      }
 
       const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle.vehicle_id);
 

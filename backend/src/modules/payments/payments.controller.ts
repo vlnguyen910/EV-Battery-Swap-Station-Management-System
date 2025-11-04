@@ -24,14 +24,14 @@ import {
 } from './dto/fee-calculation.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly feeCalculationService: FeeCalculationService,
-  ) {}
+  ) { }
 
   /**
    * ⭐ OLD ENDPOINT - Keep for backward compatibility

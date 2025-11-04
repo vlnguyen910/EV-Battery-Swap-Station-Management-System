@@ -4,7 +4,7 @@ import { CreateReservationDto } from './dto/create-reservation.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums, ReservationStatus } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('reservations')
 @UseGuards(AuthGuard, RolesGuard)

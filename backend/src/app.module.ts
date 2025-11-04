@@ -25,6 +25,7 @@ import { SystemConfigModule } from './modules/config/config.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
     DatabaseModule,
