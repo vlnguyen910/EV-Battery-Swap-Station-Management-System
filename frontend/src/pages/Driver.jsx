@@ -11,15 +11,15 @@ export default function Driver() {
   // Fetch existing reservations on mount
   useEffect(() => {
     const fetchReservations = async () => {
-      if (!user?.id) return;
+      if (!user?.user_id) return;
       try {
-        await getReservationsByUserId(user.id);
+        await getReservationsByUserId(user.user_id);
       } catch (error) {
         console.error('Failed to fetch user reservations:', error);
       }
     };
     fetchReservations();
-  }, [user?.id, getReservationsByUserId]);
+  }, [user?.user_id, getReservationsByUserId]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">

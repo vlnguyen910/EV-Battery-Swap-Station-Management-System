@@ -55,12 +55,30 @@ const getVehicleByVin = async (vin) => {
 const updateVehicle = async (vehicleId, updateData) => {
   try {
     const response = await api.patch(
-      API_ENDPOINTS.VEHICLE.UPDATE_VEHICLE(vehicleId),
+      API_ENDPOINTS.VEHICLE.ASSIGN_VEHICLE(vehicleId),
       updateData
     );
     return response.data;
   } catch (error) {
     console.error("Error updating vehicle:", error);
+    throw error;
+  }
+};
+
+// Function to assign user to vehicle (by VIN)
+const assignUserToVehicle = async (payload) => {
+  try {
+    // payload should be: { vin: string, user_id: number }
+    console.log("Assigning vehicle with payload:", payload);
+    const response = await api.patch(
+      API_ENDPOINTS.VEHICLE.ASSIGN_VEHICLE,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error assigning user to vehicle:", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
     throw error;
   }
 };
@@ -86,6 +104,7 @@ export const vehicleService = {
   getVehicleByUserId,
   updateVehicle,
   createVehicle,
+  assignUserToVehicle,
 };
 
 // parseBatteryNumber moved to ../utils/battery for reuse

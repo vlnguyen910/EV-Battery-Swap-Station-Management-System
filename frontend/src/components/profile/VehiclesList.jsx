@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Plus, Edit3, ToggleLeft, ToggleRight, Bike } from 'lucide-react';
-import AddVehicleDialog from './AddVehicleDialog'
+import AddVehicleDialog from './AssignVehicle'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog'
 import { useNavigate } from 'react-router-dom'
 
