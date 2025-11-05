@@ -1,11 +1,9 @@
 import React from 'react';
 import { Clock, Battery, Zap, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useBattery } from '../../hooks/useContext';
 
 export default function StationCard({ station, onClick }) {
   const navigate = useNavigate();
-  const { countAvailableBatteriesByStation } = useBattery();
 
   const handleBookNow = (e) => {
     e.stopPropagation();
@@ -54,7 +52,7 @@ export default function StationCard({ station, onClick }) {
               </div>
               <div className="flex items-center gap-1 text-gray-600">
                 <Battery size={16} />
-                <span>{countAvailableBatteriesByStation(station.station_id)} Slots</span>
+                <span>{station.availableBatteries ?? 0} Slots</span>
               </div>
             </div>
           </div>
@@ -74,6 +72,6 @@ export default function StationCard({ station, onClick }) {
           </div>
         </div>
       </div>
-      </>
+    </>
   );
 }

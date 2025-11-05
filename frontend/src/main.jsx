@@ -14,7 +14,6 @@ import { BookingProvider } from './contexts/BookingContext.jsx';      // Reserva
 
 // Standalone contexts
 import { VehicleProvider } from './contexts/VehicleContext.jsx';
-import { SwapProvider } from './contexts/SwapContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -24,9 +23,7 @@ createRoot(document.getElementById('root')).render(
           <ServiceProvider>
             <BookingProvider>
               <VehicleProvider>
-                <SwapProvider>
-                  <App />
-                </SwapProvider>
+                <App />
               </VehicleProvider>
             </BookingProvider>
           </ServiceProvider>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { useStation, useSwap } from '../../hooks/useContext';
+import { useStation } from '../../hooks/useContext';
+import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
 
 export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }) {
     const { stations } = useStation();
-    const { swapBatteries } = useSwap();
     const [loading, setLoading] = useState(false);
     const [vehicles, setVehicles] = useState([]);
     const [errors, setErrors] = useState([]);
@@ -153,7 +153,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
             };
 
             console.log('🚀 Auto swap payload:', payload);
-            const response = await swapBatteries(payload);
+            const response = await swappingService.swapBatteries(payload);
             console.log('✅ Auto swap success:', response);
 
             // Success - close dialog and notify parent
