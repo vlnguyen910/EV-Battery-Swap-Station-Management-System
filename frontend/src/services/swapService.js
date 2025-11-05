@@ -83,5 +83,5 @@ export const swapService = {
   getAllSwapTransactionsByStationId,
   getAllSwapTransactions,
   getAllSwapTransactionsByUserId,
-  getSwapTransactionsByStation,
+  // getSwapTransactionsByStation,
 };
