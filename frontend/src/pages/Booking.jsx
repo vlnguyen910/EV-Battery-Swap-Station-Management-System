@@ -10,6 +10,7 @@ export default function Booking({
   showCancelDialog,
   bookingTime,
   subscriptionLoading,
+  vehiclesLoading,
   activeSubscription,
   // vehicle props
   vehicles,
@@ -159,10 +160,14 @@ export default function Booking({
             </div>
           </div>
 
-          {/* Vehicle chooser (if user has vehicles) */}
-          {Array.isArray(vehicles) && vehicles.length > 0 && (
-            <div className="px-6 pb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Choose vehicle</label>
+          {/* Vehicle chooser - Always show, with loading state if needed */}
+          <div className="px-6 pb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Choose vehicle</label>
+            {vehiclesLoading ? (
+              <div className="w-full rounded-md border border-gray-200 p-2 bg-gray-50 text-gray-500">
+                Loading vehicles...
+              </div>
+            ) : Array.isArray(vehicles) && vehicles.length > 0 ? (
               <select
                 value={selectedVehicleId ?? ''}
                 onChange={(e) => onVehicleChange(Number(e.target.value))}
@@ -176,8 +181,12 @@ export default function Booking({
                   );
                 })}
               </select>
-            </div>
-          )}
+            ) : (
+              <div className="w-full rounded-md border border-gray-200 p-2 bg-gray-50 text-gray-500">
+                No vehicles found. Please add a vehicle first.
+              </div>
+            )}
+          </div>
 
           {subscriptionBanner}
 

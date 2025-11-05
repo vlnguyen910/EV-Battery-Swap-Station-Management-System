@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Booking from '../../pages/Booking';
 import { useAuth, useStation, useReservation, useSubscription } from '../../hooks/useContext';
@@ -17,13 +17,11 @@ export default function BookingContainer() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [bookingTime, setBookingTime] = useState('');
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [vehicles, setVehicles] = useState([]);
   const [subscriptionsList, setSubscriptionsList] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [selectedVehicleSubscription, setSelectedVehicleSubscription] = useState(null);
-
-  // guard to avoid repeating subscription/vehicle loads when effect deps are unstable
-  const subscriptionsLoadedRef = useRef(false);
 
 
   const [stationInfo, setStationInfo] = useState({
@@ -67,38 +65,31 @@ export default function BookingContainer() {
 
   // Check user's active subscription on mount
   useEffect(() => {
+    if (!user?.id) {
+      setSubscriptionLoading(false);
+      setVehiclesLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
     const loadVehiclesAndSubscriptions = async () => {
-      if (!user?.id) {
-        setSubscriptionLoading(false);
-        return;
-      }
-
-      // prevent duplicated loads if this effect re-runs due to unstable deps
-      if (subscriptionsLoadedRef.current) {
-        return;
-      }
-      subscriptionsLoadedRef.current = true;
-
       try {
+        console.log('BookingContainer: Starting to fetch vehicles for user:', user.id);
+
         // fetch vehicles for this user
         const vResp = await vehicleService.getVehicleByUserId(user.id);
         const vehiclesData = Array.isArray(vResp) ? vResp : Array.isArray(vResp?.data) ? vResp.data : [];
+
+        console.log('BookingContainer: Fetched vehicles:', vehiclesData);
+
+        if (!isMounted) return;
         setVehicles(vehiclesData);
+        setVehiclesLoading(false);
 
         // fetch user's subscriptions
         const subsResp = await getSubscriptionsByUserId(user.id);
         const subs = Array.isArray(subsResp) ? subsResp : Array.isArray(subsResp?.data) ? subsResp.data : [];
-
-        // Log raw responses to help debug matching issues (vehicle_id vs nested vehicle)
-        // Log once at load time to help debugging; use debug level to avoid noisy output in production
-        try {
-          if (import.meta.env.MODE === 'development') {
-            console.debug('loadVehiclesAndSubscriptions -> vehiclesData:', vehiclesData);
-            console.debug('loadVehiclesAndSubscriptions -> raw subscriptions:', subs);
-          }
-        } catch {
-          // ignore when import.meta is not available in this environment
-        }
 
         // Normalize subscriptions so each has a numeric __normalizedVehicleId we can reliably match against
         const normSubs = (subs || []).map(s => {
@@ -107,13 +98,7 @@ export default function BookingContainer() {
           return { ...s, __normalizedVehicleId: normalizedVid };
         });
 
-        try {
-          if (import.meta.env.MODE === 'development') {
-            console.debug('loadVehiclesAndSubscriptions -> normalized subscriptions:', normSubs);
-          }
-        } catch {
-          // ignore when import.meta is not available in this environment
-        }
+        if (!isMounted) return;
         setSubscriptionsList(normSubs || []);
 
         // default select first vehicle and match its subscription
@@ -122,19 +107,28 @@ export default function BookingContainer() {
           setSelectedVehicleId(firstId);
           const matched = (normSubs || []).find(s => s.__normalizedVehicleId === Number(firstId));
           setSelectedVehicleSubscription(matched || null);
+          console.log('BookingContainer: Selected first vehicle:', firstId, 'with subscription:', matched);
         }
 
         // also populate activeSubscription in context
         try { await getActiveSubscription(user.id); } catch { /* ignore */ }
       } catch (err) {
-        console.error('No active subscription found or failed to fetch vehicles', err);
+        console.error('BookingContainer: Failed to fetch vehicles/subscriptions', err);
       } finally {
-        setSubscriptionLoading(false);
+        if (isMounted) {
+          setSubscriptionLoading(false);
+          setVehiclesLoading(false);
+        }
       }
     };
 
     loadVehiclesAndSubscriptions();
-  }, [user?.id, getActiveSubscription, getSubscriptionsByUserId]);
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Timer for booking countdown
   useEffect(() => {
@@ -268,6 +262,7 @@ export default function BookingContainer() {
       showCancelDialog={showCancelDialog}
       bookingTime={bookingTime}
       subscriptionLoading={subscriptionLoading}
+      vehiclesLoading={vehiclesLoading}
       activeSubscription={activeSubscription}
       // vehicle related
       vehicles={vehicles}

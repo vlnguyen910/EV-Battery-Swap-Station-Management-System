@@ -16,7 +16,6 @@ export default function MapPage() {
   const [filteredStations, setFilteredStations] = useState(stations);
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
-  const [geoError, setGeoError] = useState(null);
 
   // Compute Haversine distance in meters
   //Công thức tính quãng đường giữa hai điểm trên map dựa trên vĩ độ và kinh độ của chúng
@@ -31,24 +30,6 @@ export default function MapPage() {
     return R * c;
   };
 
-  // Enrich stations with distance fields and sort
-  const computeWithDistance = (list, loc) => {
-    if (!Array.isArray(list)) return [];
-    const enriched = list.map((s) => {
-      if (loc && s?.latitude != null && s?.longitude != null) {
-        const meters = distanceMeters(loc.latitude, loc.longitude, s.latitude, s.longitude);
-        return {
-          ...s,
-          distanceValue: meters,
-          distance: `${(meters / 1000).toFixed(1)} km`,
-        };
-      }
-      return { ...s, distanceValue: Number.POSITIVE_INFINITY, distance: undefined };
-    });
-    enriched.sort((a, b) => (a.distanceValue || Infinity) - (b.distanceValue || Infinity));
-    return enriched;
-  };
-
   const handleSearch = (query) => {
     setSearchQuery(query);
     applyFilters(query, selectedVehicleId);
@@ -59,9 +40,33 @@ export default function MapPage() {
     applyFilters(searchQuery, vehicleId);
   };
 
-  const applyFilters = (query, vehicleId) => {
+  const applyFilters = useCallback((query, vehicleId) => {
+    // Compute distance and enrich stations locally
+    const computeWithDistance = (list, loc) => {
+      if (!Array.isArray(list)) return [];
+      const enriched = list.map((s) => {
+        // Count available batteries for this station
+        const availableBatteries = (batteries || []).filter(
+          (b) => b.station_id === s.station_id && String(b.status || '').toLowerCase() === 'full'
+        ).length;
+
+        if (loc && s?.latitude != null && s?.longitude != null) {
+          const meters = distanceMeters(loc.latitude, loc.longitude, s.latitude, s.longitude);
+          return {
+            ...s,
+            distanceValue: meters,
+            distance: `${(meters / 1000).toFixed(1)} km`,
+            availableBatteries,
+          };
+        }
+        return { ...s, distanceValue: Number.POSITIVE_INFINITY, distance: undefined, availableBatteries };
+      });
+      enriched.sort((a, b) => (a.distanceValue || Infinity) - (b.distanceValue || Infinity));
+      return enriched;
+    };
+
     let base = computeWithDistance(stations || [], userLocation);
-    
+
     // Filter by search query
     const q = (query || '').toLowerCase();
     if (q) {
@@ -75,15 +80,15 @@ export default function MapPage() {
       const selectedVehicle = vehicles?.find(v => String(v.vehicle_id) === String(vehicleId));
       if (selectedVehicle?.battery_model) {
         const vehicleBatteryModel = selectedVehicle.battery_model;
-        
+
         // Filter stations that have batteries matching the vehicle's battery model
         base = base.filter((station) => {
-          const stationBatteries = batteries?.filter(b => 
-            b.station_id === station.station_id && 
+          const stationBatteries = batteries?.filter(b =>
+            b.station_id === station.station_id &&
             (b.status === 'full' || b.status === 'charging')
           ) || [];
-          
-          return stationBatteries.some(battery => 
+
+          return stationBatteries.some(battery =>
             battery.model?.toLowerCase() === vehicleBatteryModel?.toLowerCase()
           );
         });
@@ -91,7 +96,7 @@ export default function MapPage() {
     }
 
     setFilteredStations(base);
-  };
+  }, [stations, userLocation, vehicles, batteries]);
 
   const handleStationClick = (station) => {
     if (map) {
@@ -104,36 +109,41 @@ export default function MapPage() {
 
   const handleMapReady = useCallback((mapInstance) => {
     setMap(mapInstance);
-    // Tự động định vị người dùng khi map load xong
-    locateUser();
   }, []);
 
-  // Keep filteredStations in sync when stations change (async fetch)
-  useEffect(() => {
-    applyFilters(searchQuery, selectedVehicleId);
-  }, [stations, batteries, userLocation, searchQuery, selectedVehicleId]);
-
   // Locate user using browser geolocation
-  const locateUser = () => {
+  const locateUser = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by this browser.');
+      console.warn('Geolocation is not supported by this browser.');
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         setUserLocation(loc);
-        setGeoError(null);
         if (map && typeof map.flyTo === 'function') {
           map.flyTo({ center: [loc.longitude, loc.latitude], zoom: 14 });
         }
       },
       (err) => {
-        setGeoError(err?.message || 'Unable to retrieve your location.');
+        console.warn('Unable to retrieve your location:', err?.message);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  };
+  }, [map]);
+
+  // Auto-locate user when map is ready
+  useEffect(() => {
+    if (map) {
+      locateUser();
+    }
+  }, [map, locateUser]);
+
+  // Ensure batteries are loaded before applying filters
+  useEffect(() => {
+    if (!batteries || batteries.length === 0) return;
+    applyFilters(searchQuery, selectedVehicleId);
+  }, [stations, batteries, userLocation, searchQuery, selectedVehicleId, applyFilters]);
 
   return (
     <div className="flex flex-col pb-6 h-screen overflow-hidden">
