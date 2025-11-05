@@ -1,0 +1,200 @@
+import BookingHeader from '../components/booking/BookingHeader';
+import StationInfoPanel from '../components/booking/StationInfoPanel';
+import BookingSuccessView from '../components/booking/BookingSuccessView';
+
+export default function Booking({
+  // State props
+  stationInfo,
+  bookingState,
+  timeRemaining,
+  showCancelDialog,
+  bookingTime,
+  subscriptionLoading,
+  activeSubscription,
+  // vehicle props
+  vehicles,
+  selectedVehicleId,
+  onVehicleChange,
+  selectedVehicleSubscription,
+
+  // Handler props
+  onConfirmBooking,
+  onCancelClick,
+  onConfirmCancel,
+  onCancelDialogClose,
+  onBackToMap,
+  onNavigateToPlans
+}) {
+  if (bookingState === 'booked') {
+    return (
+      <BookingSuccessView
+        stationName={stationInfo.name}
+        stationAddress={stationInfo.address}
+        availableSlots={stationInfo.availableSlots}
+        totalSlots={stationInfo.totalSlots}
+        timeRemaining={timeRemaining}
+        bookingTime={bookingTime}
+        onCancelBooking={onCancelClick}
+        showCancelDialog={showCancelDialog}
+        onConfirmCancel={onConfirmCancel}
+        onCancelDialogClose={onCancelDialogClose}
+      />
+    );
+  }
+
+  // compute subscription banner and related UI based on selected vehicle vs user-level
+  const hasVehicles = Array.isArray(vehicles) && vehicles.length > 0;
+  const subscriptionToShow = hasVehicles ? selectedVehicleSubscription : activeSubscription;
+
+  // determine selected vehicle battery model (if any) so StationInfoPanel can filter compatible batteries
+  const selectedVehicleBatteryModel = (() => {
+    if (!hasVehicles || !selectedVehicleId) return undefined;
+    const veh = vehicles.find(v => (v.vehicle_id ?? v.id) === selectedVehicleId);
+    return veh?.battery_model ?? veh?.batteryModel ?? veh?.battery?.battery_model;
+  })();
+
+  const subscriptionBanner = (() => {
+    if (subscriptionLoading) {
+      return (
+        <div className="px-6 pb-4">
+          <div className="bg-gray-100 rounded-lg p-4 text-center">
+            <p className="text-gray-600">Checking subscription status...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (hasVehicles) {
+      if (selectedVehicleSubscription) {
+        return (
+          <div className="px-6 pb-4">
+            <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700 font-medium">Active Subscription: {selectedVehicleSubscription?.package?.package_name || 'Premium Plan'}</p>
+                  <p className="text-sm text-green-600 mt-1">Swaps remaining: {selectedVehicleSubscription?.remaining_swap_count ?? 'Unlimited'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="px-6 pb-4">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700 font-medium">Selected vehicle has no active subscription</p>
+                <p className="text-sm text-yellow-600 mt-1">You need to subscribe a plan for this vehicle before booking a battery swap.</p>
+                <button onClick={onNavigateToPlans} className="mt-2 text-sm font-medium text-yellow-700 hover:text-yellow-800 underline">View Plans →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // fallback to user-level subscription
+    if (subscriptionToShow) {
+      return (
+        <div className="px-6 pb-4">
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700 font-medium">Active Subscription: {subscriptionToShow?.package?.package_name || 'Premium Plan'}</p>
+                <p className="text-sm text-green-600 mt-1">Swaps remaining: {subscriptionToShow?.remaining_swap_count ?? 'Unlimited'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="px-6 pb-4">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700 font-medium">No active subscription found</p>
+              <p className="text-sm text-yellow-600 mt-1">You need to subscribe to a plan before booking a battery swap.</p>
+              <button onClick={onNavigateToPlans} className="mt-2 text-sm font-medium text-yellow-700 hover:text-yellow-800 underline">View Plans →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  })();
+
+  return (
+    <div className="min-h-screen bg-transparent overflow-y-auto flex items-center justify-center">
+      <div className="max-w-5xl mx-auto p-6 w-full">
+        <div className="bg-white rounded-b-2xl shadow-xl max-w-2xl w-full p-8 mx-auto">
+          <BookingHeader stationName={stationInfo.name} stationAddress={stationInfo.address} onBackToMap={onBackToMap} />
+
+          <div className="relative px-6 pb-6">
+            <div className="relative overflow-hidden rounded-xl shadow-lg">
+              <img src={stationInfo.image || 'https://selex.vn/wp-content/uploads/2024/11/Group-1000002977-1.png'} alt={stationInfo.name || 'Station'} className="w-full h-72 object-cover transform hover:scale-105 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+            </div>
+          </div>
+
+          {/* Vehicle chooser (if user has vehicles) */}
+          {Array.isArray(vehicles) && vehicles.length > 0 && (
+            <div className="px-6 pb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Choose vehicle</label>
+              <select
+                value={selectedVehicleId ?? ''}
+                onChange={(e) => onVehicleChange(Number(e.target.value))}
+                className="w-full rounded-md border border-gray-200 p-2"
+              >
+                {vehicles.map((v) => {
+                  const id = v.vehicle_id ?? v.id;
+                  const label = v.vin || v.plate_number || v.name || `Vehicle ${id}`;
+                  return (
+                    <option key={id} value={id}>{label}</option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
+          {subscriptionBanner}
+
+          <StationInfoPanel
+            stationInfo={stationInfo}
+            bookingState={bookingState}
+            timeRemaining={timeRemaining}
+            onConfirmBooking={onConfirmBooking}
+            onCancelBooking={onCancelClick}
+            showCancelDialog={showCancelDialog}
+            onConfirmCancel={onConfirmCancel}
+            onCancelDialogClose={onCancelDialogClose}
+            selectedVehicleHasSubscription={Boolean(subscriptionToShow)}
+            selectedVehicleBatteryModel={selectedVehicleBatteryModel}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

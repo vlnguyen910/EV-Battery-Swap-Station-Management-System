@@ -7,20 +7,33 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { $Enums } from '@prisma/client';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
+@ApiTags('users')
+@UseGuards(AuthGuard, RolesGuard)
+@ApiBearerAuth('access-token')
+
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
+  @Roles($Enums.Role.admin)
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -28,7 +41,7 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneById(id);
   }
 
   @Patch(':id')
@@ -37,6 +50,14 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch('change-password')
+  changePassword(
+    @Request() req,
+    @Body() dto: ChangePasswordDto
+  ) {
+    return this.usersService.changePassword(req.user.sub, dto);
   }
 
   @Delete(':id')

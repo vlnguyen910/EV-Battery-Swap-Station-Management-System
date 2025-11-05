@@ -1,28 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { $Enums } from '@prisma/client';
+import { AssignVehicleDto } from './dto/assign-vehicle.dto';
 
 @Controller('vehicles')
+@UseGuards(AuthGuard, RolesGuard)
 export class VehiclesController {
-  constructor(private readonly vehiclesService: VehiclesService) {}
+  constructor(private readonly vehiclesService: VehiclesService) { }
 
   @Post()
   create(@Body() createVehicleDto: CreateVehicleDto) {
     return this.vehiclesService.create(createVehicleDto);
   }
 
-  @Get()
-  findAll(@Query('userId') userId?: string) {
-    if (userId) {
-      return this.vehiclesService.findByUser(parseInt(userId, 10));
-    }
-    return this.vehiclesService.findAll();
+  @Get('/user/:id')
+  @Roles($Enums.Role.driver)
+  findAll(@Param('id', ParseIntPipe) userId: number) {
+    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get('vin/:vin')
   findByVin(@Param('vin') vin: string) {
     return this.vehiclesService.findByVin(vin);
+  }
+
+  @Get('user/:userId')
+  findByUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get(':id')
@@ -38,7 +47,15 @@ export class VehiclesController {
     return this.vehiclesService.update(id, updateVehicleDto);
   }
 
+  @Patch('add-vehicle')
+  assignVehicleToUser(
+    @Body() assignVehicleDto: AssignVehicleDto,
+  ) {
+    return this.vehiclesService.assignVehicleToUser(assignVehicleDto);
+  }
+
   @Delete(':id')
+  @Roles('admin')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.vehiclesService.remove(id);
   }
