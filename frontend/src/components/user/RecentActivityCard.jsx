@@ -1,70 +1,72 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Zap, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import { swapService } from '../../services/swapService';
+import { useAuth } from '../../hooks/useContext';
+import { stationService } from '../../services/stationService';
 
 export default function RecentActivityCard({ onViewAll }) {
   const [swapTransactions, setSwapTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Get user from localStorage
-  const user = useMemo(() => {
-    try {
-      const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
-    } catch {
-      return null;
-    }
-  }, []);
+  const { user } = useAuth();
+  const [stations, setStations] = useState([]);
 
   useEffect(() => {
     const fetchSwapHistory = async () => {
-      if (!user?.id) {
+      if (!user?.user_id) {
         setSwapTransactions([]);
+        setStations([]);
         setLoading(false);
         return;
       }
 
       try {
-        const transactions = await swapService.getAllSwapTransactionsByUserId(user.id);
-        
+        // Fetch stations and transactions in parallel
+        const [allStations, transactions] = await Promise.all([
+          stationService.getAllStations(),
+          swapService.getAllSwapTransactionsByUserId(user.user_id)
+        ]);
+
+        setStations(Array.isArray(allStations) ? allStations : []);
+
         // Get recent 3 transactions
         const recentActivities = (transactions || [])
           .slice(0, 3)
           .map(transaction => ({
             transaction_id: transaction.transaction_id,
-            station: `Station ${transaction.station_id}`,
-            date: transaction.createAt 
-              ? new Date(transaction.createAt).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })
+            station_id: transaction.station_id,
+            date: transaction.createAt
+              ? new Date(transaction.createAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })
               : 'N/A',
-            time: transaction.createAt 
-              ? new Date(transaction.createAt).toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })
+            time: transaction.createAt
+              ? new Date(transaction.createAt).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })
               : 'N/A',
             status: transaction.status,
             batteryTaken: transaction.battery_taken_id,
             batteryReturned: transaction.battery_returned_id,
             createAt: transaction.createAt
           }));
-        
+
         setSwapTransactions(recentActivities);
       } catch (error) {
         console.error('Error fetching swap transactions:', error);
         setSwapTransactions([]);
+        setStations([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchSwapHistory();
-  }, [user?.id]);
+  }, [user?.user_id]);
 
   const getStatusConfig = (status) => {
     switch (status?.toLowerCase()) {
@@ -126,7 +128,7 @@ export default function RecentActivityCard({ onViewAll }) {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ) : swapTransactions.length === 0 ? (                       
+        ) : swapTransactions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Zap className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>No recent swap transactions</p>
@@ -135,24 +137,25 @@ export default function RecentActivityCard({ onViewAll }) {
           swapTransactions.map((item) => {
             const statusConfig = getStatusConfig(item.status);
             const StatusIcon = statusConfig.icon;
+            const stationObj = stations.find(s => String(s.station_id) === String(item.station_id));
 
             return (
-              <div 
-                key={item.transaction_id} 
+              <div
+                key={item.transaction_id}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
               >
                 <div className="flex items-center gap-4">
                   <div className={`${statusConfig.bgColor} ${statusConfig.color} p-2 rounded-full`}>
                     <Zap size={18} />
                   </div>
+                  {/* Get station name from stations state */}
                   <div>
-                    <p className="font-medium text-gray-900">{item.station}</p>
+                    <p className="font-medium text-gray-900">{stationObj?.name || `Station ${item.station_id}`}</p>
                     <p className="text-gray-500 text-sm">{item.date} at {item.time}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-gray-900">Battery Swap</p>
-                  
                 </div>
                 <div className={`${statusConfig.color} font-medium text-sm flex items-center gap-1`}>
                   <StatusIcon size={16} /> {statusConfig.label}
