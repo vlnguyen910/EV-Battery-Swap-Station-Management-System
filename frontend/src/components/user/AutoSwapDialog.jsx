@@ -9,7 +9,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
     const { swapBatteries } = useSwap();
     const [loading, setLoading] = useState(false);
     const [vehicles, setVehicles] = useState([]);
-    const [error, setError] = useState(null);
+    const [errors, setErrors] = useState([]);
     const [stationSearch, setStationSearch] = useState('');
     const [selectedStation, setSelectedStation] = useState(null);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -20,6 +20,24 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
         vehicle_id: '',
         station_id: '',
     });
+
+    // Map backend error responses to friendly UI messages
+    const mapServerErrorToMessage = (resp) => {
+        const msgs = [];
+        const raw = resp?.message ?? resp?.error ?? null;
+
+        if (Array.isArray(raw)) {
+            raw.forEach(r => msgs.push(String(r)));
+        } else if (typeof raw === 'string' && raw) {
+            msgs.push(raw);
+        } else if (resp && typeof resp === 'string') {
+            msgs.push(resp);
+        }
+
+        // Fallback
+        if (msgs.length > 0) return msgs;
+        return ['Đã xảy ra lỗi khi đổi pin, vui lòng thử lại sau.'];
+    };
 
     // Fetch user's vehicles when dialog opens
     useEffect(() => {
@@ -52,7 +70,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
             setStationSearch('');
             setSelectedStation(null);
             setShowSuggestions(false);
-            setError(null);
+            setErrors([]);
         }
     }, [open, userId]);
 
@@ -100,27 +118,27 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
         setStationSearch(station.name);
         setFormData(prev => ({ ...prev, station_id: station.station_id }));
         setShowSuggestions(false);
-        setError(null);
+        setErrors([]);
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        setError(null);
+        setErrors([]);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setErrors([]);
 
         // Validation
         if (!formData.vehicle_id) {
-            setError('Please select a vehicle');
+            setErrors(['Please select a vehicle']);
             return;
         }
 
         if (!formData.station_id) {
-            setError('Please select a station');
+            setErrors(['Please select a station']);
             return;
         }
 
@@ -134,19 +152,24 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
                 station_id: parseInt(formData.station_id, 10),
             };
 
-            console.log('Auto swap payload:', payload);
+            console.log('🚀 Auto swap payload:', payload);
             const response = await swapBatteries(payload);
-            console.log('Auto swap success:', response);
+            console.log('✅ Auto swap success:', response);
 
             // Success - close dialog and notify parent
             onOpenChange(false);
+
+            // Show success alert
+            alert('Battery swap completed successfully!');
+
             if (onSuccess) {
                 onSuccess(response);
             }
         } catch (err) {
-            console.error('Auto swap error:', err);
-            const errorMsg = err?.response?.data?.message || err.message || 'Failed to perform battery swap';
-            setError(errorMsg);
+            console.error('❌ Auto swap error:', err);
+            const resp = err?.response?.data;
+            const errorMessages = mapServerErrorToMessage(resp);
+            setErrors(errorMessages);
         } finally {
             setLoading(false);
         }
@@ -245,10 +268,18 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
                         )}
                     </div>
 
-                    {/* Error Message */}
-                    {error && (
+                    {/* Error Messages */}
+                    {errors && errors.length > 0 && (
                         <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded">
-                            <p className="text-sm text-red-700">{error}</p>
+                            {errors.length === 1 ? (
+                                <p className="text-sm text-red-700">{errors[0]}</p>
+                            ) : (
+                                <ul className="list-disc ml-5 text-sm text-red-700">
+                                    {errors.map((err, idx) => (
+                                        <li key={idx}>{err}</li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     )}
 
