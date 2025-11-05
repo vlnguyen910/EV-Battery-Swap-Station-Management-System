@@ -160,10 +160,18 @@ export class BatteriesService {
 
   async updateBatteryStatus(id: number, status: BatteryStatus, tx?: any) {
     const prisma = tx ?? this.databaseService;
+    const battery = await this.findOne(id);
+
+    if (!battery) {
+      throw new NotFoundException(`Battery with ID ${id} not found`);
+    }
+
     const updatedBattery = await prisma.battery.update({
       where: { battery_id: id },
       data: { status },
     });
+    this.logger.log(`Updated battery ID ${id} from ${battery.status} to status ${status}`);
+
     return updatedBattery;
   }
 

@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { batteryService } from '../../services/batteryService'
+import React, { useState } from 'react'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { vehicleService } from '../../services/vehicleService'
 import { useAuth } from '../../hooks/useContext'
 import { useNavigate } from 'react-router-dom'
 
-export default function AddVehicleDialog({ onAdded }) {
+export default function AssignVehicle({ onAdded }) {
     const { user } = useAuth()
     const navigate = useNavigate()
 
@@ -16,67 +15,36 @@ export default function AddVehicleDialog({ onAdded }) {
 
     // Step 1 fields
     const [vin, setVin] = useState('')
-    const [batteryModel, setBatteryModel] = useState('')
-    const [batteryType, setBatteryType] = useState('')
-    const [modules, setModules] = useState([]) // unique module options (model+type)
-    const [selectedModuleKey, setSelectedModuleKey] = useState('')
 
-    const [batteryTypes, setBatteryTypes] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [createdVehicle, setCreatedVehicle] = useState(null)
+    const [assignedVehicle, setAssignedVehicle] = useState(null)
 
-    useEffect(() => {
-        if (!open) return
-        const load = async () => {
-            try {
-                const resp = await batteryService.getAllBatteries()
-                const list = resp?.data ?? resp ?? []
-                // derive unique types
-                const types = Array.from(new Set((list || []).map(b => b.type || b.battery_type).filter(Boolean)))
-                setBatteryTypes(types)
-                // derive unique module options (by model + type)
-                const map = new Map()
-                    ; (list || []).forEach((b) => {
-                        const model = b.model || b.battery_model || ''
-                        const type = b.type || b.battery_type || ''
-                        const key = `${model}||${type}`
-                        if (!map.has(key)) map.set(key, { key, model, type })
-                    })
-                setModules(Array.from(map.values()))
-            } catch (err) {
-                console.error('Error loading batteries:', err)
-                setBatteryTypes([])
-            }
-        }
-        load()
-    }, [open])
 
     const onContinue = async () => {
         // validate
-        if (!vin || !batteryModel || !batteryType) {
-            setError('Please fill VIN, battery model and battery type')
+        if (!vin) {
+            setError('Please fill VIN')
             return
         }
         setError(null)
         setLoading(true)
 
         try {
-            // Always create vehicle as 'inactive'. Activation will happen after successful subscription/payment.
+            // Backend expects user_id as numeric string due to @IsInt validation
             const payload = {
-                user_id: user.id,
-                vin,
-                battery_model: batteryModel,
-                battery_type: batteryType,
-                status: 'inactive',
+                user_id: String(user.user_id), // Convert to string for backend validation
+                vin: String(vin).trim(),
             }
 
-            const created = await vehicleService.createVehicle(payload)
-            setCreatedVehicle(created)
+            console.log('Submitting assign payload:', payload);
+            const assign = await vehicleService.assignUserToVehicle(payload)
+            setAssignedVehicle(assign)
+            if (typeof onAdded === 'function') onAdded(assign)
             setStep(2)
         } catch (err) {
-            console.error('Error creating vehicle:', err)
-            setError(err?.response?.data?.message || err.message || 'Failed to create vehicle')
+            console.error('Error assigning vehicle:', err)
+            setError(err?.response?.data?.message || err.message || 'Failed to assign vehicle')
         } finally {
             setLoading(false)
         }
@@ -85,8 +53,8 @@ export default function AddVehicleDialog({ onAdded }) {
     const handleSubscribe = () => {
         // navigate to plans and pass vehicle id
         setOpen(false)
-        if (createdVehicle?.vehicle_id) {
-            navigate('/driver/plans', { state: { vehicle_id: createdVehicle.vehicle_id } })
+        if (assignedVehicle?.vehicle_id) {
+            navigate('/driver/plans', { state: { vehicle_id: assignedVehicle.vehicle_id } })
         } else {
             navigate('/driver/plans')
         }
@@ -95,11 +63,11 @@ export default function AddVehicleDialog({ onAdded }) {
     const handleFinishWithoutSubscribe = () => {
         setOpen(false)
         // notify parent to refresh list and optionally show banner
-        if (onAdded) onAdded({ vehicle: createdVehicle, suggestedSubscription: true })
+        if (onAdded) onAdded({ vehicle: assignedVehicle, suggestedSubscription: true })
         // reset form
         setStep(1)
         setVin('')
-        setCreatedVehicle(null)
+        setAssignedVehicle(null)
     }
 
     return (

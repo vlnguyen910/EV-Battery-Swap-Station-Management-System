@@ -231,6 +231,7 @@ export class SubscriptionsService {
       throw new BadRequestException('Subscription is not active');
     }
 
+    this.logger.log(`Incrementing swap used for subscription ID ${id}. Current swap used: ${subscription.swap_used}`);
     return db.subscription.update({
       where: { subscription_id: id },
       data: {
@@ -262,10 +263,11 @@ export class SubscriptionsService {
     }
 
     // Đảm bảo distance là số hợp lệ
-    if (typeof distance !== 'number' || isNaN(distance) || distance <= 0) {
-      throw new BadRequestException('Invalid distance value');
+    if (distance < 0) {
+      throw new BadRequestException('Distance traveled cannot be negative');
     }
 
+    this.logger.log(`Updating distance traveled for subscription ID ${id}. Adding distance: ${distance} km`);
     return db.subscription.update({
       where: { subscription_id: id },
       data: {

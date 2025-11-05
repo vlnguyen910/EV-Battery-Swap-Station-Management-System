@@ -51,7 +51,6 @@ const getAllSwapTransactions = async () => {
   }
 };
 
-
 const getAllSwapTransactionsByUserId = async (userId) => {
   try {
     const response = await api.get(
@@ -84,4 +83,5 @@ export const swapService = {
   getAllSwapTransactionsByStationId,
   getAllSwapTransactions,
   getAllSwapTransactionsByUserId,
+  getSwapTransactionsByStation,
 };

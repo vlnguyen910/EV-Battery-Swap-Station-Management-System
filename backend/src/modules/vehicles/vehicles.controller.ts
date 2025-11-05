@@ -21,7 +21,6 @@ export class VehiclesController {
   }
 
   @Get('/user/:id')
-  @Roles($Enums.Role.driver)
   findAll(@Param('id', ParseIntPipe) userId: number) {
     return this.vehiclesService.findManyByUser(userId);
   }
@@ -29,11 +28,6 @@ export class VehiclesController {
   @Get('vin/:vin')
   findByVin(@Param('vin') vin: string) {
     return this.vehiclesService.findByVin(vin);
-  }
-
-  @Get('user/:userId')
-  findByUser(@Param('userId', ParseIntPipe) userId: number) {
-    return this.vehiclesService.findManyByUser(userId);
   }
 
   @Get(':id')
@@ -49,7 +43,7 @@ export class VehiclesController {
   ) {
     // Get user_id from JWT token (attached by AuthGuard)
     const user = req['user'] as any;
-    
+
     // Validate that user info exists
     if (!user || !user.sub) {
       throw new UnauthorizedException('User information not found in token');
