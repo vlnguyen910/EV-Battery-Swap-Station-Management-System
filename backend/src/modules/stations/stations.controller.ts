@@ -7,9 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums, StationStatus } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UseGuards as UserGuards } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
 import { findAvailibaleStationsDto } from './dto/find-availiable-station.dto'
-import { ParseDecimalPipe } from 'src/common/pipes/parse-decimal.pipe';
 
 @Controller('stations')
 @UserGuards(AuthGuard, RolesGuard)
