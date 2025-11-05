@@ -99,16 +99,16 @@ export class PaymentsController {
       if (result.status === 'success') {
         const subscriptionId = result.subscription_id || '';
         return res.redirect(
-          `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/success?subscription_id=${subscriptionId}`,
+          `${process.env.VNPAY_FRONTEND_URL || 'http://localhost:5173/driver'}/payment/success?subscription_id=${subscriptionId}`,
         );
       } else {
         return res.redirect(
-          `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/failed?code=${result.vnp_response_code}`,
+          `${process.env.VNPAY_FRONTEND_URL || 'http://localhost:5173/driver'}/payment/failed?code=${result.vnp_response_code}`,
         );
       }
     } catch (error) {
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/error?message=${error.message}`,
+        `${process.env.VNPAY_FRONTEND_URL || 'http://localhost:5173/driver'}/payment/error?message=${error.message}`,
       );
     }
   }

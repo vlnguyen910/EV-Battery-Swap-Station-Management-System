@@ -108,6 +108,18 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Get user profile without sensitive information
+   */
+  async getUserProfile(user_id: number) {
+    const user = await this.findOneById(user_id);
+    
+    // Remove sensitive fields
+    const { password, refresh_token, email_token, ...safeUserData } = user;
+    
+    return safeUserData;
+  }
+
   async findOneByEmailOrPhone(emailOrPhone: string) {
     const isEmail = emailOrPhone.includes('@');
 
@@ -142,11 +154,6 @@ export class UsersService {
         email_token_expires: true,
       }
     });
-
-    if (!user) {
-      throw new NotFoundException(`User with email: ${email} not found`);
-    }
-
     return user;
   }
 
