@@ -189,6 +189,40 @@ export default function Plans() {
     }
   }
 
+  // Thanh toan tien mat
+  const handlePayDirectly = async (vehicleId) => {
+    if (!user?.user_id || !selectedPlan) {
+      alert('Missing user or package info')
+      return
+    }
+
+    setPaying(true)
+    try {
+      const payload = {
+        user_id: user.user_id,
+        package_id: selectedPlan.rawData.package_id,
+        vehicle_id: parseInt(vehicleId)
+      }
+
+      console.log('Creating direct payment with payload:', payload)
+      const res = await paymentService.createDirectPaymentWithFees(payload)
+      
+      if (res) {
+        alert('Payment created successfully! Waiting for staff approval.')
+        setModalOpen(false)
+        // Refresh subscriptions after payment
+        await fetchAllData()
+      } else {
+        alert('Payment creation failed')
+      }
+    } catch (err) {
+      console.error('Direct payment creation failed', err)
+      alert('Payment creation failed: ' + (err.message || err))
+    } finally {
+      setPaying(false)
+    }
+  }
+
   // Note: User can now subscribe to the same package multiple times
   // as long as they use different vehicles. Validation is done in SubscribeModal
   // by checking if the selected vehicle already has an active subscription.
@@ -264,6 +298,7 @@ export default function Plans() {
           plan={selectedPlan}
           user={user}
           onPay={handlePay}
+          onPayDirectly={handlePayDirectly}
           paying={paying}
           subscriptions={activeSubscriptions}
         />
