@@ -39,6 +39,15 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  /**
+   * Get current user profile from JWT token
+   */
+  @Get('me/profile')
+  getCurrentUser(@Request() req) {
+    const userId = req.user?.sub;
+    return this.usersService.getUserProfile(userId);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOneById(id);
