@@ -27,7 +27,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
         console.warn('No user ID found')
         return
       }
-      
+
       setLoading(true)
       setError(null)
       try {
@@ -55,19 +55,19 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
     <div className="fixed inset-0 z-50 flex min-h-screen w-full flex-col items-center justify-center p-4">
       {/* Background Overlay */}
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      
+
       {/* Modal Container */}
       <div className="relative w-full max-w-2xl rounded-xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col">
         {/* ToolBar / Close Button */}
         <div className="flex justify-end p-2">
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="px-8 pb-8">
           {/* PageHeading */}
           <div className="flex flex-wrap justify-between gap-3 pb-2">
@@ -75,17 +75,17 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               Subscribe to {plan.name}
             </p>
           </div>
-          
+
           {/* BodyText */}
           <p className="text-slate-600 dark:text-slate-300 text-base font-normal leading-normal text-center">
             {plan.description}
           </p>
-          
+
           {/* HeadlineText - Price */}
           <h2 className="text-slate-900 dark:text-white tracking-tight text-4xl font-bold leading-tight text-center pb-6 pt-4">
             {plan.price} <span className="text-base font-medium text-slate-500 dark:text-slate-400">/ {plan.period}</span>
           </h2>
-          
+
           {/* Vehicle Selection */}
           <div className="w-full py-3">
             <label className="flex flex-col w-full">
@@ -116,7 +116,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
                     const label = brand && model ? `${brand} ${model} - ${plate}` : plate
                     const isSubscribed = hasActiveSubscription(id)
                     const displayLabel = isSubscribed ? `${label} (Already subscribed)` : label
-                    
+
                     return (
                       <option key={id} value={id} disabled={isSubscribed}>
                         {displayLabel}
@@ -127,7 +127,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               )}
             </label>
           </div>
-          
+
           {/* Show warning if vehicle has active subscription */}
           {selectedVehicle && hasActiveSubscription(selectedVehicle) && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start gap-2 mb-3">
@@ -137,7 +137,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               </p>
             </div>
           )}
-          
+
           {/* Deposit Warning */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
@@ -148,7 +148,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               </p>
             </div>
           </div>
-          
+
           {/* Features Section */}
           <div className="py-5">
             <p className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-3">
@@ -163,11 +163,20 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               ))}
             </ul>
           </div>
-          
+
           {/* Button Group */}
-          <div className="flex flex-col sm:flex-row-reverse gap-3 pt-6">
+          <div className="flex flex-col-3 sm:flex-row-reverse gap-3 pt-6">
             <button
               onClick={() => onPay(selectedVehicle)}
+              disabled={paying || loading || !selectedVehicle || vehicles.length === 0}
+              className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-5 py-3 text-base font-semibold leading-6 text-white transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {paying ? 'Processing...' : 'Confirm & Pay'}
+            </button>
+
+            {/* Thanh toan tien mat */}
+            <button
+              onClick={() => onPayDirectly(selectedVehicle)}
               disabled={paying || loading || !selectedVehicle || vehicles.length === 0}
               className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-5 py-3 text-base font-semibold leading-6 text-white transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >

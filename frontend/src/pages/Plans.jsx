@@ -189,6 +189,47 @@ export default function Plans() {
     }
   }
 
+  // Thanh toan tien mat
+  const handlePayDirectly = async (vehicleId) => {
+    if (!user?.user_id || !selectedPlan) {
+      alert('Missing user or package info')
+      return
+    }
+
+    setPaying(true)
+    try {
+      const payload = {
+        user_id: user.user_id,
+        package_id: selectedPlan.rawData.package_id,
+        vehicle_id: parseInt(vehicleId)
+      }
+
+      const res = await paymentService.createPayment(payload)
+
+    setPaying(true)
+    try {
+      const payload = {
+        user_id: user.user_id,
+        package_id: selectedPlan.rawData.package_id,
+        vehicle_id: parseInt(vehicleId)
+      }
+
+      const res = await paymentService.createPayment(payload)
+      // Expect backend to return a redirect url to VNPay
+      const redirectUrl = res?.vnpUrl || res?.paymentUrl || res?.url || res?.redirectUrl || res
+      if (redirectUrl) {
+        window.location.href = redirectUrl
+      } else {
+        alert('Payment URL not returned by server')
+      }
+    } catch (err) {
+      console.error('Payment creation failed', err)
+      alert('Payment creation failed: ' + (err.message || err))
+    } finally {
+      setPaying(false)
+    }
+  }
+
   // Note: User can now subscribe to the same package multiple times
   // as long as they use different vehicles. Validation is done in SubscribeModal
   // by checking if the selected vehicle already has an active subscription.
@@ -264,6 +305,7 @@ export default function Plans() {
           plan={selectedPlan}
           user={user}
           onPay={handlePay}
+          onPayDirectly={handlePayDirectly}
           paying={paying}
           subscriptions={activeSubscriptions}
         />

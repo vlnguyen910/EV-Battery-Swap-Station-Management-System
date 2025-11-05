@@ -20,9 +20,9 @@ export default function FilterControls({
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value="1">1</option>
+            <option value="10">10</option>
             <option value="20">20</option>
             <option value="50">50</option>
-            <option value="100">100</option>
           </select>
         </div>
       </div>
