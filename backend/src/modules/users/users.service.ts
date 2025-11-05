@@ -142,11 +142,6 @@ export class UsersService {
         email_token_expires: true,
       }
     });
-
-    if (!user) {
-      throw new NotFoundException(`User with email: ${email} not found`);
-    }
-
     return user;
   }
 
