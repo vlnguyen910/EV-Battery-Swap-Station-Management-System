@@ -95,9 +95,9 @@ const updateProfile = async (profileData) => {
 };
 
 //get current user profile
-const getProfile = async (userId) => {
+const getProfile = async () => {
   try {
-    const response = await api.get(API_ENDPOINTS.USER.GET_USER(userId));
+    const response = await api.get(API_ENDPOINTS.USER.GET_PROFILE);
     return response.data;
   } catch (error) {
     console.error("Get profile error:", error);
@@ -134,10 +134,12 @@ const deleteUser = async (userId) => {
 
 const verifyEmail = async (token) => {
   try {
-    const response = await api.get(`${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`);
+    const response = await api.get(
+      `${API_ENDPOINTS.AUTH.VERIFY_EMAIL}?token=${token}`
+    );
     return response.data;
   } catch (error) {
-    console.error('Error verifying email:', error);
+    console.error("Error verifying email:", error);
     throw error;
   }
 };
@@ -145,10 +147,13 @@ const verifyEmail = async (token) => {
 //Change password function
 const changePassword = async (passwordData) => {
   try {
-    const response = await api.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData);
+    const response = await api.post(
+      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+      passwordData
+    );
     return response.data;
   } catch (error) {
-    console.error('Error changing password:', error);
+    console.error("Error changing password:", error);
     throw error;
   }
 };
@@ -156,10 +161,12 @@ const changePassword = async (passwordData) => {
 // Forget password function - request password reset email
 const forgetPassword = async (email) => {
   try {
-    const response = await api.post(API_ENDPOINTS.AUTH.FORGET_PASSWORD, { email });
+    const response = await api.post(API_ENDPOINTS.AUTH.FORGET_PASSWORD, {
+      email,
+    });
     return response.data;
   } catch (error) {
-    console.error('Error requesting password reset:', error);
+    console.error("Error requesting password reset:", error);
     throw error;
   }
 };
@@ -167,13 +174,13 @@ const forgetPassword = async (email) => {
 // Reset password function - set new password with token
 const resetPassword = async ({ token, new_password }) => {
   try {
-    const response = await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { 
-      token, 
-      new_password 
+    const response = await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+      token,
+      new_password,
     });
     return response.data;
   } catch (error) {
-    console.error('Error resetting password:', error);
+    console.error("Error resetting password:", error);
     throw error;
   }
 };

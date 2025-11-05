@@ -67,17 +67,17 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
-            // Take from response.user
+            // Login to get token
             const response = await loginService(credentials);
             console.log('Login response:', response);
 
-            const userData = response.user;
-
-            setUser(userData);
             setToken(response.accessToken);
-
             localStorage.setItem("token", response.accessToken);
             localStorage.setItem("refreshToken", response.refreshToken);
+
+            // Fetch user profile with token
+            const userData = await authService.getProfile();
+            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
             // Dispatch custom event to notify other contexts that login succeeded
@@ -123,11 +123,12 @@ export const AuthProvider = ({ children }) => {
             const response = await handleGoogleCallbackService();
             console.log('Google callback response:', response);
 
-            const userData = response.user;
-
-            setUser(userData);
             setToken(response.accessToken);
             localStorage.setItem("token", response.accessToken);
+
+            // Fetch user profile with token
+            const userData = await authService.getProfile();
+            setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
 
             // Navigate based on role
@@ -246,19 +247,46 @@ export const AuthProvider = ({ children }) => {
     // Clear error function (stable reference)
     const clearError = useCallback(() => setError(null), []);
 
-    // Check user on page reload
+    // Check user on page reload - fetch from API using token
     useEffect(() => {
-        const savedUser = localStorage.getItem("user");
-        if (savedUser) {
-            const userData = JSON.parse(savedUser);
+        const initializeUser = async () => {
+            const savedToken = localStorage.getItem("token");
 
-            // Normalize user data: ensure 'id' field exists
-            if (!userData.id && userData.user_id) {
-                userData.id = userData.user_id;
+            // If no token, user is not logged in
+            if (!savedToken) {
+                setUser(null);
+                return;
             }
 
-            setUser(userData);
-        }
+            // If token exists, fetch user profile from API
+            try {
+                setLoading(true);
+                const userData = await authService.getProfile();
+
+                // Normalize user data: ensure 'id' field exists
+                if (!userData.id && userData.user_id) {
+                    userData.id = userData.user_id;
+                }
+
+                setUser(userData);
+                localStorage.setItem("user", JSON.stringify(userData));
+
+                // Dispatch event for other contexts
+                window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
+            } catch (err) {
+                console.error("Failed to fetch user profile on app load:", err);
+                // If API call fails (e.g., token expired), clear auth state
+                setUser(null);
+                setToken(null);
+                localStorage.removeItem("token");
+                localStorage.removeItem("refreshToken");
+                localStorage.removeItem("user");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeUser();
     }, []);
 
     return (

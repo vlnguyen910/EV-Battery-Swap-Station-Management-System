@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
     UPDATE_USER: (id) => `/users/${id}`,
     CHANGE_PASSWORD: "/users/change-password",
     DELETE_USER: (id) => `/users/${id}`,
+    GET_PROFILE: "/users/me/profile",
   },
 
   VEHICLE: {
