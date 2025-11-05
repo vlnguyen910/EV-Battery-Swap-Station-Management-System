@@ -20,6 +20,7 @@ import { BatteryTransferRequestModule } from './modules/battery-transfer-request
 import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/battery-transfer-ticket.module';
 import { MailModule } from './modules/mail/mail.module';
 import { SystemConfigModule } from './modules/config/config.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SystemConfigModule } from './modules/config/config.module';
     BatteryTransferTicketModule,
     MailModule,
     SystemConfigModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
