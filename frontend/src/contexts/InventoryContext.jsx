@@ -1,10 +1,13 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { stationService } from "../services/stationService";
 import { batteryService } from "../services/batteryService";
+import { vehicleService } from "../services/vehicleService";
 import { AuthContext } from "./AuthContext";
 
 const { getAllStations: getAllStationsService, getStationById: getStationByIdService, getAvailableStations: getAvailableStationsService } = stationService;
 const { getAllBatteries: getAllBatteriesService, getBatteryById: getBatteryByIdService, updateBatteryById: updateBatteryByIdService } = batteryService;
+//Fetch vehicle
+const { getVehicleByUserId: getVehicleByUserIdService } = vehicleService;
 
 export const InventoryContext = createContext();
 
@@ -76,57 +79,87 @@ export const InventoryProvider = ({ children }) => {
         }
     };
 
-    const getAvailableStations = async (vehicleId = null, longitude = null, latitude = null) => {
-        setStationLoading(true);
-        setStationError(null);
+    const getAvailableStations = async (longitude = null, latitude = null) => {
+    setStationLoading(true);
+    setStationError(null);
 
+    try {
+        // Get user_id from user object
+        const userId = user?.user_id || user?.id;
+
+        if (!userId) {
+            console.warn('No user_id found, cannot fetch available stations');
+            setStations([]);
+            return;
+        }
+
+        // Lấy vehicleId bất kì từ user
+        let vehicleId = null;
         try {
-            // Get user_id from user object
-            const userId = user?.user_id || user?.id;
+            const vehiclesResponse = await getVehicleByUserIdService(userId);
+            console.log('Vehicles response:', vehiclesResponse);
 
-            if (!userId) {
-                console.warn('No user_id found, cannot fetch available stations');
-                setStations([]);
-                return;
+            // Handle different response formats
+            const vehicles = Array.isArray(vehiclesResponse)
+                ? vehiclesResponse
+                : (vehiclesResponse?.data || []);
+
+            // Get first vehicle's ID if exists
+            if (vehicles.length > 0) {
+                vehicleId = vehicles[0]?.vehicle_id || vehicles[0]?.id;
+                console.log('Using vehicle_id:', vehicleId);
+            } else {
+                console.warn('No vehicles found for user');
             }
+        } catch (vehicleError) {
+            console.error('Error fetching vehicles:', vehicleError);
+            // Continue without vehicle_id - API might work without it
+        }
 
-            // Get coordinates: use provided > user location > browser geolocation > default HCM
-            let finalLongitude = longitude;
-            let finalLatitude = latitude;
+        // Get coordinates: use provided > user location > browser geolocation > default HCM
+        let finalLongitude = longitude;
+        let finalLatitude = latitude;
 
-            if (finalLongitude === null || finalLatitude === null) {
-                // Try to use cached user location
-                if (userLocation) {
-                    finalLongitude = userLocation.longitude;
-                    finalLatitude = userLocation.latitude;
-                    console.log('Using cached user location');
+        if (finalLongitude === null || finalLatitude === null) {
+            // Try to use cached user location
+            if (userLocation) {
+                finalLongitude = userLocation.longitude;
+                finalLatitude = userLocation.latitude;
+                console.log('Using cached user location');
+            } else {
+                // Try to get current location
+                const location = await getUserLocation();
+                if (location) {
+                    finalLongitude = location.longitude;
+                    finalLatitude = location.latitude;
+                    console.log('Using fresh geolocation');
                 } else {
-                    // Try to get current location
-                    const location = await getUserLocation();
-                    if (location) {
-                        finalLongitude = location.longitude;
-                        finalLatitude = location.latitude;
-                        console.log('Using fresh geolocation');
-                    } else {
-                        // Fallback to HCM coordinates
-                        finalLongitude = 106.6297;
-                        finalLatitude = 10.8231;
-                        console.log('Using default HCM coordinates');
-                    }
+                    // Fallback to HCM coordinates
+                    finalLongitude = 106.6297;
+                    finalLatitude = 10.8231;
+                    console.log('Using default HCM coordinates');
                 }
             }
-
-            const data = await getAvailableStationsService(userId, vehicleId, finalLongitude, finalLatitude);
-            setStations(data);
-            setInitialized(true);
-            console.log("Available stations fetched successfully", data);
-        } catch (error) {
-            setStationError(error);
-            console.error("Error fetching available stations:", error);
-        } finally {
-            setStationLoading(false);
         }
-    };
+
+        // Call API - only pass vehicle_id if found
+        const data = await getAvailableStationsService(
+            userId, 
+            vehicleId, // null if no vehicle found - service will handle
+            finalLongitude, 
+            finalLatitude
+        );
+        
+        setStations(data);
+        setInitialized(true);
+        console.log("Available stations fetched successfully", data);
+    } catch (error) {
+        setStationError(error);
+        console.error("Error fetching available stations:", error);
+    } finally {
+        setStationLoading(false);
+    }
+}
 
     const getStationById = async (id) => {
         try {
@@ -194,6 +227,14 @@ export const InventoryProvider = ({ children }) => {
     };
 
     // ============ EFFECTS ============
+    //Vehicle: Fetch vehicles when user logs in
+    useEffect(() => {
+        const fetchVehiclesOnLogin = async () => {
+            if (user) {
+                await getAllVehicles();
+            }
+        };  
+    }, [user]);
     // Station: Check for token to avoid 401 errors
     useEffect(() => {
         const checkAndFetch = () => {
@@ -228,7 +269,7 @@ export const InventoryProvider = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    // Station & Battery: Re-fetch when user logs in
+    // Station: Re-fetch when user logs in
     useEffect(() => {
         const handleLogin = () => {
             if (!initialized && !stationLoading && user) {
@@ -237,49 +278,22 @@ export const InventoryProvider = ({ children }) => {
                     console.error('Failed to fetch stations after login:', err);
                 });
             }
-            if (!batteryLoading && batteries.length === 0 && user) {
-                console.log('User logged in - fetching batteries');
-                getAllBatteries().catch(err => {
-                    console.error('Failed to fetch batteries after login:', err);
-                });
-            }
         };
 
         window.addEventListener('userLoggedIn', handleLogin);
         return () => window.removeEventListener('userLoggedIn', handleLogin);
-    }, [initialized, stationLoading, batteryLoading, batteries.length, user]);
+    }, [initialized, stationLoading, user]);
 
-    // Battery: Fetch on mount if logged in, with retry logic
+    // Battery: Fetch on mount if logged in
     useEffect(() => {
-        const checkAndFetchBatteries = () => {
-            const token = localStorage.getItem('token');
-
-            console.log('InventoryContext checking batteries:', {
-                hasToken: !!token,
-                hasUser: !!user,
-                loading: batteryLoading,
-                batteriesCount: batteries.length
-            });
-
-            if (!token || !user) {
-                console.log('No token or user found - cannot fetch batteries');
-                return;
-            }
-
-            if (!batteryLoading && batteries.length === 0) {
-                console.log('Fetching available batteries...');
-                getAllBatteries().catch(err => {
-                    console.error('Failed to fetch batteries:', err);
-                });
-            }
-        };
-
-        checkAndFetchBatteries();
-        const timer = setTimeout(checkAndFetchBatteries, 100);
-
-        return () => clearTimeout(timer);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found - skipping battery fetch on mount');
+            return;
+        }
+        getAllBatteries();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, []);
 
     // Combined loading/error for backward compatibility
     const loading = stationLoading || batteryLoading;

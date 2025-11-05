@@ -23,27 +23,22 @@ const getAvailableStations = async (userId, vehicleId = null, longitude = null, 
       throw new Error('Coordinates (longitude, latitude) are required');
     }
 
-    // Prepare request body
+    // Prepare request body with all parameters
     const body = {
-      user_id: parseInt(userId)
+      user_id: parseInt(userId),
+      latitude,
+      longitude
     };
     
     if (vehicleId) {
       body.vehicle_id = parseInt(vehicleId);
     }
-
-    // Prepare query params
-    const params = {
-      longitude,
-      latitude
-    };
     
-    console.log('Calling getAvailableStations with:', { body, params });
+    console.log('Calling getAvailableStations with body:', body);
     
     const response = await api.post(
       API_ENDPOINTS.STATION.GET_AVAILABLE_STATIONS,
-      body,
-      { params }
+      body
     );
     
     console.log('getAvailableStations response:', response.data);
