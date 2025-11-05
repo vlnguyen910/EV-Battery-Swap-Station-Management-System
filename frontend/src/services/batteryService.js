@@ -37,6 +37,19 @@ const getBatteryById = async (id) => {
 //     throw error;
 //   }
 
+// Function to get batteries by station id
+const getBatteriesByStationId = async (stationId) => {
+  try {
+    const response = await api.get(
+      API_ENDPOINTS.BATTERY.GET_BY_STATION(stationId)
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching batteries by station id:", error);
+    throw error;
+  }
+};
+
 // Function to update battery by id
 const updateBatteryById = async (id, batteryData) => {
   try {
@@ -51,9 +64,9 @@ const updateBatteryById = async (id, batteryData) => {
   }
 };
 
-
 export const batteryService = {
   getAllBatteries,
   getBatteryById,
+  getBatteriesByStationId,
   updateBatteryById,
 };

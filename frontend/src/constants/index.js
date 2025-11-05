@@ -51,6 +51,7 @@ export const API_ENDPOINTS = {
     GET_ALL_BATTERIES: "/batteries",
     GET_BEST_BATTERY: "/batteries/best",
     GET_BATTERY: (id) => `/batteries/${id}`,
+    GET_BY_STATION: (stationId) => `/batteries/station/${stationId}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
   },
 
