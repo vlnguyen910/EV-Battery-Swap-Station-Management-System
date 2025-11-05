@@ -286,7 +286,7 @@ export default function ManualSwapTransaction() {
 
             setTransactionsLoading(true);
             try {
-                const data = await swapService.getSwapTransactionsByStation(staffStationId);
+                const data = await swapService.getAllSwapTransactionsByStationId(staffStationId);
                 setTransactions(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching transactions:', error);
@@ -301,29 +301,39 @@ export default function ManualSwapTransaction() {
 
     // Filter transactions based on time, status, and search
     useEffect(() => {
-        let filtered = [...transactions];
 
-        // Time filter
+        let filtered = [...transactions];
         const now = new Date();
         filtered = filtered.filter(transaction => {
             const transactionDate = new Date(transaction.createAt || transaction.created_at);
-
             switch (timeFilter) {
                 case 'day': {
-                    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    return transactionDate >= oneDayAgo;
+                    // Today only
+                    return transactionDate.getFullYear() === now.getFullYear() &&
+                        transactionDate.getMonth() === now.getMonth() &&
+                        transactionDate.getDate() === now.getDate();
                 }
                 case 'week': {
-                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    return transactionDate >= oneWeekAgo;
+                    // This ISO week
+                    const getWeek = (d) => {
+                        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+                        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                        return [d.getUTCFullYear(), weekNo];
+                    };
+                    const [year1, week1] = getWeek(now);
+                    const [year2, week2] = getWeek(transactionDate);
+                    return year1 === year2 && week1 === week2;
                 }
                 case 'month': {
-                    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                    return transactionDate >= oneMonthAgo;
+                    // This month
+                    return transactionDate.getFullYear() === now.getFullYear() &&
+                        transactionDate.getMonth() === now.getMonth();
                 }
                 case 'year': {
-                    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                    return transactionDate >= oneYearAgo;
+                    // This year
+                    return transactionDate.getFullYear() === now.getFullYear();
                 }
                 default:
                     return true;
@@ -466,64 +476,68 @@ export default function ManualSwapTransaction() {
     }
 
     return (
-        <div className="p-8">
-            {/* Page Heading */}
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <div className="flex min-w-72 flex-col gap-2">
-                    <p className="text-gray-900 dark:text-gray-50 text-3xl font-black leading-tight tracking-tight">
-                        Transaction History - {user?.station?.station_name || 'Station'}
-                    </p>
-                    <p className="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal">
-                        View and manage all battery swap transactions for this station.
-                    </p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <main className="p-8">
+                <div className="max-w-7xl mx-auto">
+                    {/* Page Heading */}
+                    <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div className="flex min-w-72 flex-col gap-2">
+                            <p className="text-gray-900 dark:text-gray-50 text-3xl font-black leading-tight tracking-tight">
+                                Transaction History - {user?.station?.name || 'Station'}
+                            </p>
+                            <p className="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal">
+                                View and manage all battery swap transactions for this station.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 shadow-sm hover:bg-blue-600/90"
+                        >
+                            <span className="material-icons text-base">add</span>
+                            <span className="truncate">Create Manual Swap</span>
+                        </button>
+                    </div>
+
+                    {/* Filters Bar */}
+                    <div className="mt-6 flex flex-row md:flex-row justify-between items-center gap-4 p-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
+                        {/* Time Filter */}
+                        <TransactionTimeFilter value={timeFilter} onChange={setTimeFilter} />
+
+                        {/* Toolbar - Search and Status Filter */}
+                        <div className="flex gap-2 items-center w-full md:w-auto">
+                            <TransactionSearchBar
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                                placeholder="Search transactions..."
+                            />
+                            <TransactionStatusFilter value={statusFilter} onChange={setStatusFilter} />
+                        </div>
+                    </div>
+
+                    {/* Transaction Table */}
+                    <div className="mt-6">
+                        <TransactionTable
+                            transactions={paginatedTransactions}
+                            loading={transactionsLoading}
+                            onViewDetails={(transaction) => {
+                                console.log('View details for transaction:', transaction);
+                                // TODO: Implement view details modal or navigation
+                            }}
+                        />
+
+                        {/* Pagination */}
+                        {!transactionsLoading && filteredTransactions.length > 0 && (
+                            <TransactionPagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalResults={filteredTransactions.length}
+                                resultsPerPage={resultsPerPage}
+                                onPageChange={setCurrentPage}
+                            />
+                        )}
+                    </div>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 shadow-sm hover:bg-blue-700"
-                >
-                    <span className="material-icons text-base">add</span>
-                    <span className="truncate">Create Manual Swap</span>
-                </button>
-            </div>
-
-            {/* Filters Bar */}
-            <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4 p-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
-                {/* Time Filter */}
-                <TransactionTimeFilter value={timeFilter} onChange={setTimeFilter} />
-
-                {/* Toolbar - Search and Status Filter */}
-                <div className="flex gap-2 items-center w-full md:w-auto">
-                    <TransactionSearchBar
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        placeholder="Search transactions..."
-                    />
-                    <TransactionStatusFilter value={statusFilter} onChange={setStatusFilter} />
-                </div>
-            </div>
-
-            {/* Transaction Table */}
-            <div className="mt-6">
-                <TransactionTable
-                    transactions={paginatedTransactions}
-                    loading={transactionsLoading}
-                    onViewDetails={(transaction) => {
-                        console.log('View details for transaction:', transaction);
-                        // TODO: Implement view details modal or navigation
-                    }}
-                />
-
-                {/* Pagination */}
-                {!transactionsLoading && filteredTransactions.length > 0 && (
-                    <TransactionPagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalResults={filteredTransactions.length}
-                        resultsPerPage={resultsPerPage}
-                        onPageChange={setCurrentPage}
-                    />
-                )}
-            </div>
+            </main>
 
             {/* Modal popup for Create New Swap Transaction */}
             {showModal && (
