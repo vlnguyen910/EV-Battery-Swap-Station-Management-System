@@ -41,10 +41,8 @@ export class StationsController {
   @Post('available')
   async findAllAvailable(
     @Body() dto: findAvailibaleStationsDto,
-    @Query('longitude', ParseDecimalPipe) longitude: Decimal | undefined,
-    @Query('latitude', ParseDecimalPipe) latitude: Decimal | undefined
   ) {
-    return this.stationsService.findAllAvailable(dto, longitude, latitude);
+    return this.stationsService.findAllAvailable(dto);
   }
 
   @Get(':id')

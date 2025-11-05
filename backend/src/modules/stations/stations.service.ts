@@ -53,21 +53,19 @@ export class StationsService {
 
   async findAllAvailable(
     dto: findAvailibaleStationsDto,
-    longitude: Decimal | undefined,
-    latitude: Decimal | undefined,
   ) {
     try {
-      if (!latitude || !longitude) {
-        throw new BadRequestException('Latitude and Longitude are required');
-      }
-
-      const radiusKm = this.configService.get<number>('SEARCH_RADIUS_KM', 20); // default radius 20 km
+      const radiusKm = this.configService.get<number>('SEARCH_RADIUS_KM', 20);
 
       // If vehicle_id is not provided, get all active stations
-      if (!dto.vehicle_id) {
+      if (!dto.vehicle_id || !dto.latitude || !dto.longitude) {
         const availableStations = await this.findAll(StationStatus.active);
         return availableStations;
       }
+
+      // Type assertion - TypeScript biết chắc chắn không phải undefined
+      const userLatitude = dto.latitude as number;
+      const userLongitude = dto.longitude as number;
 
       const vehicle = await this.vehiclesService.findOne(dto.vehicle_id);
 
@@ -116,7 +114,12 @@ export class StationsService {
           longitude: station.longitude,
           status: station.status,
           available_batteries: station._count.batteries,
-          distance: this.calculateDistance(latitude, longitude, station.latitude, station.longitude)
+          distance: this.calculateDistance(
+            new Decimal(userLatitude.toString()),
+            new Decimal(userLongitude.toString()),
+            station.latitude,
+            station.longitude
+          )
         }))
         .filter(station => station.distance < radiusKm);
 
