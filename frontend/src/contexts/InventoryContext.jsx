@@ -30,6 +30,10 @@ export const InventoryProvider = ({ children }) => {
     const [batteryLoading, setBatteryLoading] = useState(false);
     const [batteryError, setBatteryError] = useState(null);
 
+    // ============ VEHICLE STATE ============
+    const [cachedVehicles, setCachedVehicles] = useState([]);
+    const [vehiclesFetched, setVehiclesFetched] = useState(false);
+
     // ============ STATION METHODS ============
     // Get user's current location
     const getUserLocation = () => {
@@ -80,86 +84,102 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const getAvailableStations = async (longitude = null, latitude = null) => {
-    setStationLoading(true);
-    setStationError(null);
+        setStationLoading(true);
+        setStationError(null);
 
-    try {
-        // Get user_id from user object
-        const userId = user?.user_id || user?.id;
-
-        if (!userId) {
-            console.warn('No user_id found, cannot fetch available stations');
-            setStations([]);
-            return;
-        }
-
-        // Lấy vehicleId bất kì từ user
-        let vehicleId = null;
         try {
-            const vehiclesResponse = await getVehicleByUserIdService(userId);
-            console.log('Vehicles response:', vehiclesResponse);
+            // Get user_id from user object
+            const userId = user?.user_id || user?.id;
 
-            // Handle different response formats
-            const vehicles = Array.isArray(vehiclesResponse)
-                ? vehiclesResponse
-                : (vehiclesResponse?.data || []);
-
-            // Get first vehicle's ID if exists
-            if (vehicles.length > 0) {
-                vehicleId = vehicles[0]?.vehicle_id || vehicles[0]?.id;
-                console.log('Using vehicle_id:', vehicleId);
-            } else {
-                console.warn('No vehicles found for user');
+            if (!userId) {
+                console.warn('No user_id found, cannot fetch available stations');
+                setStations([]);
+                return;
             }
-        } catch (vehicleError) {
-            console.error('Error fetching vehicles:', vehicleError);
-            // Continue without vehicle_id - API might work without it
-        }
 
-        // Get coordinates: use provided > user location > browser geolocation > default HCM
-        let finalLongitude = longitude;
-        let finalLatitude = latitude;
+            // Lấy vehicleId từ cached vehicles của user hiện tại
+            let vehicleId = null;
 
-        if (finalLongitude === null || finalLatitude === null) {
-            // Try to use cached user location
-            if (userLocation) {
-                finalLongitude = userLocation.longitude;
-                finalLatitude = userLocation.latitude;
-                console.log('Using cached user location');
+            // Chỉ fetch vehicles nếu chưa fetch cho user này
+            if (!vehiclesFetched) {
+                try {
+                    const vehiclesResponse = await getVehicleByUserIdService(userId);
+                    console.log('Vehicles response:', vehiclesResponse);
+
+                    // Handle different response formats
+                    const vehicles = Array.isArray(vehiclesResponse)
+                        ? vehiclesResponse
+                        : (vehiclesResponse?.data || []);
+
+                    // Cache vehicles cho user này
+                    setCachedVehicles(vehicles);
+                    setVehiclesFetched(true);
+
+                    // Get first vehicle's ID if exists
+                    if (vehicles.length > 0) {
+                        vehicleId = vehicles[0]?.vehicle_id || vehicles[0]?.id;
+                        console.log('Using vehicle_id:', vehicleId);
+                    } else {
+                        console.warn('No vehicles found for user');
+                    }
+                } catch (vehicleError) {
+                    console.error('Error fetching vehicles:', vehicleError);
+                    setVehiclesFetched(true); // Đánh dấu đã fetch để không thử lại
+                }
             } else {
-                // Try to get current location
-                const location = await getUserLocation();
-                if (location) {
-                    finalLongitude = location.longitude;
-                    finalLatitude = location.latitude;
-                    console.log('Using fresh geolocation');
+                // Dùng cached vehicles
+                if (cachedVehicles.length > 0) {
+                    vehicleId = cachedVehicles[0]?.vehicle_id || cachedVehicles[0]?.id;
+                    console.log('Using cached vehicle_id:', vehicleId);
                 } else {
-                    // Fallback to HCM coordinates
-                    finalLongitude = 106.6297;
-                    finalLatitude = 10.8231;
-                    console.log('Using default HCM coordinates');
+                    console.log('No cached vehicles for this user');
                 }
             }
-        }
 
-        // Call API - only pass vehicle_id if found
-        const data = await getAvailableStationsService(
-            userId, 
-            vehicleId, // null if no vehicle found - service will handle
-            finalLongitude, 
-            finalLatitude
-        );
-        
-        setStations(data);
-        setInitialized(true);
-        console.log("Available stations fetched successfully", data);
-    } catch (error) {
-        setStationError(error);
-        console.error("Error fetching available stations:", error);
-    } finally {
-        setStationLoading(false);
+            // Get coordinates: use provided > user location > browser geolocation > default HCM
+            let finalLongitude = longitude;
+            let finalLatitude = latitude;
+
+            if (finalLongitude === null || finalLatitude === null) {
+                // Try to use cached user location
+                if (userLocation) {
+                    finalLongitude = userLocation.longitude;
+                    finalLatitude = userLocation.latitude;
+                    console.log('Using cached user location');
+                } else {
+                    // Try to get current location
+                    const location = await getUserLocation();
+                    if (location) {
+                        finalLongitude = location.longitude;
+                        finalLatitude = location.latitude;
+                        console.log('Using fresh geolocation');
+                    } else {
+                        // Fallback to HCM coordinates
+                        finalLongitude = 106.6297;
+                        finalLatitude = 10.8231;
+                        console.log('Using default HCM coordinates');
+                    }
+                }
+            }
+
+            // Call API - only pass vehicle_id if found
+            const data = await getAvailableStationsService(
+                userId,
+                vehicleId, // null if no vehicle found - service will handle
+                finalLongitude,
+                finalLatitude
+            );
+
+            setStations(data);
+            setInitialized(true);
+            console.log("Available stations fetched successfully", data);
+        } catch (error) {
+            setStationError(error);
+            console.error("Error fetching available stations:", error);
+        } finally {
+            setStationLoading(false);
+        }
     }
-}
 
     const getStationById = async (id) => {
         try {
@@ -227,14 +247,28 @@ export const InventoryProvider = ({ children }) => {
     };
 
     // ============ EFFECTS ============
-    //Vehicle: Fetch vehicles when user logs in
+    // Clear cached data when user changes (logout/login)
     useEffect(() => {
-        const fetchVehiclesOnLogin = async () => {
-            if (user) {
-                await getAllVehicles();
-            }
-        };  
-    }, [user]);
+        const userId = user?.user_id || user?.id;
+
+        if (!userId) {
+            // User logged out - clear everything
+            console.log('User logged out - clearing cached data');
+            setCachedVehicles([]);
+            setVehiclesFetched(false);
+            setStations([]);
+            setInitialized(false);
+            return;
+        }
+
+        // User changed - reset vehicle cache for new user
+        console.log('User changed - resetting vehicle cache for user:', userId);
+        setCachedVehicles([]);
+        setVehiclesFetched(false);
+        setInitialized(false);
+
+    }, [user?.user_id, user?.id]);
+
     // Station: Check for token to avoid 401 errors
     useEffect(() => {
         const checkAndFetch = () => {
