@@ -65,7 +65,23 @@ const updateVehicle = async (vehicleId, updateData) => {
   }
 };
 
-// Function to assign user to vehicle (by VIN)
+// Function to add vehicle to current user (driver self-assignment)
+const addVehicleToCurrentUser = async (vin) => {
+  try {
+    console.log("Adding vehicle with VIN:", vin);
+    const response = await api.patch(API_ENDPOINTS.VEHICLE.ASSIGN_VEHICLE, {
+      vin: String(vin).trim(),
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error adding vehicle:", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
+    throw error;
+  }
+};
+
+// Function to assign user to vehicle (by VIN) - for admin use
 const assignUserToVehicle = async (payload) => {
   try {
     // payload should be: { vin: string, user_id: number }
@@ -105,6 +121,7 @@ export const vehicleService = {
   updateVehicle,
   createVehicle,
   assignUserToVehicle,
+  addVehicleToCurrentUser,
 };
 
 // parseBatteryNumber moved to ../utils/battery for reuse

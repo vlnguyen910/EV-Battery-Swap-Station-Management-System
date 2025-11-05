@@ -3,11 +3,11 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { vehicleService } from '../../services/vehicleService'
-import { useAuth } from '../../hooks/useContext'
+// import { useAuth } from '../../hooks/useContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function AssignVehicle({ onAdded }) {
-    const { user } = useAuth()
+    // const { user } = useAuth()
     const navigate = useNavigate()
 
     const [open, setOpen] = useState(false)
@@ -31,20 +31,15 @@ export default function AssignVehicle({ onAdded }) {
         setLoading(true)
 
         try {
-            // Backend expects user_id as numeric string due to @IsInt validation
-            const payload = {
-                user_id: String(user.user_id), // Convert to string for backend validation
-                vin: String(vin).trim(),
-            }
-
-            console.log('Submitting assign payload:', payload);
-            const assign = await vehicleService.assignUserToVehicle(payload)
+            console.log('Adding vehicle with VIN:', vin);
+            // Use PATCH /vehicles/add-vehicle for driver self-assignment
+            const assign = await vehicleService.addVehicleToCurrentUser(vin)
             setAssignedVehicle(assign)
             if (typeof onAdded === 'function') onAdded(assign)
             setStep(2)
         } catch (err) {
-            console.error('Error assigning vehicle:', err)
-            setError(err?.response?.data?.message || err.message || 'Failed to assign vehicle')
+            console.error('Error adding vehicle:', err)
+            setError(err?.response?.data?.message || err.message || 'Failed to add vehicle')
         } finally {
             setLoading(false)
         }
