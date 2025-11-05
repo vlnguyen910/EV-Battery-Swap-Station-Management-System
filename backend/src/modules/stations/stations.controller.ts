@@ -7,9 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums, StationStatus } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UseGuards as UserGuards } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
 import { findAvailibaleStationsDto } from './dto/find-availiable-station.dto'
-import { ParseDecimalPipe } from 'src/common/pipes/parse-decimal.pipe';
 
 @Controller('stations')
 @UserGuards(AuthGuard, RolesGuard)
@@ -41,10 +39,8 @@ export class StationsController {
   @Post('available')
   async findAllAvailable(
     @Body() dto: findAvailibaleStationsDto,
-    @Query('longitude', ParseDecimalPipe) longitude: Decimal | undefined,
-    @Query('latitude', ParseDecimalPipe) latitude: Decimal | undefined
   ) {
-    return this.stationsService.findAllAvailable(dto, longitude, latitude);
+    return this.stationsService.findAllAvailable(dto);
   }
 
   @Get(':id')
