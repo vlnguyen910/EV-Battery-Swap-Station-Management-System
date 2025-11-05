@@ -25,6 +25,7 @@ import {
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -366,6 +367,30 @@ export class PaymentsController {
       createPaymentWithFeesDto,
       ipAddr,
     );
+  }
+
+  /**
+ * ⭐ NEW ENDPOINT - Create direct payment with fees (no VNPAY)
+ * POST /payments/direct-with-fees
+ * 
+ * Same as /calculate-and-create-vnpay-url but:
+ * - Does NOT redirect to VNPAY
+ * - Creates payment with success status immediately
+ * - Creates subscription immediately (if applicable)
+ * - Calculates and displays full fee breakdown
+ * 
+ * Use for:
+ * - Demo without VNPAY
+ * - Testing payment flows
+ * - When VNPAY is unavailable
+ */
+  @Post('direct-with-fees')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('driver', 'admin', 'station_staff')
+  async createDirectPaymentWithFees(
+    @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
+  ) {
+    return this.paymentsService.createDirectPaymentWithFees(createPaymentWithFeesDto);
   }
 }
 
