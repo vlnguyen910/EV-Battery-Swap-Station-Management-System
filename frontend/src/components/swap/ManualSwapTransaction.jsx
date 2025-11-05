@@ -3,6 +3,12 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useBattery, useAuth, useSubscription, usePackage, useSwap, useReservation } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
+import { swapService } from '../../services/swapService';
+import TransactionTimeFilter from '../transactions/TransactionTimeFilter';
+import TransactionSearchBar from '../transactions/TransactionSearchBar';
+import TransactionStatusFilter from '../transactions/TransactionStatusFilter';
+import TransactionTable from '../transactions/TransactionTable';
+import TransactionPagination from '../transactions/TransactionPagination';
 
 export default function ManualSwapTransaction() {
     const navigate = useNavigate();
@@ -43,6 +49,16 @@ export default function ManualSwapTransaction() {
     });
     const [reservationDetails, setReservationDetails] = useState(null);
     const [apiErrors, setApiErrors] = useState([]);
+
+    // Transaction history states
+    const [transactions, setTransactions] = useState([]);
+    const [filteredTransactions, setFilteredTransactions] = useState([]);
+    const [transactionsLoading, setTransactionsLoading] = useState(true);
+    const [timeFilter, setTimeFilter] = useState('week');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const resultsPerPage = 10;
 
     // Map backend error responses to friendly UI messages
     const mapServerErrorToMessage = (resp) => {
@@ -279,6 +295,91 @@ export default function ManualSwapTransaction() {
         fetchReservation();
     }, [reservationId, searchParams]);
 
+    // Fetch all transactions for staff's station
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            if (!staffStationId) return;
+
+            setTransactionsLoading(true);
+            try {
+                const data = await swapService.getSwapTransactionsByStation(staffStationId);
+                setTransactions(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching transactions:', error);
+                setTransactions([]);
+            } finally {
+                setTransactionsLoading(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [staffStationId]);
+
+    // Filter transactions based on time, status, and search
+    useEffect(() => {
+        let filtered = [...transactions];
+
+        // Time filter
+        const now = new Date();
+        filtered = filtered.filter(transaction => {
+            const transactionDate = new Date(transaction.createAt || transaction.created_at);
+
+            switch (timeFilter) {
+                case 'day': {
+                    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    return transactionDate >= oneDayAgo;
+                }
+                case 'week': {
+                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return transactionDate >= oneWeekAgo;
+                }
+                case 'month': {
+                    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                    return transactionDate >= oneMonthAgo;
+                }
+                case 'year': {
+                    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                    return transactionDate >= oneYearAgo;
+                }
+                default:
+                    return true;
+            }
+        });
+
+        // Status filter
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(transaction => transaction.status === statusFilter);
+        }
+
+        // Search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(transaction => {
+                const transactionId = String(transaction.transaction_id).toLowerCase();
+                const userId = String(transaction.user_id).toLowerCase();
+                const userName = (transaction.user?.full_name || transaction.user?.username || '').toLowerCase();
+                const batteryOut = String(transaction.battery_returned_id || '').toLowerCase();
+                const batteryIn = String(transaction.battery_taken_id || '').toLowerCase();
+
+                return transactionId.includes(query) ||
+                    userId.includes(query) ||
+                    userName.includes(query) ||
+                    batteryOut.includes(query) ||
+                    batteryIn.includes(query);
+            });
+        }
+
+        setFilteredTransactions(filtered);
+        setCurrentPage(1); // Reset to first page when filters change
+    }, [transactions, timeFilter, statusFilter, searchQuery]);
+
+    // Get paginated transactions
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * resultsPerPage,
+        currentPage * resultsPerPage
+    );
+    const totalPages = Math.ceil(filteredTransactions.length / resultsPerPage);
+
     // Filter batteries: only show batteries that are 'full' and at staff's station
     const availableBatteries = batteries.filter(b => {
         if (!b || b.status !== 'full' || !staffStationId || b.station_id !== staffStationId) return false;
@@ -459,57 +560,63 @@ export default function ManualSwapTransaction() {
 
     return (
         <div className="p-8">
-            <div class="flex flex-wrap justify-between gap-4 mb-6">
-                <div class="flex min-w-72 flex-col gap-3">
-                    <p class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Lịch sử giao dịch</p>
-                    <p class="text-gray-500 dark:text-[#9ba0bb] text-base font-normal leading-normal">Xem và quản lý tất cả các giao dịch đổi pin đã hoàn thành tại trạm hiện tại.</p>
+            {/* Page Heading */}
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div className="flex min-w-72 flex-col gap-2">
+                    <p className="text-gray-900 dark:text-gray-50 text-3xl font-black leading-tight tracking-tight">
+                        Transaction History - {user?.station?.station_name || 'Station'}
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal">
+                        View and manage all battery swap transactions for this station.
+                    </p>
                 </div>
-
-                <button onClick={() => setShowModal(true)} className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#272a3a] text-white text-sm font-bold leading-normal tracking-[0.015em]">
-                    <span className="truncate">Create New Swap</span>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 shadow-sm hover:bg-blue-700"
+                >
+                    <span className="material-icons text-base">add</span>
+                    <span className="truncate">Create Manual Swap</span>
                 </button>
             </div>
 
-            <div class="flex flex-wrap md:flex-nowrap items-center gap-3 mb-4">
-                {/* <!-- Ô tìm kiếm --> */}
-                <div class="flex-1 min-w-[250px]">
-                    <label class="flex flex-col h-12 w-full">
-                        <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
-                            <div class="text-gray-500 flex border-none bg-gray-100 dark:bg-[#272a3a] items-center justify-center pl-4 rounded-l-lg border-r-0">
-                                <i class="ri-search-line text-lg"></i>
-                            </div>
-                            <input
-                                class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-gray-100 dark:bg-[#272a3a] h-full placeholder:text-gray-500 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
-                                placeholder="Tìm kiếm một giao dịch cụ thể"
-                                value=""
-                            />
-                        </div>
-                    </label>
-                </div>
+            {/* Filters Bar */}
+            <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4 p-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
+                {/* Time Filter */}
+                <TransactionTimeFilter value={timeFilter} onChange={setTimeFilter} />
 
-                {/* <!-- Bộ nút lọc --> */}
-                <div class="flex gap-2 shrink-0">
-                    <button class="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-[#272a3a] px-4">
-                        <i class="ri-calendar-line text-gray-600 dark:text-white text-lg"></i>
-                        <p class="text-gray-800 dark:text-white text-sm font-medium leading-normal">Ngày</p>
-                        <i class="ri-arrow-down-s-line text-gray-600 dark:text-white text-lg"></i>
-                    </button>
-
-                    <button class="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-[#272a3a] px-4">
-                        <i class="ri-battery-2-charge-line text-gray-600 dark:text-white text-lg"></i>
-                        <p class="text-gray-800 dark:text-white text-sm font-medium leading-normal">Model pin</p>
-                        <i class="ri-arrow-down-s-line text-gray-600 dark:text-white text-lg"></i>
-                    </button>
-
-                    <button class="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-[#272a3a] px-4">
-                        <i class="ri-checkbox-circle-line text-gray-600 dark:text-white text-lg"></i>
-                        <p class="text-gray-800 dark:text-white text-sm font-medium leading-normal">Trạng thái</p>
-                        <i class="ri-arrow-down-s-line text-gray-600 dark:text-white text-lg"></i>
-                    </button>
+                {/* Toolbar - Search and Status Filter */}
+                <div className="flex gap-2 items-center w-full md:w-auto">
+                    <TransactionSearchBar
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search transactions..."
+                    />
+                    <TransactionStatusFilter value={statusFilter} onChange={setStatusFilter} />
                 </div>
             </div>
 
+            {/* Transaction Table */}
+            <div className="mt-6">
+                <TransactionTable
+                    transactions={paginatedTransactions}
+                    loading={transactionsLoading}
+                    onViewDetails={(transaction) => {
+                        console.log('View details for transaction:', transaction);
+                        // TODO: Implement view details modal or navigation
+                    }}
+                />
 
+                {/* Pagination */}
+                {!transactionsLoading && filteredTransactions.length > 0 && (
+                    <TransactionPagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalResults={filteredTransactions.length}
+                        resultsPerPage={resultsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
+            </div>
 
             {/* Modal popup for Create New Swap Transaction */}
             {showModal && (
