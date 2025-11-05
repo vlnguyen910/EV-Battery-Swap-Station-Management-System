@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { paymentService } from '../services/paymentService';
 import { swapService } from '../services/swapService';
+import { stationService } from '../services/stationService';
 import SwapHistoryCard from '../components/history/SwapHistoryCard';
 import PaymentHistoryCard from '../components/history/PaymentHistoryCard';
 
@@ -33,6 +34,7 @@ export default function SwapHistory() {
   const [swapHistory, setSwapHistory] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stations, setStations] = useState({});
 
   // Filter data by time period
   const filterByTimePeriod = (data, timePeriod) => {
@@ -70,40 +72,54 @@ export default function SwapHistory() {
 
       setLoading(true);
       try {
-        // Fetch both swap transactions and payments in parallel
-        const [swapTransactions, payments] = await Promise.all([
+        // Fetch stations, swap transactions and payments in parallel
+        const [allStations, swapTransactions, payments] = await Promise.all([
+          stationService.getAllStations(),
           swapService.getAllSwapTransactionsByUserId(user.user_id),
           paymentService.getPaymentByUserId(user.user_id)
         ]);
 
         console.log('Swap transactions from API:', swapTransactions);
         console.log('Payments from API:', payments);
+        console.log('Stations from API:', allStations);
+
+        // Create a map of station_id to station object for quick lookup
+        const stationMap = {};
+        if (allStations && Array.isArray(allStations)) {
+          allStations.forEach(station => {
+            stationMap[station.station_id] = station;
+          });
+        }
+        setStations(stationMap);
 
         // Transform swap transactions to UI format
-        const transformedSwaps = (swapTransactions || []).map(transaction => ({
-          id: `swap-${transaction.transaction_id}`,
-          type: 'swap',
-          date: transaction.createAt
-            ? new Date(transaction.createAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })
-            : 'N/A',
-          time: transaction.createAt
-            ? new Date(transaction.createAt).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-            : 'N/A',
-          location: `Station ${transaction.station_id}`,
-          amount: 1, // Each transaction is 1 battery swap
-          timestamp: transaction.createAt ? new Date(transaction.createAt).getTime() : 0,
-          status: transaction.status,
-          batteryTaken: transaction.battery_taken_id,
-          batteryReturned: transaction.battery_returned_id,
-          rawData: transaction
-        }));
+        const transformedSwaps = (swapTransactions || []).map(transaction => {
+          const station = stationMap[transaction.station_id];
+          return {
+            id: `swap-${transaction.transaction_id}`,
+            type: 'swap',
+            date: transaction.createAt
+              ? new Date(transaction.createAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })
+              : 'N/A',
+            time: transaction.createAt
+              ? new Date(transaction.createAt).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+              : 'N/A',
+            location: station?.name || station?.address || `Station ${transaction.station_id || 'Unknown'}`,
+            amount: 1, // Each transaction is 1 battery swap
+            timestamp: transaction.createAt ? new Date(transaction.createAt).getTime() : 0,
+            status: transaction.status,
+            batteryTaken: transaction.battery_taken_id,
+            batteryReturned: transaction.battery_returned_id,
+            rawData: transaction
+          };
+        });
 
         // Transform payments to UI format
         const transformedPayments = (payments || []).map(payment => ({
