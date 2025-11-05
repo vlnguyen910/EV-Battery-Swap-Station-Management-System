@@ -268,7 +268,7 @@ export const InventoryProvider = ({ children }) => {
 
     }, [user?.user_id, user?.id]);
 
-    // Station: Check for token to avoid 401 errors
+    // Station: Check for token to avoid 401 errors (only for driver role)
     useEffect(() => {
         const checkAndFetch = () => {
             const token = localStorage.getItem('token');
@@ -277,6 +277,7 @@ export const InventoryProvider = ({ children }) => {
                 hasToken: !!token,
                 hasUser: !!user,
                 userId: user?.user_id || user?.id,
+                role: user?.role,
                 initialized,
                 loading: stationLoading,
                 stationsCount: stations.length
@@ -284,6 +285,12 @@ export const InventoryProvider = ({ children }) => {
 
             if (!token || !user) {
                 console.log('No token or user found - cannot fetch stations');
+                return;
+            }
+
+            // Only fetch available stations for driver role
+            if (user.role !== 'driver') {
+                console.log(`User role is ${user.role} - skipping available stations fetch (driver only)`);
                 return;
             }
 
@@ -300,13 +307,13 @@ export const InventoryProvider = ({ children }) => {
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.role, user?.user_id]);
 
-    // Station: Re-fetch when user logs in
+    // Station: Re-fetch when user logs in (only for driver role)
     useEffect(() => {
         const handleLogin = () => {
-            if (!initialized && !stationLoading && user) {
-                console.log('User logged in - fetching available stations');
+            if (!initialized && !stationLoading && user && user.role === 'driver') {
+                console.log('Driver logged in - fetching available stations');
                 getAvailableStations().catch(err => {
                     console.error('Failed to fetch stations after login:', err);
                 });
@@ -315,7 +322,8 @@ export const InventoryProvider = ({ children }) => {
 
         window.addEventListener('userLoggedIn', handleLogin);
         return () => window.removeEventListener('userLoggedIn', handleLogin);
-    }, [initialized, stationLoading, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, user?.user_id]);
 
     // Battery: Fetch on mount if logged in
     useEffect(() => {
@@ -324,9 +332,15 @@ export const InventoryProvider = ({ children }) => {
             console.log('No token found - skipping battery fetch on mount');
             return;
         }
+
+        // Only fetch all batteries for admin/driver, not for station_staff
+        if (user?.role === 'station_staff') {
+            console.log('Station staff - batteries will be fetched by station_id in StaffInventory');
+            return;
+        }
+
         getAllBatteries();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.role, user?.user_id]);
 
     // Combined loading/error for backward compatibility
     const loading = stationLoading || batteryLoading;
