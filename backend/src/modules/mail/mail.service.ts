@@ -42,7 +42,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    const frontend_url = `${this.configService.get('FRONTEND_URL')}?token=${token}`;
+    const frontend_url = `${this.configService.get('FRONTEND_RESET_PASSWORD_URL')}?token=${token}`;
 
     await this.transporter.sendMail({
       from: `"No Reply" <${this.configService.get('MAIL_FROM')}>`,
