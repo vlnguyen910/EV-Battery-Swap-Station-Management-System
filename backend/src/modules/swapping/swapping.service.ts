@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { SwappingDto } from './dto/swapping.dto';
 import { UsersService } from '../users/users.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
@@ -24,10 +24,9 @@ export class SwappingService {
     ) { }
 
     async swapBatteries(swapDto: SwappingDto) {
-        const { user_id, station_id } = swapDto;
-        const kmPerPercent: number = 5; // Example: 5 km per 1% battery
-        const fullBatteryPercent = 100;
-
+        const { user_id, vehicle_id, station_id } = swapDto;
+        const KM_PER_PERCENT: number = 5; // Example: 5 km per 1% battery
+        const FULL_BATTERY_PERCENT: number = 100;
 
         try {
             // Check user is exist
@@ -37,11 +36,7 @@ export class SwappingService {
             const station = await this.stationsService.findOne(station_id);
 
             // Check vehicle is exist
-            const vehicle = await this.vehiclesService.findOneActiveByUserId(user_id);
-
-            // Get vehicle id and return battery id from vehicle
-            const vehicle_id = vehicle.vehicle_id;
-            const return_battery_id = vehicle.battery_id;
+            const vehicle = await this.vehiclesService.findOne(vehicle_id);
 
             // Check user subscription is valid
             const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle_id);
@@ -63,12 +58,18 @@ export class SwappingService {
                     throw new BadRequestException(`Reservation station does not match the swapping station`);
                 }
 
-                if (reservation.vehicle_id !== vehicle_id) {
-                    throw new BadRequestException(`Reservation vehicle does not match the swapping vehicle`);
+                if (reservation.vehicle_id === vehicle_id) {
+                    taken_battery_id = reservation.battery_id;
+                    // Update battery status to full for swapping
+                    await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full);
                 }
             }
+            else {
+                taken_battery_id = (await this.batteriesService.findBestBatteryForVehicle(vehicle_id, station_id)).battery_id;
+            }
 
-            taken_battery_id = (await this.batteriesService.findBestBatteryForVehicle(vehicle_id, station_id)).battery_id;
+            //get return battery id from vehicle
+            const return_battery_id = vehicle.battery_id;
 
             // If no return battery, it means it's the first swap, so just assign the taken battery to the vehicle
             if (!return_battery_id) {
@@ -76,7 +77,7 @@ export class SwappingService {
                     user_id,
                     station_id,
                     vehicle_id,
-                    taken_battery_id: taken_battery_id,
+                    taken_battery_id,
                     subscription_id: subscription.subscription_id,
                     reservation_id: reservation?.reservation_id
                 };
@@ -94,8 +95,9 @@ export class SwappingService {
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
 
                 const returnBattery = await this.batteriesService.findOne(return_battery_id);
-                const batteryUsedPercent = fullBatteryPercent - returnBattery.current_charge.toNumber();
-                const distanceTraveled = batteryUsedPercent * kmPerPercent;
+                const batteryUsedPercent = FULL_BATTERY_PERCENT - returnBattery.current_charge.toNumber();
+                const distanceTraveled = batteryUsedPercent * KM_PER_PERCENT;
+                console.log(`Distance traveled in this swap: ${distanceTraveled} km`);
 
                 // Update distance traveled in subscription
                 await this.subscriptionsService.updateDistanceTraveled(
