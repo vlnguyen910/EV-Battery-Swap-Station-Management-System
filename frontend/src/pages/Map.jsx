@@ -13,7 +13,7 @@ export default function MapPage() {
   const { vehicles } = useVehicle();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
-  const [filteredStations, setFilteredStations] = useState(stations);
+  const [filteredStations, setFilteredStations] = useState([]);
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
@@ -139,9 +139,8 @@ export default function MapPage() {
     }
   }, [map, locateUser]);
 
-  // Ensure batteries are loaded before applying filters
+  // Apply filters whenever stations, batteries, or location changes
   useEffect(() => {
-    if (!batteries || batteries.length === 0) return;
     applyFilters(searchQuery, selectedVehicleId);
   }, [stations, batteries, userLocation, searchQuery, selectedVehicleId, applyFilters]);
 
