@@ -26,7 +26,6 @@ export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) { }
 
   @Post()
-  @Roles('driver', 'admin')
   create(@Body() createSubscriptionDto: CreateSubscriptionDto) {
     return this.subscriptionsService.create(createSubscriptionDto);
   }

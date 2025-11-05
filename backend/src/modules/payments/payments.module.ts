@@ -3,11 +3,13 @@ import { PaymentsService } from './payments.service';
 import { FeeCalculationService } from './services/fee-calculation.service';
 import { PaymentsController } from './payments.controller';
 import { DatabaseModule } from '../database/database.module';
+import { BatteryServicePackagesModule } from '../battery-service-packages/battery-service-packages.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, BatteryServicePackagesModule, SubscriptionsModule],
   providers: [PaymentsService, FeeCalculationService],
   controllers: [PaymentsController],
   exports: [PaymentsService, FeeCalculationService],
 })
-export class PaymentsModule {}
+export class PaymentsModule { }
