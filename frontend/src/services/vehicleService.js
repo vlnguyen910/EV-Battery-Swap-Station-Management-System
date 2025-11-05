@@ -14,7 +14,7 @@ const getAllVehicles = async () => {
   }
 };
 
-// Get vehicle by user ID function
+// Get vehicle by user ID function (for all roles)
 const getVehicleByUserId = async (userId) => {
   try {
     const response = await api.get(

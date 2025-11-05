@@ -27,7 +27,7 @@ export const API_ENDPOINTS = {
     CREATE_VEHICLE: "/vehicles",
     GET_ALL_VEHICLES: "/vehicles",
     GET_VEHICLE_BY_VIN: (vin) => `/vehicles/vin/${vin}`,
-    GET_VEHICLES_BY_USER: (userId) => `/vehicles/user/${userId}`,
+    GET_VEHICLES_BY_USER: (userId) => `/vehicles/user/${userId}`, // For all roles
     GET_VEHICLE: (id) => `/vehicles/${id}`,
     UPDATE_VEHICLE: (id) => `/vehicles/${id}`,
     ASSIGN_VEHICLE: "/vehicles/add-vehicle",

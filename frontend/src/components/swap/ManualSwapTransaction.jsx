@@ -160,7 +160,8 @@ export default function ManualSwapTransaction() {
                         if (vehArr[0].battery_id) setFormData(prev => ({ ...prev, battery_returned_id: String(vehArr[0].battery_id) }));
                     }
                 } catch (vehErr) {
-                    // non-fatal: user may have no vehicles
+                    console.warn('⚠️ Failed to fetch vehicles for user (staff endpoint):', userId, vehErr);
+                    setUserVehicles([]);
                 }
             } catch (error) {
                 console.error('❌ Error fetching user data for manual entry:', error);
