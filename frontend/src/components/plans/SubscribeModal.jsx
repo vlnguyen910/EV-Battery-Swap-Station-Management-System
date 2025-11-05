@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { X, CheckCircle, AlertCircle } from 'lucide-react'
 import { vehicleService } from '../../services/vehicleService'
 
-export default function SubscribeModal({ open, onClose, plan, user, onPay, paying, subscriptions = [] }) {
+export default function SubscribeModal({ open, onClose, plan, user, onPay, onPayDirectly, paying, subscriptions = [] }) {
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -180,7 +180,7 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
               disabled={paying || loading || !selectedVehicle || vehicles.length === 0}
               className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-5 py-3 text-base font-semibold leading-6 text-white transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {paying ? 'Processing...' : 'Confirm & Pay'}
+              {paying ? 'Processing...' : 'Pay with cash'}
             </button>
             <button
               onClick={onClose}

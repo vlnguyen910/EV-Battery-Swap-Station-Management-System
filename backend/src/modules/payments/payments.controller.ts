@@ -385,8 +385,7 @@ export class PaymentsController {
  * - When VNPAY is unavailable
  */
   @Post('direct-with-fees')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('driver', 'admin', 'station_staff')
+  @UseGuards(AuthGuard)
   async createDirectPaymentWithFees(
     @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
   ) {

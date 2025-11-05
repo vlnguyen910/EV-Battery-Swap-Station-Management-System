@@ -204,26 +204,19 @@ export default function Plans() {
         vehicle_id: parseInt(vehicleId)
       }
 
-      const res = await paymentService.createPayment(payload)
-
-    setPaying(true)
-    try {
-      const payload = {
-        user_id: user.user_id,
-        package_id: selectedPlan.rawData.package_id,
-        vehicle_id: parseInt(vehicleId)
-      }
-
-      const res = await paymentService.createPayment(payload)
-      // Expect backend to return a redirect url to VNPay
-      const redirectUrl = res?.vnpUrl || res?.paymentUrl || res?.url || res?.redirectUrl || res
-      if (redirectUrl) {
-        window.location.href = redirectUrl
+      console.log('Creating direct payment with payload:', payload)
+      const res = await paymentService.createDirectPaymentWithFees(payload)
+      
+      if (res) {
+        alert('Payment created successfully! Waiting for staff approval.')
+        setModalOpen(false)
+        // Refresh subscriptions after payment
+        await fetchAllData()
       } else {
-        alert('Payment URL not returned by server')
+        alert('Payment creation failed')
       }
     } catch (err) {
-      console.error('Payment creation failed', err)
+      console.error('Direct payment creation failed', err)
       alert('Payment creation failed: ' + (err.message || err))
     } finally {
       setPaying(false)
