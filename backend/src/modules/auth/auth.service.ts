@@ -244,6 +244,10 @@ export class AuthService {
 
             const user = await this.usersService.findOneByEmail(email);
 
+            if (!user) {
+                throw new NotFoundException(`User with email: ${email} not found`);
+            }
+
             if (!user.email_verified && user.email_verified === false) {
                 throw new BadRequestException('Email not verified. Cannot reset password.');
             }
