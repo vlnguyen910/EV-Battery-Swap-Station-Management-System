@@ -30,10 +30,6 @@ export const InventoryProvider = ({ children }) => {
     const [batteryLoading, setBatteryLoading] = useState(false);
     const [batteryError, setBatteryError] = useState(null);
 
-    // ============ VEHICLE STATE ============
-    const [cachedVehicles, setCachedVehicles] = useState([]);
-    const [vehiclesFetched, setVehiclesFetched] = useState(false);
-
     // ============ STATION METHODS ============
     // Get user's current location
     const getUserLocation = () => {
@@ -97,43 +93,28 @@ export const InventoryProvider = ({ children }) => {
                 return;
             }
 
-            // Lấy vehicleId từ cached vehicles của user hiện tại
+            // Lấy vehicleId bất kì từ user (fetch mỗi lần để tránh cache stale)
             let vehicleId = null;
+            try {
+                const vehiclesResponse = await getVehicleByUserIdService(userId);
+                console.log('Vehicles response:', vehiclesResponse);
 
-            // Chỉ fetch vehicles nếu chưa fetch cho user này
-            if (!vehiclesFetched) {
-                try {
-                    const vehiclesResponse = await getVehicleByUserIdService(userId);
-                    console.log('Vehicles response:', vehiclesResponse);
+                // Handle different response formats
+                const vehicles = Array.isArray(vehiclesResponse)
+                    ? vehiclesResponse
+                    : (vehiclesResponse?.data || []);
 
-                    // Handle different response formats
-                    const vehicles = Array.isArray(vehiclesResponse)
-                        ? vehiclesResponse
-                        : (vehiclesResponse?.data || []);
-
-                    // Cache vehicles cho user này
-                    setCachedVehicles(vehicles);
-                    setVehiclesFetched(true);
-
-                    // Get first vehicle's ID if exists
-                    if (vehicles.length > 0) {
-                        vehicleId = vehicles[0]?.vehicle_id || vehicles[0]?.id;
-                        console.log('Using vehicle_id:', vehicleId);
-                    } else {
-                        console.warn('No vehicles found for user');
-                    }
-                } catch (vehicleError) {
-                    console.error('Error fetching vehicles:', vehicleError);
-                    setVehiclesFetched(true); // Đánh dấu đã fetch để không thử lại
-                }
-            } else {
-                // Dùng cached vehicles
-                if (cachedVehicles.length > 0) {
-                    vehicleId = cachedVehicles[0]?.vehicle_id || cachedVehicles[0]?.id;
-                    console.log('Using cached vehicle_id:', vehicleId);
+                // Get first vehicle's ID if exists
+                if (vehicles.length > 0) {
+                    vehicleId = vehicles[0]?.vehicle_id || vehicles[0]?.id;
+                    console.log('Using vehicle_id:', vehicleId);
+                    console.log('Vehicle details:', vehicles[0]);
                 } else {
-                    console.log('No cached vehicles for this user');
+                    console.log('No vehicles found for user - will fetch all stations');
                 }
+            } catch (vehicleError) {
+                console.error('Error fetching vehicles:', vehicleError);
+                // Continue without vehicle_id - backend will return all stations
             }
 
             // Get coordinates: use provided > user location > browser geolocation > default HCM
@@ -162,20 +143,41 @@ export const InventoryProvider = ({ children }) => {
                 }
             }
 
-            // Call API - only pass vehicle_id if found
+            // Call API - backend will handle null vehicleId by returning all stations
+            console.log('📍 Calling API with params:', {
+                userId,
+                vehicleId,
+                longitude: finalLongitude,
+                latitude: finalLatitude
+            });
+
             const data = await getAvailableStationsService(
                 userId,
-                vehicleId, // null if no vehicle found - service will handle
+                vehicleId, // null if no vehicle → backend returns all stations
                 finalLongitude,
                 finalLatitude
             );
 
-            setStations(data);
-            setInitialized(true);
-            console.log("Available stations fetched successfully", data);
+            console.log('📦 API Response:', data);
+
+            // Handle response - could be empty array if no stations nearby
+            if (Array.isArray(data)) {
+                setStations(data);
+                setInitialized(true);
+                if (data.length === 0) {
+                    console.log('✓ No stations found nearby (within 20km radius)');
+                } else {
+                    console.log(`✓ Found ${data.length} available station(s)`, data);
+                }
+            } else {
+                console.warn('⚠️ Unexpected response format:', data);
+                setStations([]);
+                setInitialized(true);
+            }
         } catch (error) {
             setStationError(error);
-            console.error("Error fetching available stations:", error);
+            console.error("❌ Error fetching available stations:", error);
+            setStations([]); // Set empty on error
         } finally {
             setStationLoading(false);
         }
@@ -247,24 +249,21 @@ export const InventoryProvider = ({ children }) => {
     };
 
     // ============ EFFECTS ============
-    // Clear cached data when user changes (logout/login)
+    // Clear data when user logs out
     useEffect(() => {
         const userId = user?.user_id || user?.id;
 
         if (!userId) {
             // User logged out - clear everything
-            console.log('User logged out - clearing cached data');
-            setCachedVehicles([]);
-            setVehiclesFetched(false);
+            console.log('User logged out - clearing all data');
             setStations([]);
             setInitialized(false);
+            setBatteries([]);
             return;
         }
 
-        // User changed - reset vehicle cache for new user
-        console.log('User changed - resetting vehicle cache for user:', userId);
-        setCachedVehicles([]);
-        setVehiclesFetched(false);
+        // User logged in or changed - reset initialized flag to trigger re-fetch
+        console.log('User detected:', userId, '- will fetch fresh data');
         setInitialized(false);
 
     }, [user?.user_id, user?.id]);
