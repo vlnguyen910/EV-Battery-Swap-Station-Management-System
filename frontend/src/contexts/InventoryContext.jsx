@@ -3,7 +3,7 @@ import { stationService } from "../services/stationService";
 import { batteryService } from "../services/batteryService";
 import { AuthContext } from "./AuthContext";
 
-const { getAllStations: getAllStationsService, getStationById: getStationByIdService , getAvailableStations: getAvailableStationsService } = stationService;
+const { getAllStations: getAllStationsService, getStationById: getStationByIdService, getAvailableStations: getAvailableStationsService } = stationService;
 const { getAllBatteries: getAllBatteriesService, getBatteryById: getBatteryByIdService, updateBatteryById: updateBatteryByIdService } = batteryService;
 
 export const InventoryContext = createContext();
@@ -18,7 +18,7 @@ export const InventoryProvider = ({ children }) => {
     const [stationLoading, setStationLoading] = useState(false);
     const [stationError, setStationError] = useState(null);
     const [initialized, setInitialized] = useState(false);
-    
+
     // Geolocation state
     const [userLocation, setUserLocation] = useState(null);
 
@@ -83,7 +83,7 @@ export const InventoryProvider = ({ children }) => {
         try {
             // Get user_id from user object
             const userId = user?.user_id || user?.id;
-            
+
             if (!userId) {
                 console.warn('No user_id found, cannot fetch available stations');
                 setStations([]);
@@ -228,7 +228,7 @@ export const InventoryProvider = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    // Station: Re-fetch when user logs in
+    // Station & Battery: Re-fetch when user logs in
     useEffect(() => {
         const handleLogin = () => {
             if (!initialized && !stationLoading && user) {
@@ -237,22 +237,49 @@ export const InventoryProvider = ({ children }) => {
                     console.error('Failed to fetch stations after login:', err);
                 });
             }
+            if (!batteryLoading && batteries.length === 0 && user) {
+                console.log('User logged in - fetching batteries');
+                getAllBatteries().catch(err => {
+                    console.error('Failed to fetch batteries after login:', err);
+                });
+            }
         };
 
         window.addEventListener('userLoggedIn', handleLogin);
         return () => window.removeEventListener('userLoggedIn', handleLogin);
-    }, [initialized, stationLoading, user]);
+    }, [initialized, stationLoading, batteryLoading, batteries.length, user]);
 
-    // Battery: Fetch on mount if logged in
+    // Battery: Fetch on mount if logged in, with retry logic
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.log('No token found - skipping battery fetch on mount');
-            return;
-        }
-        getAllBatteries();
+        const checkAndFetchBatteries = () => {
+            const token = localStorage.getItem('token');
+
+            console.log('InventoryContext checking batteries:', {
+                hasToken: !!token,
+                hasUser: !!user,
+                loading: batteryLoading,
+                batteriesCount: batteries.length
+            });
+
+            if (!token || !user) {
+                console.log('No token or user found - cannot fetch batteries');
+                return;
+            }
+
+            if (!batteryLoading && batteries.length === 0) {
+                console.log('Fetching available batteries...');
+                getAllBatteries().catch(err => {
+                    console.error('Failed to fetch batteries:', err);
+                });
+            }
+        };
+
+        checkAndFetchBatteries();
+        const timer = setTimeout(checkAndFetchBatteries, 100);
+
+        return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user]);
 
     // Combined loading/error for backward compatibility
     const loading = stationLoading || batteryLoading;
@@ -272,7 +299,7 @@ export const InventoryProvider = ({ children }) => {
             getAllBatteries,
             getBatteryById,
             countAvailableBatteriesByStation,
-            
+
 
             // Combined status
             loading,
