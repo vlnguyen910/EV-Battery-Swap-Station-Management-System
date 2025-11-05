@@ -4,7 +4,6 @@ import { InventoryContext } from "../contexts/InventoryContext";
 import { ServiceContext } from "../contexts/ServiceContext";
 import { BookingContext } from "../contexts/BookingContext";
 import { VehicleContext } from "../contexts/VehicleContext";
-import { SwapContext } from "../contexts/SwapContext";
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -129,8 +128,4 @@ export function useSwapRequest() {
 
 export function useVehicle() {
   return useContext(VehicleContext);
-}
-
-export function useSwap() {
-  return useContext(SwapContext);
 }

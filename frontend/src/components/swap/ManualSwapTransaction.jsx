@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useBattery, useAuth, useSubscription, usePackage, useSwap } from '../../hooks/useContext';
+import { useBattery, useAuth, useSubscription, usePackage } from '../../hooks/useContext';
+import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
 import { swapService } from '../../services/swapService';
@@ -17,7 +18,7 @@ export default function ManualSwapTransaction() {
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
     const { packages, getPackageById } = usePackage();
-    const { swapBatteries } = useSwap();
+
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
@@ -395,7 +396,7 @@ export default function ManualSwapTransaction() {
             console.log('🚀 Creating swap transaction with payload:', swapPayload);
 
             // Call backend swapping endpoint which handles everything automatically
-            const resp = await swapBatteries(swapPayload);
+            const resp = await swappingService.swapBatteries(swapPayload);
             console.log('✅ Swap transaction created:', resp);
 
             // If this was a reservation flow, backend already updated reservation status to completed

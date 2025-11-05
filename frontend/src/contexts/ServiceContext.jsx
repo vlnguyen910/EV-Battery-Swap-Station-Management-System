@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useContext } from "react";
+import { AuthContext } from "./AuthContext";
 import { packageService } from "../services/packageService";
 import { subscriptionService } from "../services/subscriptionService";
 
@@ -216,7 +217,9 @@ export const ServiceProvider = ({ children }) => {
 
     // ============ EFFECTS ============
     // Load packages on mount
+    const { token } = useContext(AuthContext);
     useEffect(() => {
+        if (!token) return;
         let mounted = true;
 
         const fetchPackages = async () => {
@@ -237,7 +240,7 @@ export const ServiceProvider = ({ children }) => {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [token]);
 
     // Combined loading/error for backward compatibility
     const loading = packageLoading || subscriptionLoading;
