@@ -133,17 +133,22 @@ export class ReservationsService {
     return `This action returns a #${id} reservation`;
   }
 
-  async findOneScheduledByUserId(userId: number) {
+  async findOneScheduledForVehicleByUserId(user_id: number, vehicle_id: number) {
     try {
-      const vehicle = await this.vehicleService.findOneActiveByUserId(userId);
+      const vehicle = await this.vehicleService.findOne(vehicle_id);
+
       if (!vehicle) {
-        throw new NotFoundException('Not found driver vehicle or not active yet');
+        throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
+      }
+
+      if (vehicle.user_id !== user_id) {
+        throw new BadRequestException(`Vehicle with ID ${vehicle_id} does not belong to user with ID ${user_id}`);
       }
 
       return this.databaseService.reservation.findFirst({
         where: {
-          user_id: userId,
-          vehicle_id: vehicle.vehicle_id,
+          user_id: user_id,
+          vehicle_id: vehicle_id,
           status: ReservationStatus.scheduled
         }
       });

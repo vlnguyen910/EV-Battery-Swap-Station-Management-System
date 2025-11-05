@@ -50,7 +50,7 @@ export class SwappingService {
             }
 
             //check is use have reservation at this station
-            const reservation = await this.reservationsService.findOneScheduledByUserId(user_id);
+            const reservation = await this.reservationsService.findOneScheduledForVehicleByUserId(user_id, vehicle_id);
             let taken_battery_id: number;
             if (reservation) {
                 this.logger.log(`User has a reservation: ${JSON.stringify(reservation)}`);
