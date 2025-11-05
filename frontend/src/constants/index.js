@@ -95,6 +95,7 @@ export const API_ENDPOINTS = {
     GET_BY_USER: (userId) => `/swap-transactions/user/${userId}`,
     GET_BY_STATION: (stationId) => `/swap-transactions/station/${stationId}`,
     GET_TRANSACTION_BY_ID: (id) => `/swap-transactions/transaction/${id}`,
+    GET_BY_STATION: (stationId) => `/swap-transactions/station/${stationId}`,
     UPDATE_TRANSACTION: (id) => `/swap-transactions/${id}`,
     DELETE_TRANSACTION: (id) => `/swap-transactions/${id}`,
   },

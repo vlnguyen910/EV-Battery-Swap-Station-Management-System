@@ -92,7 +92,7 @@ export class AuthController {
     });
 
     // Redirect to frontend with access token
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('GOOGLE_FRONTEND_RETURN') || 'http://localhost:3000';
     return response.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`);
   }
 
