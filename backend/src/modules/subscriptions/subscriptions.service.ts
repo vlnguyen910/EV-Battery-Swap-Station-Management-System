@@ -9,7 +9,7 @@ import {
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { DatabaseService } from '../database/database.service';
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus, VehicleStatus } from '@prisma/client';
 import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
 
 @Injectable()
@@ -29,50 +29,84 @@ export class SubscriptionsService {
       throw new BadRequestException('Package is not active');
     }
 
-    // 2. Check if user has an active subscription for this package
+    // 2. Check if vehicle exists
+    const vehicle = await this.prisma.vehicle.findUnique({
+      where: { vehicle_id: createSubscriptionDto.vehicle_id },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Vehicle not found');
+    }
+
+    // 3. Verify vehicle belongs to user
+    if (vehicle.user_id !== createSubscriptionDto.user_id) {
+      throw new BadRequestException('Vehicle does not belong to this user');
+    }
+
+    // 4. Check if this VEHICLE already has ANY active subscription
+    // Rule: Vehicle can only have ONE active subscription at a time
     const existingSubscription = await this.prisma.subscription.findFirst({
       where: {
-        user_id: createSubscriptionDto.user_id,
-        package_id: createSubscriptionDto.package_id,
+        vehicle_id: createSubscriptionDto.vehicle_id,
         status: SubscriptionStatus.active,
+      },
+      include: {
+        package: true,
       },
     });
 
     if (existingSubscription) {
       throw new ConflictException(
-        'User already has an active subscription for this package',
+        `This vehicle already has an active subscription (${existingSubscription.package.name}). Please cancel it first before creating a new one.`,
       );
     }
 
-    // 3. Calculate end date based on duration_days
+    // 5. Calculate end date based on duration_days
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + servicePackage.duration_days);
 
-    // 4. Create subscription
-    return this.prisma.subscription.create({
-      data: {
-        user_id: createSubscriptionDto.user_id,
-        package_id: createSubscriptionDto.package_id,
-        vehicle_id: createSubscriptionDto.vehicle_id,
-        start_date: startDate,
-        end_date: endDate,
-        status: SubscriptionStatus.active,
-        swap_used: 0,
-      },
-      include: {
-        package: true,
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            phone: true,
-          },
+    // 6. Create subscription and activate vehicle in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create subscription
+      const subscription = await tx.subscription.create({
+        data: {
+          user_id: createSubscriptionDto.user_id,
+          package_id: createSubscriptionDto.package_id,
+          vehicle_id: createSubscriptionDto.vehicle_id,
+          start_date: startDate,
+          end_date: endDate,
+          status: SubscriptionStatus.active,
+          swap_used: 0,
         },
-        vehicle: true,
-      },
+        include: {
+          package: true,
+          user: {
+            select: {
+              user_id: true,
+              username: true,
+              email: true,
+              phone: true,
+            },
+          },
+          vehicle: true,
+        },
+      });
+
+      // Activate vehicle
+      await tx.vehicle.update({
+        where: { vehicle_id: createSubscriptionDto.vehicle_id },
+        data: { status: VehicleStatus.active },
+      });
+
+      this.logger.log(
+        `Vehicle ${vehicle.vin} (ID: ${vehicle.vehicle_id}) activated for subscription ${subscription.subscription_id}`,
+      );
+
+      return subscription;
     });
+
+    return result;
   }
 
   async findAll() {
@@ -202,24 +236,60 @@ export class SubscriptionsService {
       throw new BadRequestException('Subscription is not active');
     }
 
-    return this.prisma.subscription.update({
-      where: { subscription_id: id },
-      data: {
-        status: SubscriptionStatus.cancelled,
-      },
-      include: {
-        package: true,
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            phone: true,
-          },
+    // Cancel subscription and deactivate vehicle if no other active subscriptions
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Cancel the subscription
+      const cancelled = await tx.subscription.update({
+        where: { subscription_id: id },
+        data: {
+          status: SubscriptionStatus.cancelled,
         },
-        vehicle: true,
-      },
+        include: {
+          package: true,
+          user: {
+            select: {
+              user_id: true,
+              username: true,
+              email: true,
+              phone: true,
+            },
+          },
+          vehicle: true,
+        },
+      });
+
+      // Only deactivate vehicle if vehicle_id exists
+      if (subscription.vehicle_id) {
+        // Check if vehicle has any other active subscriptions
+        const otherActiveSubscriptions = await tx.subscription.findFirst({
+          where: {
+            vehicle_id: subscription.vehicle_id,
+            subscription_id: { not: id },
+            status: SubscriptionStatus.active,
+          },
+        });
+
+        // If no other active subscriptions, deactivate the vehicle
+        if (!otherActiveSubscriptions) {
+          await tx.vehicle.update({
+            where: { vehicle_id: subscription.vehicle_id },
+            data: { status: VehicleStatus.inactive },
+          });
+
+          this.logger.log(
+            `Vehicle ID ${subscription.vehicle_id} deactivated after cancelling subscription ${id}`,
+          );
+        } else {
+          this.logger.log(
+            `Vehicle ID ${subscription.vehicle_id} remains active (has other active subscriptions)`,
+          );
+        }
+      }
+
+      return cancelled;
     });
+
+    return result;
   }
 
   async incrementSwapUsed(id: number, tx?: any) {
@@ -310,6 +380,7 @@ export class SubscriptionsService {
             email: true,
           },
         },
+        vehicle: true,
       },
     });
 
@@ -328,25 +399,55 @@ export class SubscriptionsService {
       .filter(sub => sub.distance_traveled > sub.package.base_distance)
       .map(sub => sub.subscription_id);
 
-    await this.prisma.subscription.updateMany({
-      where: {
-        subscription_id: { in: expiredIds },
-      },
-      data: {
-        status: SubscriptionStatus.expired,
-      },
-    });
-    this.logger.log(`Marked ${expiredIds.length} subscriptions as expired.`);
+    // Use transaction to update subscriptions and deactivate vehicles
+    await this.prisma.$transaction(async (tx) => {
+      // Mark subscriptions as expired
+      await tx.subscription.updateMany({
+        where: {
+          subscription_id: { in: expiredIds },
+        },
+        data: {
+          status: SubscriptionStatus.expired,
+        },
+      });
+      this.logger.log(`Marked ${expiredIds.length} subscriptions as expired.`);
 
-    await this.prisma.subscription.updateMany({
-      where: {
-        subscription_id: { in: needPaymentIds },
-      },
-      data: {
-        status: SubscriptionStatus.pending_penalty_payment,
-      },
+      // Mark subscriptions with penalty as pending payment
+      await tx.subscription.updateMany({
+        where: {
+          subscription_id: { in: needPaymentIds },
+        },
+        data: {
+          status: SubscriptionStatus.pending_penalty_payment,
+        },
+      });
+      this.logger.log(`Marked ${needPaymentIds.length} subscriptions as pending penalty payment.`);
+
+      // Deactivate vehicles that no longer have active subscriptions
+      const vehicleIds = expiredSubscriptions
+        .map(sub => sub.vehicle_id)
+        .filter((id): id is number => id !== null);
+
+      for (const vehicleId of vehicleIds) {
+        // Check if vehicle still has any active subscription
+        const stillActive = await tx.subscription.findFirst({
+          where: {
+            vehicle_id: vehicleId,
+            status: SubscriptionStatus.active,
+          },
+        });
+
+        // If no active subscription, deactivate vehicle
+        if (!stillActive) {
+          await tx.vehicle.update({
+            where: { vehicle_id: vehicleId },
+            data: { status: VehicleStatus.inactive },
+          });
+
+          this.logger.log(`Vehicle ID ${vehicleId} deactivated (no active subscriptions)`);
+        }
+      }
     });
-    this.logger.log(`Marked ${needPaymentIds.length} subscriptions as pending penalty payment.`);
 
     this.logger.log(`Expired ${expiredSubscriptions.length} subscriptions.`);
     return {
