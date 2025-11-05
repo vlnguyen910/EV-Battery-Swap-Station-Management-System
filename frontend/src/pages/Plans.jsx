@@ -7,10 +7,12 @@ import { packageService } from '../services/packageService'
 import { subscriptionService } from '../services/subscriptionService'
 import SubscribeModal from '../components/plans/SubscribeModal'
 import { paymentService } from '../services/paymentService'
+import { useVehicle } from '../hooks/useContext'
 
 export default function Plans() {
   // Get user from parent (Driver.jsx) via Outlet context
   const { user } = useOutletContext()
+  const { fetchAllVehicles } = useVehicle()
 
   const [packages, setPackages] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
@@ -139,6 +141,10 @@ export default function Plans() {
   // Fetch packages on component mount
   useEffect(() => {
     fetchAllData()
+    // Also fetch vehicles to ensure they're available for subscription modal
+    if (fetchAllVehicles && user?.user_id) {
+      fetchAllVehicles(user.user_id)
+    }
   }, [user?.user_id])
 
 
@@ -183,12 +189,9 @@ export default function Plans() {
     }
   }
 
-  // Check if user is already subscribed to a package (excluding cancelled subscriptions)
-  const isUserSubscribed = (packageId) => {
-    return activeSubscriptions.some(sub =>
-      String(sub.package_id) === String(packageId)
-    )
-  }
+  // Note: User can now subscribe to the same package multiple times
+  // as long as they use different vehicles. Validation is done in SubscribeModal
+  // by checking if the selected vehicle already has an active subscription.
 
   // Loading state
   if (loading) {
@@ -251,7 +254,6 @@ export default function Plans() {
             subscriptions={activeSubscriptions}
             onSubscribe={openSubscribeModal}
             loading={subscribing}
-            isUserSubscribed={isUserSubscribed}
           />
         </section>
 

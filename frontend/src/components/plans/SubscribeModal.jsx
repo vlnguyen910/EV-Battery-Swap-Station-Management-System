@@ -21,12 +21,20 @@ export default function SubscribeModal({ open, onClose, plan, user, onPay, payin
   useEffect(() => {
     if (!open) return
     const fetchVehicles = async () => {
-      if (!user?.id) return
+      // Support both user.id and user.user_id
+      const userId = user?.user_id || user?.id
+      if (!userId) {
+        console.warn('No user ID found')
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const res = await vehicleService.getVehicleByUserId(user.id)
+        console.log('Fetching vehicles for user:', userId)
+        const res = await vehicleService.getVehicleByUserId(userId)
         const data = res?.data || res || []
+        console.log('Fetched vehicles:', data)
         setVehicles(Array.isArray(data) ? data : [])
         // Don't auto-select - force user to choose
         setSelectedVehicle(null)
