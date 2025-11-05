@@ -6,28 +6,37 @@ export default function StaffPage() {
     const { logout } = useAuth();
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <Navigation type="staff" />
+        <div className="min-h-screen bg-gray-50 relative">
+            {/* Aurora Dream Diagonal Flow Background */}
+            <div
+                className="fixed inset-0 z-0"
+                style={{
+                    background: `
+                        radial-gradient(ellipse 80% 60% at 5% 40%, #ecf1fbdc, transparent 67%),
+                        radial-gradient(ellipse 70% 60% at 45% 45%, #eaf1ff69, transparent 67%),
+                        radial-gradient(ellipse 62% 52% at 83% 76%, #f7fbffff, transparent 63%),
+                        radial-gradient(ellipse 60% 48% at 75% 20%, #dde5ffbc, transparent 66%),
+                        linear-gradient(45deg, #eaeeffc5 0%, #ffffffff 100%)
+                    `,
+                }}
+            />
 
-            <main className="p-6">
+            {/* Navigation */}
+            <div className="relative z-10">
+                <Navigation type="staff" />
+            </div>
+
+            {/* Main Content */}
+            <main className="relative z-10 p-6">
                 {/* Trang con sẽ render ở đây */}
                 <Outlet />
                 <button
                     onClick={logout}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                    }}
+                    className="mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded border-none cursor-pointer transition-colors"
                 >
                     🚪 Logout
                 </button>
             </main>
-
-
         </div>
     );
 }

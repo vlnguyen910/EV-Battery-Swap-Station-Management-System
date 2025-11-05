@@ -65,23 +65,23 @@ const getAllSwapTransactionsByUserId = async (userId) => {
   }
 };
 
-// const getAllSwapTransactionsByStationId = async (stationId) => {
-//   try {
-//     const response = await api.get(
-//       `${API_ENDPOINTS.SWAP_TRANSACTION.GET_ALL_TRANSACTIONS}?stationId=${stationId}`
-//     );
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error fetching swap histories by stationId:", error);
-//     throw error;
-//   }
-// };
+const getAllSwapTransactionsByStationId = async (stationId) => {
+  try {
+    const response = await api.get(
+      API_ENDPOINTS.SWAP_TRANSACTION.GET_BY_STATION(stationId)
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching swap histories by stationId:", error);
+    throw error;
+  }
+};
 
 export const swapService = {
   getSwapTransactionById,
   updateSwapTransaction,
   createSwapTransaction,
-  // getAllSwapTransactionsByStationId,
+  getAllSwapTransactionsByStationId,
   getAllSwapTransactions,
   getAllSwapTransactionsByUserId,
 };
