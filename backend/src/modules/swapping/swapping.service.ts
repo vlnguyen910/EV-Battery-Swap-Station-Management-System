@@ -12,6 +12,7 @@ import { FirstSwapDto } from './dto/first-swap.dto';
 import { ReservationsService } from '../reservations/reservations.service';
 @Injectable()
 export class SwappingService {
+    private readonly logger = new Logger(SwappingService.name);
     constructor(
         private databaseService: DatabaseService,
         private usersService: UsersService,
@@ -52,6 +53,7 @@ export class SwappingService {
             const reservation = await this.reservationsService.findOneScheduledByUserId(user_id);
             let taken_battery_id: number;
             if (reservation) {
+                this.logger.log(`User has a reservation: ${JSON.stringify(reservation)}`);
                 taken_battery_id = reservation.battery_id;
 
                 if (reservation.station_id !== station_id) {
@@ -86,8 +88,6 @@ export class SwappingService {
 
             // Perform the swap within a transaction
             return await this.databaseService.$transaction(async (prisma) => {
-                //update battery status booked to full for swapping
-                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full, prisma);
 
                 await this.batteriesService.returnBatteryToStation(return_battery_id, station_id, prisma);
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
@@ -97,7 +97,7 @@ export class SwappingService {
                 const returnBattery = await this.batteriesService.findOne(return_battery_id);
                 const batteryUsedPercent = FULL_BATTERY_PERCENT - returnBattery.current_charge.toNumber();
                 const distanceTraveled = batteryUsedPercent * KM_PER_PERCENT;
-                console.log(`Distance traveled in this swap: ${distanceTraveled} km`);
+                this.logger.log(`Battery used percent: ${batteryUsedPercent}%, Distance traveled: ${distanceTraveled} km`);
 
                 // Update distance traveled in subscription
                 await this.subscriptionsService.updateDistanceTraveled(
@@ -123,6 +123,7 @@ export class SwappingService {
                     reservationStatus = await this.reservationsService.updateReservationStatus(reservation.reservation_id, user_id, ReservationStatus.completed, prisma);
                 }
 
+                this.logger.log(`Battery swap completed successfully for user ID ${user_id}, vehicle ID ${vehicle_id}`);
                 return {
                     message: 'Battery swap successful',
                     swap_used: subscription.swap_used,
@@ -133,7 +134,6 @@ export class SwappingService {
                     reservation_status: reservation ? ReservationStatus.completed : null
                 }
             });
-
         } catch (error) {
             throw error;
         }
@@ -143,8 +143,6 @@ export class SwappingService {
         const { user_id, station_id, vehicle_id, taken_battery_id, reservation_id, subscription_id } = firstSwapDto;
         try {
             return await this.databaseService.$transaction(async (prisma) => {
-                //update battery status booked to full for swapping
-                await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full, prisma);
 
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
                 await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
