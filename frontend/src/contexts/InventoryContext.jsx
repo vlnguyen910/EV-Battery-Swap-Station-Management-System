@@ -326,7 +326,7 @@ export const InventoryProvider = ({ children }) => {
         }
         getAllBatteries();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user]);
 
     // Combined loading/error for backward compatibility
     const loading = stationLoading || batteryLoading;
