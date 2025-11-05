@@ -10,15 +10,16 @@ import NearbyStationsCard from '../components/user/NearbyStationsCard';
 import PlansCard from '../components/user/PlansCard';
 import HelpLinksCard from '../components/user/HelpLinksCard';
 import SwapSuccessDialog from '../components/dashboard/SwapSuccessDialog';
+import AutoSwapDialog from '../components/user/AutoSwapDialog';
 
 export default function User() {
   const navigate = useNavigate();
-  // Get user from parent (Driver.jsx) via Outlet context
   const { user } = useOutletContext();
   const { stations } = useStation();
   const { activeSubscription, getActiveSubscription } = useSubscription();
   const [vehicleData, setVehicleData] = useState([]);
-  const [showSwapSuccess, setShowSwapSuccess] = useState(false);
+  const [showAutoSwap, setShowAutoSwap] = useState(false);
+  const [swapResult, setSwapResult] = useState(null);
 
   // Fetch user's active subscription on component mount
   useEffect(() => {
@@ -68,8 +69,45 @@ export default function User() {
   }, [stations]);
 
   const handleAutoSwap = () => {
-    // TODO: integrate real auto-swap flow; for now, show success dialog
-    setShowSwapSuccess(true);
+    setShowAutoSwap(true);
+  };
+
+  const handleSwapSuccess = (response) => {
+    console.log('✅ Swap successful - Full response:', response);
+    console.log('📋 Swap transaction object:', response?.swapTransaction);
+    console.log('🔍 Transaction ID:', response?.swapTransaction?.transaction_id);
+
+    // Find the vehicle from vehicleData
+    const vehicle = vehicleData.find(v => v.vehicle_id === response.swapTransaction?.vehicle_id);
+
+    // Find the station from stations
+    const station = stations.find(s => s.station_id === response.swapTransaction?.station_id);
+
+    // Prepare summary data for success dialog
+    const summary = {
+      user: user?.username || user?.full_name || 'Driver',
+      station: station?.name || 'Unknown Station',
+      vehicle: vehicle?.vin || vehicle?.plate || `Vehicle #${response.swapTransaction?.vehicle_id}`,
+      plan: activeSubscription?.package?.package_name || activeSubscription?.package_name || 'Active Subscription',
+    };
+
+    console.log('📊 Summary for dialog:', summary);
+    setSwapResult(summary);
+
+    // Auto-hide success dialog after 5 seconds
+    setTimeout(() => {
+      setSwapResult(null);
+    }, 5000);
+
+    // Refresh vehicle data after swap
+    if (user?.user_id) {
+      vehicleService.getVehiclesByUserIdWithBattery(user.user_id)
+        .then(vehicles => {
+          console.log('🔄 Vehicles refreshed after swap:', vehicles);
+          setVehicleData(Array.isArray(vehicles) ? vehicles : []);
+        })
+        .catch(err => console.error('Error refreshing vehicles:', err));
+    }
   };
 
   return (
@@ -122,17 +160,22 @@ export default function User() {
         </main>
       </div>
 
-      {/* Swap Success Dialog */}
-      <SwapSuccessDialog
-        open={showSwapSuccess}
-        onOpenChange={setShowSwapSuccess}
-        summary={{
-          user: user?.name || 'Unknown',
-          station: 'Central Charging Hub', // TODO: bind real selected station if available
-          vehicle: vehicleData?.model ? `${vehicleData.model}` : (vehicleData?.vin || 'Unknown vehicle'),
-          plan: activeSubscription?.package_name || 'Active Subscription',
-        }}
+      {/* Auto Swap Dialog */}
+      <AutoSwapDialog
+        open={showAutoSwap}
+        onOpenChange={setShowAutoSwap}
+        userId={user?.user_id}
+        onSuccess={handleSwapSuccess}
       />
+
+      {/* Swap Success Notification */}
+      {swapResult && (
+        <SwapSuccessDialog
+          open={Boolean(swapResult)}
+          onOpenChange={() => setSwapResult(null)}
+          summary={swapResult}
+        />
+      )}
     </div>
   );
 }

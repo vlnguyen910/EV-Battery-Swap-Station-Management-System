@@ -27,7 +27,7 @@ export const API_ENDPOINTS = {
     CREATE_VEHICLE: "/vehicles",
     GET_ALL_VEHICLES: "/vehicles",
     GET_VEHICLE_BY_VIN: (vin) => `/vehicles/vin/${vin}`,
-    GET_VEHICLES_BY_USER: (userId) => `/vehicles/user/${userId}`,
+    GET_VEHICLES_BY_USER: (userId) => `/vehicles/user/${userId}`, // For all roles
     GET_VEHICLE: (id) => `/vehicles/${id}`,
     UPDATE_VEHICLE: (id) => `/vehicles/${id}`,
     ASSIGN_VEHICLE: "/vehicles/add-vehicle",
@@ -93,6 +93,7 @@ export const API_ENDPOINTS = {
     CREATE_TRANSACTION: "/swap-transactions",
     GET_ALL_TRANSACTIONS: "/swap-transactions",
     GET_BY_USER: (userId) => `/swap-transactions/user/${userId}`,
+    GET_BY_STATION: (stationId) => `/swap-transactions/station/${stationId}`,
     GET_TRANSACTION_BY_ID: (id) => `/swap-transactions/transaction/${id}`,
     UPDATE_TRANSACTION: (id) => `/swap-transactions/${id}`,
     DELETE_TRANSACTION: (id) => `/swap-transactions/${id}`,
@@ -101,7 +102,7 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     // Basic VNPAY endpoints
     CREATE_VNPAY_URL: "/payments/create-vnpay-url", // Legacy - subscription only - CŨ
-    CREATE_VNPAY_URL_ADVANCED: "/payments/create-vnpay-url-advanced", // Multi-type support 
+    CREATE_VNPAY_URL_ADVANCED: "/payments/create-vnpay-url-advanced", // Multi-type support
     CREATE_VNPAY_URL_WITH_FEES: "/payments/calculate-and-create-vnpay-url", // Integrated calculation - MỚI
     VNPAY_RETURN: "/payments/vnpay-return",
     VNPAY_IPN: "/payments/vnpay-ipn",
