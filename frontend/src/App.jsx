@@ -23,6 +23,14 @@ import Payment from './pages/Payment'
 import VerifyEmail from './pages/VerifyEmail'
 import ResetPassword from './pages/ResetPassword'
 import ForgetPassword from './pages/ForgetPassword'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminStationList from './pages/admin/AdminStationList'
+import AdminUserList from './pages/admin/AdminUserList'
+import AdminPackageList from './pages/admin/AdminPackageList'
+import AdminBatteryTransferReq from './pages/admin/AdminBatteryTransferReq'
+import AdminSupportList from './pages/admin/AdminSupportList'
+import AdminReport from './pages/admin/AdminReport'
+import StationDetail from './pages/admin/StationDetail'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -71,7 +79,15 @@ function App() {
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminPage />}>
+          <Route index element={<AdminDashboard />} />
           {/* Add nested routes for Admin here */}
+          <Route path="stations-list" element={<AdminStationList />} />
+          <Route path="stations-list/:stationId" element={<StationDetail />} />
+          <Route path="users-list" element={<AdminUserList />} />
+          <Route path="packages-list" element={<AdminPackageList />} />
+          <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />
+          <Route path="support-list" element={<AdminSupportList />} />
+          <Route path="report" element={<AdminReport />} />
         </Route>
 
         {/* 404 Not Found - Must be last */}
