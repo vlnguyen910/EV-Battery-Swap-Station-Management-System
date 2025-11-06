@@ -30,25 +30,39 @@ function App() {
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
-        <Route path="/driver" element={<Driver />} />
-        <Route path="/" element={<GuestPage />} />
-        <Route path="*" element={<NotFound />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/auth/callback" element={<GoogleCallback />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/auth/verify-email" element={<VerifyEmail />} />
-        <Route path="/forget-password" element={<ForgetPassword />} />
-        <Route path="/auth/forget-password" element={<ForgetPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/" element={<GuestPage />} />
+          <Route path="*" element={<NotFound />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<GoogleCallback />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/auth/verify-email" element={<VerifyEmail />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
+          <Route path="/auth/forget-password" element={<ForgetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-        <Route path="/admin" element={<AdminPage />} />
-
+          {/* Driver Routes with Nested Routing */}
+          <Route path="/driver" element={<Driver />}>
+            {/* Route container for User */}
+            <Route index element={<User />} />
+            <Route path="booking" element={<BookingContainer />} />
+            <Route path="booking/:stationId" element={<BookingContainer />} />
+            <Route path="swap-history" element={<SwapHistory />} />
+            <Route path="plans" element={<Plans />} />
+            <Route path="map" element={<MapPage />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="support" element={<Support />} />
+            {/* Payment Routes*/}
+            <Route path="payment/success" element={<Payment />} />
+            <Route path="payment/failed" element={<Payment />} />
+            <Route path="payment/error" element={<Payment />} />
+          </Route>
+        </Routes>
 
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
-          {/* Route con   */}
+          {/* Route container for Staff */}
           <Route index element={<StaffDashboard />} />
           <Route path="inventory" element={<StaffInventory />} />
           <Route path="inspection" element={<StaffInspection />} />
@@ -56,25 +70,12 @@ function App() {
           <Route path="manual-swap" element={<ManualSwapTransaction />} />
         </Route>
 
-        {/* Payment Routes (outside Driver layout for clean UI) */}
+        <Route path="/admin" element={<AdminPage />}>
+          {/* Add nested routes for Admin here */}
 
 
-        {/* Driver Routes with Nested Routing */}
-        <Route path="/driver" element={<Driver />}>
-          {/* Route con */}
-          <Route index element={<User />} />
-          <Route path="booking" element={<BookingContainer />} />
-          <Route path="booking/:stationId" element={<BookingContainer />} />
-          <Route path="swap-history" element={<SwapHistory />} />
-          <Route path="plans" element={<Plans />} />
-          <Route path="map" element={<MapPage />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="support" element={<Support />} />
-          <Route path="payment/success" element={<Payment />} />
-          <Route path="payment/failed" element={<Payment />} />
-          <Route path="payment/error" element={<Payment />} />
         </Route>
-      </Routes>
+
     </div>
   );
 }
