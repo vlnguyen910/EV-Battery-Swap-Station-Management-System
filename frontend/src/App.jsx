@@ -30,35 +30,34 @@ function App() {
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
-          <Route path="/" element={<GuestPage />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/auth/callback" element={<GoogleCallback />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/auth/verify-email" element={<VerifyEmail />} />
-          <Route path="/forget-password" element={<ForgetPassword />} />
-          <Route path="/auth/forget-password" element={<ForgetPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/auth/reset-password" element={<ResetPassword />} />
+        {/* Public Routes */}
+        <Route path="/" element={<GuestPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/auth/callback" element={<GoogleCallback />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/auth/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-          {/* Driver Routes with Nested Routing */}
-          <Route path="/driver" element={<Driver />}>
-            {/* Route container for User */}
-            <Route index element={<User />} />
-            <Route path="booking" element={<BookingContainer />} />
-            <Route path="booking/:stationId" element={<BookingContainer />} />
-            <Route path="swap-history" element={<SwapHistory />} />
-            <Route path="plans" element={<Plans />} />
-            <Route path="map" element={<MapPage />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="support" element={<Support />} />
-            {/* Payment Routes*/}
-            <Route path="payment/success" element={<Payment />} />
-            <Route path="payment/failed" element={<Payment />} />
-            <Route path="payment/error" element={<Payment />} />
-          </Route>
-        </Routes>
+        {/* Driver Routes with Nested Routing */}
+        <Route path="/driver" element={<Driver />}>
+          {/* Route container for User */}
+          <Route index element={<User />} />
+          <Route path="booking" element={<BookingContainer />} />
+          <Route path="booking/:stationId" element={<BookingContainer />} />
+          <Route path="swap-history" element={<SwapHistory />} />
+          <Route path="plans" element={<Plans />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="support" element={<Support />} />
+          {/* Payment Routes*/}
+          <Route path="payment/success" element={<Payment />} />
+          <Route path="payment/failed" element={<Payment />} />
+          <Route path="payment/error" element={<Payment />} />
+        </Route>
 
         {/* Staff Routes with Nested Routing */}
         <Route path="/staff" element={<StaffPage />}>
@@ -70,14 +69,16 @@ function App() {
           <Route path="manual-swap" element={<ManualSwapTransaction />} />
         </Route>
 
+        {/* Admin Routes */}
         <Route path="/admin" element={<AdminPage />}>
           {/* Add nested routes for Admin here */}
-
-
         </Route>
 
+        {/* 404 Not Found - Must be last */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </div>
   );
 }
-export default App;
 
+export default App;
