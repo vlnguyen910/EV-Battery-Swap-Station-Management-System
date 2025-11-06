@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "../hooks/useContext";
+import { useAuth } from "../../hooks/useContext";
 
 const registerSchema = z.object({
   username: z.string().nonempty("Username is required").min(3, "Username must be at least 3 characters"),
