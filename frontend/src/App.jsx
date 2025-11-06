@@ -30,9 +30,8 @@ function App() {
     <div className="App">
       {/* <Navigation /> */}
       <Routes>
-        <Route path="/driver" element={<Driver />} />
+        {/* Public Routes */}
         <Route path="/" element={<GuestPage />} />
-        <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<GoogleCallback />} />
@@ -43,25 +42,9 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-        <Route path="/admin" element={<AdminPage />} />
-
-
-        {/* Staff Routes with Nested Routing */}
-        <Route path="/staff" element={<StaffPage />}>
-          {/* Route con   */}
-          <Route index element={<StaffDashboard />} />
-          <Route path="inventory" element={<StaffInventory />} />
-          <Route path="inspection" element={<StaffInspection />} />
-          <Route path="swap-requests" element={<StaffSwapRequests />} />
-          <Route path="manual-swap" element={<ManualSwapTransaction />} />
-        </Route>
-
-        {/* Payment Routes (outside Driver layout for clean UI) */}
-
-
         {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
-          {/* Route con */}
+          {/* Route container for User */}
           <Route index element={<User />} />
           <Route path="booking" element={<BookingContainer />} />
           <Route path="booking/:stationId" element={<BookingContainer />} />
@@ -70,13 +53,32 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
+          {/* Payment Routes*/}
           <Route path="payment/success" element={<Payment />} />
           <Route path="payment/failed" element={<Payment />} />
           <Route path="payment/error" element={<Payment />} />
         </Route>
+
+        {/* Staff Routes with Nested Routing */}
+        <Route path="/staff" element={<StaffPage />}>
+          {/* Route container for Staff */}
+          <Route index element={<StaffDashboard />} />
+          <Route path="inventory" element={<StaffInventory />} />
+          <Route path="inspection" element={<StaffInspection />} />
+          <Route path="swap-requests" element={<StaffSwapRequests />} />
+          <Route path="manual-swap" element={<ManualSwapTransaction />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminPage />}>
+          {/* Add nested routes for Admin here */}
+        </Route>
+
+        {/* 404 Not Found - Must be last */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
 }
-export default App;
 
+export default App;
