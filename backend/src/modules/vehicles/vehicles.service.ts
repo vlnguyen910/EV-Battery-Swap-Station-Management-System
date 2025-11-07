@@ -165,11 +165,11 @@ export class VehiclesService {
     }
   }
 
-  async update(id: number, updateVehicleDto: UpdateVehicleDto) {
-    await this.findOne(id); // Check if vehicle exists
-
+  async update(id: number, updateVehicleDto: UpdateVehicleDto, tx?: any) {
+    const prisma = tx ?? this.databaseService;
     try {
-      return await this.databaseService.vehicle.update({
+      await this.findOne(id); // Check if vehicle exists
+      const updatedVehicle = await prisma.vehicle.update({
         where: { vehicle_id: id },
         data: updateVehicleDto,
         include: {
@@ -183,6 +183,8 @@ export class VehiclesService {
           },
         },
       });
+
+      return updatedVehicle;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('VIN already exists');

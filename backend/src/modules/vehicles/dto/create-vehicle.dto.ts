@@ -10,6 +10,7 @@ import { Type } from 'class-transformer';
 import { VehicleStatus } from '@prisma/client';
 
 export class CreateVehicleDto {
+
   @IsNotEmpty({ message: 'VIN is required' })
   @IsString({ message: 'VIN must be a string' })
   @MaxLength(50, { message: 'VIN must not exceed 50 characters' })
