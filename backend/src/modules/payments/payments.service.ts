@@ -23,23 +23,28 @@ import { FeeCalculationService } from './services/fee-calculation.service';
 import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
 import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SystemConfigService } from '../config/system-config.service';
+
 @Injectable()
 export class PaymentsService {
-  private readonly PAYMENT_EXPIRY_MINUTES = 15; // Payment expires after 15 minutes
-
   constructor(
     private prisma: DatabaseService,
     @Inject(FeeCalculationService)
     private feeCalculationService: FeeCalculationService,
     private batteryServicePackage: BatteryServicePackagesService,
-    private subscriptionsService: SubscriptionsService
+    private subscriptionsService: SubscriptionsService,
+    private systemConfigService: SystemConfigService,
   ) { }
 
   /**
-   * Calculate payment expiry time
+   * Calculate payment expiry time from database config (loaded at startup)
    */
   private getPaymentExpiryTime(): Date {
-    return moment().add(this.PAYMENT_EXPIRY_MINUTES, 'minutes').toDate();
+    const expiryMinutes = this.systemConfigService.getNumber(
+      'Payment_Expiry_Minutes',
+      15, // Default fallback
+    );
+    return moment().add(expiryMinutes, 'minutes').toDate();
   }
 
   /**
@@ -99,6 +104,7 @@ export class PaymentsService {
 
     // 2. Create payment record with pending status
     const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime(); // Sync call now
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -110,7 +116,7 @@ export class PaymentsService {
         status: PaymentStatus.pending,
         payment_type: createPaymentDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
-        expires_at: this.getPaymentExpiryTime(),
+        expires_at: expiresAt,
         order_info:
           createPaymentDto.orderDescription ||
           (servicePackage ? `Thanh toan goi ${servicePackage.name}` : `Thanh toan ${createPaymentDto.payment_type}`),
@@ -707,6 +713,13 @@ export class PaymentsService {
     createPaymentWithFeesDto: CreatePaymentWithFeesDto,
     ipAddr: string,
   ): Promise<PaymentWithFeesResponse> {
+    console.log('🔍 createPaymentUrlWithFees called with:', {
+      user_id: createPaymentWithFeesDto.user_id,
+      package_id: createPaymentWithFeesDto.package_id,
+      payment_type: createPaymentWithFeesDto.payment_type,
+      vehicle_id: createPaymentWithFeesDto.vehicle_id,
+    });
+
     // 1. Get package information
     const servicePackage = await this.prisma.batteryServicePackage.findUnique({
       where: { package_id: createPaymentWithFeesDto.package_id },
@@ -719,6 +732,8 @@ export class PaymentsService {
     if (!servicePackage.active) {
       throw new BadRequestException('Package is not active');
     }
+
+    console.log('✅ Package found:', servicePackage.name);
 
     // 2. Check if user has existing subscription for this vehicle (to determine deposit status)
     let existingSubscription: any = null;
@@ -806,6 +821,7 @@ export class PaymentsService {
 
     // 4. Create payment record with calculated total amount
     const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime();
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -817,10 +833,18 @@ export class PaymentsService {
         status: PaymentStatus.pending,
         payment_type: createPaymentWithFeesDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
+        expires_at: expiresAt,
         order_info:
           createPaymentWithFeesDto.order_info ||
           `Thanh toan ${servicePackage.name}${feeAmount > 0 ? ' + phí' : ''}`,
       },
+    });
+
+    console.log('✅ Payment record created:', {
+      payment_id: payment.payment_id,
+      vnp_txn_ref: vnpTxnRef,
+      amount: totalAmount,
+      expires_at: expiresAt,
     });
 
     // 5. Build VNPAY payment URL with total amount
