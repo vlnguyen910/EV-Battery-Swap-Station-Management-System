@@ -97,6 +97,7 @@ export const InventoryProvider = ({ children }) => {
             if (!userId) {
                 console.warn('No user_id found, cannot fetch available stations');
                 setAvailableStations([]);
+                setStations([]);
                 return;
             }
 
@@ -170,6 +171,7 @@ export const InventoryProvider = ({ children }) => {
             // Handle response - could be empty array if no stations nearby
             if (Array.isArray(data)) {
                 setStations(data);
+                setAvailableStations(data);
                 setInitialized(true);
                 if (data.length === 0) {
                     console.log('✓ No stations found nearby (within 20km radius)');
@@ -178,12 +180,14 @@ export const InventoryProvider = ({ children }) => {
                 }
             } else {
                 console.warn('⚠️ Unexpected response format:', data);
-                setAvailableStations
+                setStations([]);
+                setAvailableStations([]);
                 setInitialized(true);
             }
         } catch (error) {
             setStationError(error);
             console.error("❌ Error fetching available stations:", error);
+            setStations([]);
             setAvailableStations([]); // Set empty on error
         } finally {
             setStationLoading(false);
