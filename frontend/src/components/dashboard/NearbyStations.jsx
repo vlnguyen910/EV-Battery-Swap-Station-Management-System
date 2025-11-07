@@ -31,8 +31,8 @@
 //       <CardContent className="p-4">
 //         <div className="space-y-3">
 //           {stations.map((station) => (
-//             <div 
-//               key={station.station_id} 
+//             <div
+//               key={station.station_id}
 //               className={`bg-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-indigo-300 transition-all cursor-pointer border border-gray-100`}
 //             >
 //               <div className="flex items-center space-x-3">

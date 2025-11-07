@@ -5,6 +5,7 @@ import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
 import { swapService } from '../../services/swapService';
+import userService from '../../services/userService';
 import TransactionTimeFilter from '../transactions/TransactionTimeFilter';
 import TransactionSearchBar from '../transactions/TransactionSearchBar';
 import TransactionStatusFilter from '../transactions/TransactionStatusFilter';
@@ -26,6 +27,12 @@ export default function ManualSwapTransaction() {
 
     // Track fetched user_id to prevent infinite loop
     const [fetchedUserId, setFetchedUserId] = useState(null);
+
+    // Email search states for Luồng 2
+    const [userEmail, setUserEmail] = useState('');
+    const [foundUser, setFoundUser] = useState(null);
+    const [emailSearching, setEmailSearching] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     // Get data from URL params (passed from staff request list in Luồng 1)
     const reservationId = searchParams.get('reservationId');
@@ -106,7 +113,46 @@ export default function ManualSwapTransaction() {
         }
     }, [staffStationId, formData.station_id]);
 
-    // Luồng 2: When staff manually enters user_id, auto-fill vehicle, subscription, returned_battery
+    // Handler to search user by email (Luồng 2)
+    const handleEmailSearch = async () => {
+        if (!userEmail || !userEmail.includes('@')) {
+            setEmailError('Vui lòng nhập email hợp lệ');
+            return;
+        }
+
+        setEmailSearching(true);
+        setEmailError('');
+        setFoundUser(null);
+
+        try {
+            const userData = await userService.getUserByEmail(userEmail);
+            if (userData && userData.user_id) {
+                setFoundUser(userData);
+                // Reset form và set user_id, vehicles sẽ load trong useEffect
+                setFormData(prev => ({
+                    ...prev,
+                    user_id: userData.user_id.toString(),
+                    vehicle_id: '',
+                    subscription_id: '',
+                    subscription_name: ''
+                }));
+                setEmailError('');
+            } else {
+                setEmailError('Không tìm thấy user với email này');
+            }
+        } catch (error) {
+            console.error('Error searching user by email:', error);
+            if (error.response?.status === 404) {
+                setEmailError('Không tìm thấy user với email này');
+            } else {
+                setEmailError('Lỗi khi tìm kiếm user, vui lòng thử lại');
+            }
+        } finally {
+            setEmailSearching(false);
+        }
+    };
+
+    // Luồng 2: When staff manually enters user_id, fetch user's vehicles
     useEffect(() => {
         if (reservationId || !formData.user_id) {
             return;
@@ -122,45 +168,11 @@ export default function ManualSwapTransaction() {
             return;
         }
 
-        const fetchUserData = async () => {
+        const fetchUserVehicles = async () => {
             try {
-                console.log('🔄 Fetching user data for userId:', currentUserId);
+                console.log('🔄 Fetching vehicles for userId:', currentUserId);
 
-                const subscription = await getActiveSubscription(currentUserId);
-
-                if (subscription) {
-                    // Resolve package name: prefer backend-provided nested package, otherwise look up from packages list
-                    let packageName = subscription.package?.package_name || subscription.package?.name
-                        || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
-                        || null;
-
-                    // If still not found, try fetching single package by id
-                    if (!packageName && subscription.package_id && typeof getPackageById === 'function') {
-                        try {
-                            const pkg = await getPackageById(subscription.package_id);
-                            packageName = pkg?.package_name || pkg?.name || null;
-                        } catch {
-                            console.warn('Failed to fetch package by id for subscription:', subscription.package_id);
-                        }
-                    }
-
-                    setFormData(prev => ({
-                        ...prev,
-                        subscription_id: subscription.subscription_id.toString(),
-                        subscription_name: packageName || 'Chưa đăng ký',
-                        vehicle_id: subscription.vehicle_id?.toString() || prev.vehicle_id,
-                    }));
-
-                    if (subscription.vehicle_id) {
-                        const vehicle = await vehicleService.getVehicleById(subscription.vehicle_id);
-                        setFormData(prev => ({ ...prev, battery_returned_id: vehicle.battery_id?.toString() || '' }));
-                        setVehicleData(vehicle);
-                    }
-                } else {
-                    console.warn('⚠️ No active subscription found for userId:', currentUserId);
-                }
-
-                // Fetch user's vehicles so staff can choose if multiple
+                // Fetch user's vehicles so staff can choose
                 try {
                     const vehiclesResp = await vehicleService.getVehicleByUserId(currentUserId);
                     const vehArr = Array.isArray(vehiclesResp) ? vehiclesResp : (vehiclesResp ? [vehiclesResp] : []);
@@ -173,12 +185,12 @@ export default function ManualSwapTransaction() {
                 // Mark this user_id as fetched
                 setFetchedUserId(currentUserId);
             } catch (error) {
-                console.error('❌ Error fetching user data for manual entry:', error);
+                console.error('❌ Error fetching user vehicles:', error);
                 setFetchedUserId(currentUserId); // Mark as fetched even on error to prevent retry loop
             }
         };
 
-        fetchUserData();
+        fetchUserVehicles();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.user_id, reservationId]);
 
@@ -190,6 +202,11 @@ export default function ManualSwapTransaction() {
 
         const fetchVehicleData = async () => {
             try {
+                // Set user_id from URL params first (Luồng 1 always has urlUserId)
+                if (urlUserId) {
+                    setFormData(prev => ({ ...prev, user_id: String(urlUserId) }));
+                }
+
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
                 if (vehicle?.vehicle_id) setFormData(prev => ({ ...prev, vehicle_id: String(vehicle.vehicle_id) }));
@@ -214,7 +231,7 @@ export default function ManualSwapTransaction() {
         fetchVehicleData();
     }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription, packages, getPackageById]);
 
-    // When vehicle_id changes (manual selection), fetch its details
+    // When vehicle_id changes (manual selection in Luồng 2), fetch vehicle details AND subscription
     useEffect(() => {
         if (!formData.vehicle_id) return;
         // avoid refetch during reservation flow where we already fetched
@@ -223,9 +240,9 @@ export default function ManualSwapTransaction() {
         const currentVehicleId = parseInt(formData.vehicle_id);
         if (isNaN(currentVehicleId)) return;
 
-        const fetchVehicleDetails = async () => {
+        const fetchVehicleAndSubscription = async () => {
             try {
-                console.log('🔄 Fetching vehicle details for vehicleId:', currentVehicleId);
+                console.log('🔄 Fetching vehicle details and subscription for vehicleId:', currentVehicleId);
 
                 const vehicle = await vehicleService.getVehicleById(currentVehicleId);
                 setVehicleData(vehicle);
@@ -236,13 +253,71 @@ export default function ManualSwapTransaction() {
                 } else {
                     setFormData(prev => ({ ...prev, battery_returned_id: '' }));
                 }
+
+                // Fetch subscription for this specific vehicle (Luồng 2 only)
+                if (!reservationId && formData.user_id) {
+                    try {
+                        const currentUserId = parseInt(formData.user_id);
+                        // Get ALL active subscriptions of user
+                        const subscriptions = await getActiveSubscription(currentUserId);
+
+                        // If it's an array, find the one matching this vehicle
+                        let subscription = null;
+                        if (Array.isArray(subscriptions)) {
+                            subscription = subscriptions.find(sub => sub.vehicle_id === currentVehicleId);
+                        } else if (subscriptions && subscriptions.vehicle_id === currentVehicleId) {
+                            subscription = subscriptions;
+                        }
+
+                        if (subscription) {
+                            console.log('✅ Found subscription for vehicle:', subscription);
+
+                            // Get package name from subscription
+                            let packageName = subscription.package?.package_name
+                                || subscription.package?.name
+                                || 'Chưa đăng ký';
+
+                            // If package not included, try to fetch it
+                            if (packageName === 'Chưa đăng ký' && subscription.package_id) {
+                                try {
+                                    const pkg = await getPackageById(subscription.package_id);
+                                    packageName = pkg?.package_name || pkg?.name || 'Chưa đăng ký';
+                                } catch (err) {
+                                    console.warn('Failed to fetch package:', err);
+                                }
+                            }
+
+                            setFormData(prev => ({
+                                ...prev,
+                                subscription_id: subscription.subscription_id.toString(),
+                                subscription_name: packageName
+                            }));
+                        } else {
+                            // No subscription for this vehicle
+                            console.warn('⚠️ No subscription found for vehicle:', currentVehicleId);
+                            setFormData(prev => ({
+                                ...prev,
+                                subscription_id: '',
+                                subscription_name: 'Chưa đăng ký'
+                            }));
+                        }
+                    } catch (err) {
+                        console.error('❌ Error fetching subscription:', err);
+                        setFormData(prev => ({
+                            ...prev,
+                            subscription_id: '',
+                            subscription_name: 'Chưa đăng ký'
+                        }));
+                    }
+                }
             } catch (err) {
-                console.warn('Failed to fetch vehicle on vehicle_id change:', err);
+                console.warn('Failed to fetch vehicle:', err);
             }
         };
 
-        fetchVehicleDetails();
-    }, [formData.vehicle_id, reservationId, urlVehicleId]);
+        fetchVehicleAndSubscription();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.vehicle_id, reservationId]);
 
     // If we have a reservationId (Luồng 1), fetch reservation details and prefill battery_taken_id
     useEffect(() => {
@@ -550,30 +625,91 @@ export default function ManualSwapTransaction() {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* User ID */}
-                                <div className="min-w-0">
-                                    <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="user_id">
-                                        User ID
-                                    </label>
-                                    <div className="relative">
-                                        <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">person</span>
-                                        <input
-                                            type="text"
-                                            id="user_id"
-                                            name="user_id"
-                                            value={formData.user_id}
-                                            onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
-                                            readOnly={!!reservationId}
-                                            placeholder={!reservationId ? "Enter User ID..." : ""}
-                                        />
+                                {/* User Email Search (Luồng 2) or User ID (Luồng 1) */}
+                                {!reservationId ? (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="user_email">
+                                            Driver Email
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">email</span>
+                                                <input
+                                                    type="email"
+                                                    id="user_email"
+                                                    value={userEmail}
+                                                    onChange={(e) => {
+                                                        setUserEmail(e.target.value);
+                                                        setEmailError('');
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            handleEmailSearch();
+                                                        }
+                                                    }}
+                                                    className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="Enter driver email..."
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleEmailSearch}
+                                                disabled={emailSearching || !userEmail}
+                                                className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${emailSearching || !userEmail
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                    }`}
+                                            >
+                                                {emailSearching ? (
+                                                    <>
+                                                        <span className="material-icons animate-spin">refresh</span>
+                                                        Searching...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="material-icons">search</span>
+                                                        Search
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                        {emailError && (
+                                            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                                <span className="material-icons text-sm">error</span>
+                                                {emailError}
+                                            </p>
+                                        )}
+                                        {foundUser && (
+                                            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                                                <p className="text-sm text-green-700 flex items-center gap-2">
+                                                    <span className="material-icons text-lg">check_circle</span>
+                                                    <span>
+                                                        <strong>{foundUser.username}</strong> (ID: {foundUser.user_id})
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
-                                    {!reservationId && (
-                                        <p className="text-xs text-blue-600 mt-1">
-                                            Enter user ID to auto-fill vehicle & subscription
-                                        </p>
-                                    )}
-                                </div>
+                                ) : (
+                                    <div className="min-w-0">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="user_id">
+                                            User ID
+                                        </label>
+                                        <div className="relative">
+                                            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">person</span>
+                                            <input
+                                                type="text"
+                                                id="user_id"
+                                                name="user_id"
+                                                value={formData.user_id}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Vehicle ID */}
                                 <div className="min-w-0">

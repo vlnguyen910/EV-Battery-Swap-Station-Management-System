@@ -53,6 +53,12 @@ export class UsersController {
     return this.usersService.findOneById(id);
   }
 
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
+  @Get('email/:email')
+  findOneByEmail(@Param('email') email: string) {
+    return this.usersService.findOneByEmail(email);
+  }
+
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

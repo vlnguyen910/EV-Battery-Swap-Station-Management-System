@@ -18,12 +18,27 @@ export function useStation() {
 
   return {
     stations: context.stations,
+    availableStations: context.availableStations,
     initialized: context.initialized,
-    fetchAllStations: context.fetchAllStations, // Now points to getAvailableStations
+    fetchAllStations: context.fetchAllStations,
     getAvailableStations: context.getAvailableStations,
     getStationById: context.getStationById,
     loading: context.stationLoading,
     error: context.stationError,
+  };
+}
+
+// ============ VEHICLE (from InventoryContext) ============
+export function useVehicle() {
+  const context = useContext(InventoryContext);
+  if (!context) {
+    throw new Error("useVehicle must be used within InventoryProvider");
+  }
+
+  return {
+    vehicles: context.vehicles,
+    fetchVehicles: context.fetchVehicles,
+    loading: context.vehicleLoading,
   };
 }
 
@@ -37,6 +52,7 @@ export function useBattery() {
   return {
     batteries: context.batteries,
     getAllBatteries: context.getAllBatteries,
+    getAllBatteriesByStationId: context.getAllBatteriesByStationId,
     getBatteryById: context.getBatteryById,
     countAvailableBatteriesByStation: context.countAvailableBatteriesByStation,
     loading: context.batteryLoading,
@@ -124,8 +140,4 @@ export function useSwapRequest() {
     loading: context.swapRequestLoading,
     error: context.swapRequestError,
   };
-}
-
-export function useVehicle() {
-  return useContext(VehicleContext);
 }
