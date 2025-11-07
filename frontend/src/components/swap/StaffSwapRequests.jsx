@@ -1,7 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useSubscription, useSwapRequest } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
+import { batteryService } from '../../services/batteryService';
+import { reservationService } from '../../services/reservationService';
+import userService from '../../services/userService';
+import PendingSwapRequestCard from './PendingSwapRequestCard';
+import ReservationHistory from './ReservationHistory';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function StaffSwapRequests() {
     const { getSubscriptionsByUserId } = useSubscription();
@@ -16,12 +22,110 @@ export default function StaffSwapRequests() {
         fetchSwapRequestsForStation
     } = useSwapRequest();
 
+    // Local state for all reservations (for history) and enriched pending requests
+    const [allReservations, setAllReservations] = useState([]);
+    const [enrichedRequests, setEnrichedRequests] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    // Pagination for pending requests
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6; // 2 rows x 3 columns
+
     // Fetch scheduled reservations when component mounts or user changes
     useEffect(() => {
         if (user?.station_id) {
             fetchSwapRequestsForStation(user.station_id);
         }
     }, [user?.station_id, fetchSwapRequestsForStation]);
+
+    // Fetch all reservations for history (not just scheduled)
+    useEffect(() => {
+        const fetchAllReservations = async () => {
+            if (!user?.station_id) return;
+
+            setHistoryLoading(true);
+            try {
+                const allRes = await reservationService.getReservationsByStationId(user.station_id);
+
+                // Enrich with user, vehicle, and battery info
+                const enrichedAll = await Promise.all(
+                    allRes.map(async (reservation) => {
+                        try {
+                            const [userInfo, vehicle, battery] = await Promise.all([
+                                userService.getUserById(reservation.user_id).catch(() => null),
+                                vehicleService.getVehicleById(reservation.vehicle_id).catch(() => null),
+                                reservation.battery_id
+                                    ? batteryService.getBatteryById(reservation.battery_id).catch(() => null)
+                                    : Promise.resolve(null)
+                            ]);
+
+                            return {
+                                ...reservation,
+                                user: userInfo,
+                                vehicle: vehicle,
+                                battery: battery
+                            };
+                        } catch (err) {
+                            console.error(`Error enriching reservation ${reservation.reservation_id}:`, err);
+                            return reservation;
+                        }
+                    })
+                );
+
+                setAllReservations(enrichedAll);
+            } catch (err) {
+                console.error('Error fetching all reservations:', err);
+            } finally {
+                setHistoryLoading(false);
+            }
+        };
+
+        fetchAllReservations();
+    }, [user?.station_id]);
+
+    // Enrich swap requests with user, vehicle, and battery info
+    useEffect(() => {
+        const enrichRequests = async () => {
+            if (!swapRequests || swapRequests.length === 0) {
+                setEnrichedRequests([]);
+                return;
+            }
+
+            try {
+                const enrichedData = await Promise.all(
+                    swapRequests.map(async (reservation) => {
+                        try {
+                            // Fetch user, vehicle, and battery info in parallel
+                            const [userInfo, vehicle, battery] = await Promise.all([
+                                userService.getUserById(reservation.user_id).catch(() => null),
+                                vehicleService.getVehicleById(reservation.vehicle_id).catch(() => null),
+                                reservation.battery_id
+                                    ? batteryService.getBatteryById(reservation.battery_id).catch(() => null)
+                                    : Promise.resolve(null)
+                            ]);
+
+                            return {
+                                ...reservation,
+                                user: userInfo,
+                                vehicle: vehicle,
+                                battery: battery
+                            };
+                        } catch (err) {
+                            console.error(`Error enriching reservation ${reservation.reservation_id}:`, err);
+                            return reservation;
+                        }
+                    })
+                );
+
+                setEnrichedRequests(enrichedData);
+            } catch (err) {
+                console.error('Error enriching requests:', err);
+                setEnrichedRequests(swapRequests);
+            }
+        };
+
+        enrichRequests();
+    }, [swapRequests]);
 
     const handleProcessRequest = async (reservation) => {
         try {
@@ -61,8 +165,8 @@ export default function StaffSwapRequests() {
 
     if (loading) {
         return (
-            <div className="p-6">
-                <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="flex justify-center items-center min-h-[40vh]">
+                <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-500">Loading swap requests...</p>
                 </div>
@@ -72,13 +176,12 @@ export default function StaffSwapRequests() {
 
     if (error) {
         return (
-            <div className="p-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                    <span className="material-icons text-red-500 text-6xl mb-4">error</span>
-                    <p className="text-red-600 text-lg font-semibold">{error}</p>
+            <div className="flex justify-center items-center min-h-[40vh]">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center max-w-md">
+                    <p className="text-red-600 text-lg font-semibold mb-4">{error}</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                     >
                         Retry
                     </button>
@@ -88,81 +191,72 @@ export default function StaffSwapRequests() {
     }
 
     return (
-        <div className="p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Yêu cầu đổi pin</h1>
-                <p className="text-gray-600">Các booking đã được xác nhận và đang chờ xử lý</p>
-            </div>
+        <main className="flex flex-col gap-8 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Pending Swap Requests Section */}
+            <section>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div className="flex min-w-72 flex-col gap-2">
+                        <h1 className="text-gray-900 text-3xl font-black leading-tight tracking-[-0.033em]">
+                            Pending Swap Requests
+                        </h1>
+                        <p className="text-gray-600 text-base font-normal leading-normal">
+                            Review and process incoming battery swap requests.
+                        </p>
+                    </div>
+                    {/* Navigation Arrows - Only show if there are multiple pages */}
+                    {enrichedRequests.length > itemsPerPage && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(enrichedRequests.length / itemsPerPage), prev + 1))}
+                                disabled={currentPage >= Math.ceil(enrichedRequests.length / itemsPerPage)}
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                    )}
+                </div>
 
-            {swapRequests.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-8 text-center">
-                    <span className="material-icons text-gray-300 text-6xl mb-4">inbox</span>
-                    <p className="text-gray-500 text-lg">Không có yêu cầu đổi pin nào</p>
-                    <p className="text-gray-400 text-sm mt-2">Các booking đã được xác nhận sẽ hiển thị ở đây</p>
+                {enrichedRequests.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                        <div className="text-gray-300 text-6xl mb-4">📋</div>
+                        <p className="text-gray-500 text-lg font-medium">No pending swap requests</p>
+                        <p className="text-gray-400 text-sm mt-2">Confirmed bookings will appear here</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Grid */}
+                        <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {enrichedRequests
+                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                .map((reservation) => (
+                                    <PendingSwapRequestCard
+                                        key={reservation.reservation_id}
+                                        reservation={reservation}
+                                        onProcessSwap={handleProcessRequest}
+                                    />
+                                ))}
+                        </div>
+                    </>
+                )}
+            </section>
+
+            {/* Reservation History Section */}
+            {historyLoading ? (
+                <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-500">Loading history...</p>
                 </div>
             ) : (
-                <div className="grid gap-4">
-                    {swapRequests.map((reservation) => (
-                        <div
-                            key={reservation.reservation_id}
-                            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="material-icons text-blue-500">event</span>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            Reservation #{reservation.reservation_id}
-                                        </h3>
-                                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                                            Scheduled
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                                        <div>
-                                            <p className="text-gray-500">User ID</p>
-                                            <p className="font-medium text-gray-900">{reservation.user_id}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Vehicle ID</p>
-                                            <p className="font-medium text-gray-900">{reservation.vehicle_id}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Station ID</p>
-                                            <p className="font-medium text-gray-900">{reservation.station_id}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Battery ID</p>
-                                            <p className="font-medium text-gray-900">{reservation.battery_id || 'N/A'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Scheduled Time</p>
-                                            <p className="font-medium text-gray-900">
-                                                {new Date(reservation.scheduled_time).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Status</p>
-                                            <p className="font-medium text-gray-900">{reservation.status}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="ml-4">
-                                    <button
-                                        onClick={() => handleProcessRequest(reservation)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                                    >
-                                        <span className="material-icons">build</span>
-                                        Process Swap
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <ReservationHistory reservations={allReservations} />
             )}
-        </div>
+        </main>
     );
 }
