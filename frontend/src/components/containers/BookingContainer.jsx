@@ -12,6 +12,8 @@ export default function BookingContainer() {
   const { vehicles, loading: vehiclesLoading } = useVehicle();
   const navigate = useNavigate();
 
+  console.log('BookingContainer render - user:', user, 'user.id:', user?.id, 'vehicles:', vehicles.length, 'vehiclesLoading:', vehiclesLoading);
+
   const [bookingState, setBookingState] = useState('idle');
   const [timeRemaining, setTimeRemaining] = useState(3600);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -63,7 +65,9 @@ export default function BookingContainer() {
 
   // Check user's active subscription on mount
   useEffect(() => {
+    console.log('BookingContainer: useEffect[user?.id] - user:', user);
     if (!user?.id) {
+      console.log('BookingContainer: No user.id, skipping subscription fetch');
       setSubscriptionLoading(false);
       return;
     }
@@ -72,24 +76,29 @@ export default function BookingContainer() {
 
     const loadSubscriptions = async () => {
       try {
+        console.log('BookingContainer: Fetching subscriptions for user:', user.id);
         // fetch user's subscriptions
         const subsResp = await getSubscriptionsByUserId(user.id);
+        console.log('BookingContainer: Raw subscription response:', subsResp);
         const subs = Array.isArray(subsResp) ? subsResp : Array.isArray(subsResp?.data) ? subsResp.data : [];
+        console.log('BookingContainer: Parsed subscriptions array:', subs);
 
         // Normalize subscriptions so each has a numeric __normalizedVehicleId we can reliably match against
         const normSubs = (subs || []).map(s => {
           const rawVid = s.vehicle_id ?? s.vehicle?.vehicle_id ?? s.vehicle?.id ?? s.vehicleId ?? s.vehicle?.vehicleId;
           const normalizedVid = rawVid !== undefined && rawVid !== null ? Number(rawVid) : undefined;
+          console.log('  - Subscription:', s.subscription_id, 'rawVid:', rawVid, '→ normalizedVid:', normalizedVid);
           return { ...s, __normalizedVehicleId: normalizedVid };
         });
 
         if (!isMounted) return;
+        console.log('BookingContainer: ✓ Setting subscriptionsList:', normSubs);
         setSubscriptionsList(normSubs || []);
 
         // also populate activeSubscription in context
         try { await getActiveSubscription(user.id); } catch { /* ignore */ }
       } catch (err) {
-        console.error('BookingContainer: Failed to fetch subscriptions', err);
+        console.error('BookingContainer: ❌ Failed to fetch subscriptions', err);
       } finally {
         if (isMounted) {
           setSubscriptionLoading(false);
@@ -110,16 +119,24 @@ export default function BookingContainer() {
     if (vehicles && vehicles.length > 0 && !selectedVehicleId) {
       const firstId = vehicles[0].vehicle_id ?? vehicles[0].id;
       setSelectedVehicleId(firstId);
-      console.log('BookingContainer: Auto-selected first vehicle:', firstId);
+      console.log('BookingContainer: Auto-selected first vehicle:', firstId, 'from vehicles:', vehicles);
     }
   }, [vehicles, selectedVehicleId]);
 
   // Match subscription to selected vehicle
   useEffect(() => {
+    console.log('BookingContainer: Matching subscription - selectedVehicleId:', selectedVehicleId, 'subscriptionsList:', subscriptionsList);
     if (selectedVehicleId && subscriptionsList.length > 0) {
-      const matched = subscriptionsList.find(s => s.__normalizedVehicleId === Number(selectedVehicleId));
+      const matched = subscriptionsList.find(s => {
+        const matches = s.__normalizedVehicleId === Number(selectedVehicleId);
+        console.log('  - Checking subscription:', s.subscription_id, '__normalizedVehicleId:', s.__normalizedVehicleId, 'matches:', matches);
+        return matches;
+      });
       setSelectedVehicleSubscription(matched || null);
-      console.log('BookingContainer: Matched subscription for vehicle:', selectedVehicleId, matched);
+      console.log('BookingContainer: ✓ Matched subscription for vehicle:', selectedVehicleId, '→', matched);
+    } else if (selectedVehicleId && subscriptionsList.length === 0) {
+      console.log('BookingContainer: ⚠️ No subscriptions available yet for vehicle:', selectedVehicleId);
+      setSelectedVehicleSubscription(null);
     }
   }, [selectedVehicleId, subscriptionsList]);
 
