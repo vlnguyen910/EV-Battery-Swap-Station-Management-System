@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     GET_ACTIVE_STATIONS: "/stations/active",
     GET_AVAILABLE_STATIONS: "/stations/available",
     GET_SEARCH_STATIONS: "/stations/search",
+    CREATE_STATION: "/stations",
     GET_STATION: (id) => `/stations/${id}`,
     UPDATE_STATION: (id) => `/stations/${id}`,
     DELETE_STATION: (id) => `/stations/${id}`,
