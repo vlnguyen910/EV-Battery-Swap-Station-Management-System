@@ -88,8 +88,37 @@ const getStationById = async (id) => {
   }
 };
 
+const createStation = async (stationData) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.STATION.CREATE_STATION, stationData);  
+    return response.data; 
+  } catch (error) {
+    console.error("Error creating station:", error);
+    throw error;
+  } 
+};
+
+const updateStation = async (id, stationData) => {
+  try {
+    // console.log('Updating station with ID:', id);
+    // console.log('Station data being sent:', stationData);
+    // console.log('API endpoint:', API_ENDPOINTS.STATION.UPDATE_STATION(id));
+    
+    const response = await api.patch(API_ENDPOINTS.STATION.UPDATE_STATION(id), stationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating station:", error);
+    console.error("Error response data:", error.response?.data);
+    console.error("Error response status:", error.response?.status);
+    console.error("Error response headers:", error.response?.headers);
+    throw error;
+  }
+};
+
 export const stationService = {
   getAllStations,
   getStationById,
   getAvailableStations,
+  createStation,
+  updateStation,
 };
