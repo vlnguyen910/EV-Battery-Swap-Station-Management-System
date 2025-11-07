@@ -117,9 +117,9 @@ export class FeeCalculationService {
         where: { name: 'Overcharge_Fee_Tier3' },
       });
 
-      const tier1Price = tier1?.value.toNumber() || 0;  // VNĐ/km
-      const tier2Price = tier2?.value.toNumber() || 0;  // VNĐ/km
-      const tier3Price = tier3?.value.toNumber() || 0;  // VNĐ/km
+      const tier1Price = tier1?.value?.toNumber() || 0;  // VNĐ/km
+      const tier2Price = tier2?.value?.toNumber() || 0;  // VNĐ/km
+      const tier3Price = tier3?.value?.toNumber() || 0;  // VNĐ/km
 
       // Tính phí theo bậc (tương tự tiền điện)
       // Tier 1: 0-2000km vượt quá
@@ -169,7 +169,7 @@ export class FeeCalculationService {
       where: { name: damageConfigName },
     });
 
-    const damageCost = damageConfig?.value.toNumber() || 0;
+    const damageCost = damageConfig?.value?.toNumber() || 0;
 
     return {
       subscription_fee: 0,

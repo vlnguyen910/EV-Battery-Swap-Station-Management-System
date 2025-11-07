@@ -111,10 +111,10 @@ export default function AdminStationList() {
               View, search, and manage all charging stations in the system.
             </p>
           </div>
-          <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-medium leading-normal tracking-wide shadow-sm hover:bg-blue-700">
+          <Link to="/admin/stations/create" className="flex min-w-[84px] items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-medium leading-normal tracking-wide shadow-sm hover:bg-blue-700">
             <Plus className="h-5 w-5" />
             <span className="truncate">Add New Station</span>
-          </button>
+          </Link>
         </div>
 
         {/* Search and Filter Card */}

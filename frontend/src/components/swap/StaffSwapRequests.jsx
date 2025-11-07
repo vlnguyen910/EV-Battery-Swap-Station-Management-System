@@ -29,7 +29,7 @@ export default function StaffSwapRequests() {
 
     // Pagination for pending requests
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6; // 2 rows x 3 columns
+    const itemsPerPage = 3; // 1 row x 3 columns
 
     // Fetch scheduled reservations when component mounts or user changes
     useEffect(() => {
@@ -45,11 +45,13 @@ export default function StaffSwapRequests() {
 
             setHistoryLoading(true);
             try {
+                // Get reservations for this station (currently returns scheduled only from backend)
+                // But we pass them to ReservationHistory which will show them with all status options
                 const allRes = await reservationService.getReservationsByStationId(user.station_id);
 
                 // Enrich with user, vehicle, and battery info
                 const enrichedAll = await Promise.all(
-                    allRes.map(async (reservation) => {
+                    (Array.isArray(allRes) ? allRes : []).map(async (reservation) => {
                         try {
                             const [userInfo, vehicle, battery] = await Promise.all([
                                 userService.getUserById(reservation.user_id).catch(() => null),
@@ -226,7 +228,7 @@ export default function StaffSwapRequests() {
 
                 {enrichedRequests.length === 0 ? (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                        <div className="text-gray-300 text-6xl mb-4">📋</div>
+                        {/* <div className="text-gray-300 text-6xl mb-4"></div> */}
                         <p className="text-gray-500 text-lg font-medium">No pending swap requests</p>
                         <p className="text-gray-400 text-sm mt-2">Confirmed bookings will appear here</p>
                     </div>

@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import GuestPage from './pages/GuestPage'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
@@ -31,11 +32,14 @@ import AdminBatteryTransferReq from './pages/admin/AdminBatteryTransferReq'
 import AdminSupportList from './pages/admin/AdminSupportList'
 import AdminReport from './pages/admin/AdminReport'
 import StationDetail from './pages/admin/StationDetail'
+import EditStation from './pages/admin/EditStation'
+import CreateStation from './pages/admin/CreateStation'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
     <div className="App">
+      <Toaster position="top-right" richColors closeButton />
       {/* <Navigation /> */}
       <Routes>
         {/* Public Routes */}
@@ -83,7 +87,10 @@ function App() {
           <Route index element={<AdminDashboard />} />
           {/* Add nested routes for Admin here */}
           <Route path="stations-list" element={<AdminStationList />} />
-          <Route path="stations-list/:stationId" element={<StationDetail />} />
+          <Route path="stations/create" element={<CreateStation />} />
+          <Route path="stations/:id" element={<StationDetail />} />
+          <Route path="stations/edit/:id" element={<EditStation />} />
+
           <Route path="users-list" element={<AdminUserList />} />
           <Route path="packages-list" element={<AdminPackageList />} />
           <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />

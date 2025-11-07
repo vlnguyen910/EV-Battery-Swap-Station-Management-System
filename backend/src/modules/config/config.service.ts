@@ -112,6 +112,10 @@ export class ConfigService {
       throw new BadRequestException(`Config "${name}" is inactive`);
     }
 
+    if (config.value === null) {
+      throw new BadRequestException(`Config "${name}" has no value`);
+    }
+
     return parseFloat(config.value.toString());
   }
 
