@@ -120,7 +120,8 @@ export const API_ENDPOINTS = {
     BATTERY_DEPOSIT: "/payments/battery-deposit",
     DAMAGE_FEE: "/payments/damage-fee",
     BATTERY_REPLACEMENT: "/payments/battery-replacement",
-
+    DIRECT_WITH_FEES: "/payments/direct-with-fees",
+    
     // Fee calculation endpoints
     CALCULATE_SUBSCRIPTION_FEE: "/payments/calculate/subscription-fee",
     CALCULATE_OVERCHARGE_FEE: "/payments/calculate/overcharge-fee",

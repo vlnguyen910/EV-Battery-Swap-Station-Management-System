@@ -45,17 +45,9 @@ export class SubscriptionsService {
 
     // 4. Check if this VEHICLE already has ANY active subscription
     // Rule: Vehicle can only have ONE active subscription at a time
-    const existingSubscription = await this.prisma.subscription.findFirst({
-      where: {
-        vehicle_id: createSubscriptionDto.vehicle_id,
-        status: SubscriptionStatus.active,
-      },
-      include: {
-        package: true,
-      },
-    });
+    const existingSubscription = await this.findOneByVehicleId(createSubscriptionDto.vehicle_id);
 
-    if (existingSubscription) {
+    if (existingSubscription && existingSubscription.status === SubscriptionStatus.active) {
       throw new ConflictException(
         `This vehicle already has an active subscription (${existingSubscription.package.name}). Please cancel it first before creating a new one.`,
       );
@@ -168,6 +160,9 @@ export class SubscriptionsService {
       where: {
         vehicle_id: vehicleId,
       },
+      include: {
+        package: true
+      }
     });
 
     if (!subscription) {

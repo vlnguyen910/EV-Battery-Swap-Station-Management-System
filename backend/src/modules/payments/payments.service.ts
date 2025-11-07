@@ -18,16 +18,21 @@ import {
 import * as crypto from 'crypto';
 import * as qs from 'qs';
 import moment from 'moment';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod, PaymentStatus, PaymentType, SubscriptionStatus } from '@prisma/client';
 import { FeeCalculationService } from './services/fee-calculation.service';
-
+import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
+import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 @Injectable()
 export class PaymentsService {
   constructor(
     private prisma: DatabaseService,
     @Inject(FeeCalculationService)
     private feeCalculationService: FeeCalculationService,
-  ) {}
+    private batteryServicePackage: BatteryServicePackagesService,
+    private subscriptionsService: SubscriptionsService
+  ) { }
+
 
   /**
    * Create VNPAY payment URL for subscription
@@ -103,7 +108,7 @@ export class PaymentsService {
     const signData = qs.stringify(vnpParams, { encode: false });
     const hmac = crypto.createHmac('sha512', vnpayConfig.vnp_HashSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-    
+
     // Add signature to params
     vnpParams['vnp_SecureHash'] = signed;
 
@@ -719,7 +724,7 @@ export class PaymentsService {
             'high': 'severe',
           };
           const mappedDamageType = damageTypeMapping[createPaymentWithFeesDto.damage_type] as 'minor' | 'moderate' | 'severe';
-          
+
           const damageResult = await this.feeCalculationService.calculateDamageFee(mappedDamageType);
           feeAmount = damageResult.damage_fee;
           feeBreakdownText = `Phí hư hỏng: ${damageResult.damage_fee.toLocaleString('vi-VN')} VND`;
@@ -825,6 +830,162 @@ export class PaymentsService {
     };
   }
 
+  /**
+   * Create direct payment with fees calculation (without VNPAY)
+   * This method:
+   * 1. Calculates fees based on payment_type
+   * 2. Creates payment record with success status immediately
+   * 3. Creates subscription immediately (if applicable)
+   * 4. Returns detailed fee breakdown
+   * 
+   * Use for: Demo, testing, or when VNPAY is unavailable
+   */
+  async createDirectPaymentWithFees(
+    createPaymentWithFeesDto: CreateDirectPaymentDto,
+  ): Promise<{
+    success: boolean;
+    payment: any;
+    subscription?: any;
+    feeBreakdown: any;
+    message: string;
+  }> {
+    try {
+      // 1. Get package information
+      const servicePackage = await this.prisma.batteryServicePackage.findUnique({
+        where: { package_id: createPaymentWithFeesDto.package_id },
+      });
+
+      if (!servicePackage) {
+        throw new NotFoundException('Package not found');
+      }
+
+      if (!servicePackage.active) {
+        throw new BadRequestException('Package is not active');
+      }
+
+      const existingSubscription = await this.subscriptionsService.findOneByVehicleId(createPaymentWithFeesDto.vehicle_id);
+      if (existingSubscription && existingSubscription.status === SubscriptionStatus.active) {
+        throw new BadRequestException('This vehicle is already have a subscription, choose other vehicle or cancle current subscription')
+      }
+
+      // 2. Calculate fee based on fee type (same logic as createPaymentUrlWithFees)
+      let feeAmount = 0;
+      let feeBreakdownText = '';
+      let feeDetails: any = {
+        baseAmount: servicePackage.base_price.toNumber(),
+        totalAmount: 0,
+      };
+
+      // Call appropriate fee calculation method
+      switch (createPaymentWithFeesDto.payment_type) {
+        case 'subscription_with_deposit':
+          const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
+            createPaymentWithFeesDto.package_id,
+          );
+          feeAmount = depositResult.deposit_fee;
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          feeDetails.depositFee = depositResult.deposit_fee;
+          break;
+
+        case 'battery_replacement':
+          if (createPaymentWithFeesDto.distance_traveled) {
+            feeAmount = 0;
+            feeBreakdownText = `Thanh toán thay pin: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+          }
+          break;
+
+        case 'subscription':
+        case 'other':
+        default:
+          feeAmount = 0;
+          feeBreakdownText = `Tổng tiền: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+          break;
+      }
+
+      // 3. Calculate total amount
+      const totalAmount = servicePackage.base_price.toNumber() + feeAmount;
+      feeDetails.totalAmount = totalAmount;
+      feeDetails.breakdown_text = feeBreakdownText;
+
+      // 4. Create payment record with SUCCESS status (direct payment confirmed)
+      const payment = await this.prisma.payment.create({
+        data: {
+          user_id: createPaymentWithFeesDto.user_id,
+          package_id: createPaymentWithFeesDto.package_id,
+          vehicle_id: createPaymentWithFeesDto.vehicle_id,
+          amount: totalAmount, // Total amount including fee
+          method: PaymentMethod.cash, // Direct payment method
+          status: PaymentStatus.success, // Immediate success
+          payment_type: createPaymentWithFeesDto.payment_type as any,
+          payment_time: new Date(),
+          transaction_id: `DIRECT${moment().format('YYYYMMDDHHmmss')}`,
+          order_info:
+            createPaymentWithFeesDto.order_info ||
+            `Direct payment for ${servicePackage.name}${feeAmount > 0 ? ' + fees' : ''}`,
+        },
+        include: {
+          package: true,
+        },
+      });
+
+      // 5. Create subscription immediately (if payment_type requires it)
+      let subscription: any = null;
+
+      if (
+        createPaymentWithFeesDto.payment_type === 'subscription' ||
+        createPaymentWithFeesDto.payment_type === 'subscription_with_deposit'
+      ) {
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + servicePackage.duration_days);
+
+        subscription = await this.prisma.subscription.create({
+          data: {
+            user_id: createPaymentWithFeesDto.user_id,
+            package_id: createPaymentWithFeesDto.package_id,
+            vehicle_id: createPaymentWithFeesDto.vehicle_id,
+            start_date: startDate,
+            end_date: endDate,
+            status: 'active',
+            swap_used: 0,
+          },
+          include: {
+            package: true,
+            vehicle: true,
+          },
+        });
+
+        // Link payment to subscription
+        await this.prisma.payment.update({
+          where: { payment_id: payment.payment_id },
+          data: { subscription_id: subscription.subscription_id },
+        });
+      }
+
+      // 6. Return detailed response
+      return {
+        success: true,
+        payment: {
+          ...payment,
+          subscription_id: subscription?.subscription_id,
+        },
+        subscription,
+        feeBreakdown: {
+          baseAmount: feeDetails.baseAmount,
+          depositFee: feeDetails.depositFee,
+          overchargeFee: feeDetails.overchargeFee,
+          damageFee: feeDetails.damageFee,
+          totalAmount: feeDetails.totalAmount,
+          breakdown_text: feeDetails.breakdown_text,
+        },
+        message: subscription
+          ? 'Direct payment with fees processed successfully and subscription created'
+          : 'Direct payment with fees processed successfully',
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 

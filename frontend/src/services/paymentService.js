@@ -26,6 +26,29 @@ const createPayment = async (paymentData) => {
   }
 };
 
+const createDirectPaymentWithFees = async (paymentData) => {
+  try {
+    // ⚠️ Use MOCK_PAYMENT because DIRECT_WITH_FEES returns 404
+    const response = await api.post(API_ENDPOINTS.PAYMENT.MOCK_PAYMENT, paymentData);
+    console.log("Created direct payment with fees:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating direct payment with fees:", error);
+    throw error;
+  }
+};
+
+// const createDirectPayment = async (paymentData) => {
+//   try {
+//     const response = await api.post(API_ENDPOINTS.PAYMENT.DIRECT_PAYMENT, paymentData);   
+//     console.log("Created direct payment:", response.data);
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error creating direct payment:", error);
+//     throw error;
+//   }   
+// };
+
 const handleVnpayReturn = async (queryParams) => {
   try {
     const response = await api.get(API_ENDPOINTS.PAYMENT.VNPAY_RETURN, {
@@ -42,6 +65,7 @@ const handleVnpayReturn = async (queryParams) => {
 export const paymentService = {
   getPaymentByUserId,
   createPayment,
+  createDirectPaymentWithFees,
   handleVnpayReturn,
 };
 
