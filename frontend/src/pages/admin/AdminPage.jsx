@@ -30,12 +30,6 @@ export default function AdminPage() {
             <main className="relative z-10 p-6">
                 {/* Trang con sẽ render ở đây */}
                 <Outlet />
-                <button
-                    onClick={logout}
-                    className="mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded border-none cursor-pointer transition-colors"
-                >
-                    🚪 Logout
-                </button>
             </main>
         </div>
     );
