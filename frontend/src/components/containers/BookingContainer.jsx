@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Booking from '../../pages/Booking';
-import { useAuth, useStation, useReservation, useSubscription } from '../../hooks/useContext';
-import { vehicleService } from '../../services/vehicleService';
+import { useAuth, useStation, useReservation, useSubscription, useVehicle } from '../../hooks/useContext';
 
 export default function BookingContainer() {
   const { stationId } = useParams();
@@ -10,6 +9,7 @@ export default function BookingContainer() {
   const { getStationById } = useStation();
   const { createReservation } = useReservation();
   const { activeSubscription, getActiveSubscription, getSubscriptionsByUserId } = useSubscription();
+  const { vehicles, loading: vehiclesLoading } = useVehicle();
   const navigate = useNavigate();
 
   const [bookingState, setBookingState] = useState('idle');
@@ -17,8 +17,6 @@ export default function BookingContainer() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [bookingTime, setBookingTime] = useState('');
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
-  const [vehiclesLoading, setVehiclesLoading] = useState(true);
-  const [vehicles, setVehicles] = useState([]);
   const [subscriptionsList, setSubscriptionsList] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [selectedVehicleSubscription, setSelectedVehicleSubscription] = useState(null);
@@ -67,26 +65,13 @@ export default function BookingContainer() {
   useEffect(() => {
     if (!user?.id) {
       setSubscriptionLoading(false);
-      setVehiclesLoading(false);
       return;
     }
 
     let isMounted = true;
 
-    const loadVehiclesAndSubscriptions = async () => {
+    const loadSubscriptions = async () => {
       try {
-        console.log('BookingContainer: Starting to fetch vehicles for user:', user.id);
-
-        // fetch vehicles for this user
-        const vResp = await vehicleService.getVehicleByUserId(user.id);
-        const vehiclesData = Array.isArray(vResp) ? vResp : Array.isArray(vResp?.data) ? vResp.data : [];
-
-        console.log('BookingContainer: Fetched vehicles:', vehiclesData);
-
-        if (!isMounted) return;
-        setVehicles(vehiclesData);
-        setVehiclesLoading(false);
-
         // fetch user's subscriptions
         const subsResp = await getSubscriptionsByUserId(user.id);
         const subs = Array.isArray(subsResp) ? subsResp : Array.isArray(subsResp?.data) ? subsResp.data : [];
@@ -101,34 +86,42 @@ export default function BookingContainer() {
         if (!isMounted) return;
         setSubscriptionsList(normSubs || []);
 
-        // default select first vehicle and match its subscription
-        if (vehiclesData.length > 0) {
-          const firstId = vehiclesData[0].vehicle_id ?? vehiclesData[0].id;
-          setSelectedVehicleId(firstId);
-          const matched = (normSubs || []).find(s => s.__normalizedVehicleId === Number(firstId));
-          setSelectedVehicleSubscription(matched || null);
-          console.log('BookingContainer: Selected first vehicle:', firstId, 'with subscription:', matched);
-        }
-
         // also populate activeSubscription in context
         try { await getActiveSubscription(user.id); } catch { /* ignore */ }
       } catch (err) {
-        console.error('BookingContainer: Failed to fetch vehicles/subscriptions', err);
+        console.error('BookingContainer: Failed to fetch subscriptions', err);
       } finally {
         if (isMounted) {
           setSubscriptionLoading(false);
-          setVehiclesLoading(false);
         }
       }
     };
 
-    loadVehiclesAndSubscriptions();
+    loadSubscriptions();
 
     return () => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Auto-select first vehicle when vehicles load
+  useEffect(() => {
+    if (vehicles && vehicles.length > 0 && !selectedVehicleId) {
+      const firstId = vehicles[0].vehicle_id ?? vehicles[0].id;
+      setSelectedVehicleId(firstId);
+      console.log('BookingContainer: Auto-selected first vehicle:', firstId);
+    }
+  }, [vehicles, selectedVehicleId]);
+
+  // Match subscription to selected vehicle
+  useEffect(() => {
+    if (selectedVehicleId && subscriptionsList.length > 0) {
+      const matched = subscriptionsList.find(s => s.__normalizedVehicleId === Number(selectedVehicleId));
+      setSelectedVehicleSubscription(matched || null);
+      console.log('BookingContainer: Matched subscription for vehicle:', selectedVehicleId, matched);
+    }
+  }, [selectedVehicleId, subscriptionsList]);
 
   // Timer for booking countdown
   useEffect(() => {

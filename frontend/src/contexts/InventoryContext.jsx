@@ -5,7 +5,7 @@ import { vehicleService } from "../services/vehicleService";
 import { AuthContext } from "./AuthContext";
 
 const { getAllStations: getAllStationsService, getStationById: getStationByIdService, getAvailableStations: getAvailableStationsService } = stationService;
-const { getAllBatteries: getAllBatteriesService, getBatteryById: getBatteryByIdService, updateBatteryById: updateBatteryByIdService } = batteryService;
+const { getAllBatteries: getAllBatteriesService, getBatteriesByStationId: getBatteriesByStationIdService, getBatteryById: getBatteryByIdService, updateBatteryById: updateBatteryByIdService } = batteryService;
 //Fetch vehicle
 const { getVehicleByUserId: getVehicleByUserIdService } = vehicleService;
 
@@ -18,6 +18,7 @@ export const InventoryProvider = ({ children }) => {
 
     // ============ STATION STATE (from StationContext) ============
     const [stations, setStations] = useState([]);
+    const [availableStations, setAvailableStations] = useState([]);
     const [stationLoading, setStationLoading] = useState(false);
     const [stationError, setStationError] = useState(null);
     const [initialized, setInitialized] = useState(false);
@@ -27,8 +28,14 @@ export const InventoryProvider = ({ children }) => {
 
     // ============ BATTERY STATE (from BatteryContext) ============
     const [batteries, setBatteries] = useState([]);
+
     const [batteryLoading, setBatteryLoading] = useState(false);
     const [batteryError, setBatteryError] = useState(null);
+
+    // ============ VEHICLE STATE ============
+    const [vehicles, setVehicles] = useState([]);
+    const [vehicleLoading, setVehicleLoading] = useState(false);
+    const [vehicleError, setVehicleError] = useState(null);
 
     // ============ STATION METHODS ============
     // Get user's current location
@@ -89,7 +96,7 @@ export const InventoryProvider = ({ children }) => {
 
             if (!userId) {
                 console.warn('No user_id found, cannot fetch available stations');
-                setStations([]);
+                setAvailableStations([]);
                 return;
             }
 
@@ -171,13 +178,13 @@ export const InventoryProvider = ({ children }) => {
                 }
             } else {
                 console.warn('⚠️ Unexpected response format:', data);
-                setStations([]);
+                setAvailableStations
                 setInitialized(true);
             }
         } catch (error) {
             setStationError(error);
             console.error("❌ Error fetching available stations:", error);
-            setStations([]); // Set empty on error
+            setAvailableStations([]); // Set empty on error
         } finally {
             setStationLoading(false);
         }
@@ -223,6 +230,19 @@ export const InventoryProvider = ({ children }) => {
         }
     };
 
+    const getAllBatteriesByStationId = async (stationID) => {
+        setBatteryLoading(true);
+        setBatteryError(null);
+        try {
+            const batteries = await getBatteriesByStationIdService(stationID);
+            setBatteries(batteries);
+        } catch (error) {
+            setBatteryError(error);
+        } finally {
+            setBatteryLoading(false);
+        }
+    };
+
     const getBatteryById = async (id) => {
         setBatteryLoading(true);
         setBatteryError(null);
@@ -248,6 +268,31 @@ export const InventoryProvider = ({ children }) => {
         }, 0);
     };
 
+    // ============ VEHICLE METHODS ============
+    const fetchVehicles = async () => {
+        const userId = user?.user_id || user?.id;
+        if (!userId) {
+            console.log('No user_id - cannot fetch vehicles');
+            setVehicles([]);
+            return;
+        }
+
+        setVehicleLoading(true);
+        setVehicleError(null);
+        try {
+            const response = await getVehicleByUserIdService(userId);
+            const vehiclesData = Array.isArray(response) ? response : (response?.data || []);
+            setVehicles(vehiclesData);
+            console.log('✓ Vehicles fetched in context:', vehiclesData);
+        } catch (error) {
+            setVehicleError(error);
+            console.error('❌ Error fetching vehicles in context:', error);
+            setVehicles([]);
+        } finally {
+            setVehicleLoading(false);
+        }
+    };
+
     // ============ EFFECTS ============
     // Clear data when user logs out
     useEffect(() => {
@@ -259,6 +304,7 @@ export const InventoryProvider = ({ children }) => {
             setStations([]);
             setInitialized(false);
             setBatteries([]);
+            setVehicles([]);
             return;
         }
 
@@ -309,6 +355,29 @@ export const InventoryProvider = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.role, user?.user_id]);
 
+    // Vehicles: Fetch for driver on mount/login
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userId = user?.user_id || user?.id;
+
+        if (!token || !userId) {
+            console.log('No token or user - skipping vehicle fetch');
+            return;
+        }
+
+        // Only fetch vehicles for driver role
+        if (user.role !== 'driver') {
+            console.log(`User role is ${user.role} - skipping vehicles fetch (driver only)`);
+            return;
+        }
+
+        if (!vehicleLoading && vehicles.length === 0) {
+            console.log('Fetching vehicles for driver...');
+            fetchVehicles();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, user?.user_id]);
+
     // Station: Re-fetch when user logs in (only for driver role)
     useEffect(() => {
         const handleLogin = () => {
@@ -343,15 +412,16 @@ export const InventoryProvider = ({ children }) => {
     }, [user?.role, user?.user_id]);
 
     // Combined loading/error for backward compatibility
-    const loading = stationLoading || batteryLoading;
-    const error = stationError || batteryError;
+    const loading = stationLoading || batteryLoading || vehicleLoading;
+    const error = stationError || batteryError || vehicleError;
 
     return (
         <InventoryContext.Provider value={{
             // Station data & methods
             stations,
+            availableStations,
             initialized,
-            fetchAllStations: getAvailableStations, // User chỉ cần available stations
+            fetchAllStations,
             getStationById,
             getAvailableStations,
 
@@ -359,8 +429,13 @@ export const InventoryProvider = ({ children }) => {
             batteries,
             getAllBatteries,
             getBatteryById,
+            getAllBatteriesByStationId,
             countAvailableBatteriesByStation,
 
+            // Vehicle data & methods
+            vehicles,
+            fetchVehicles,
+            vehicleLoading,
 
             // Combined status
             loading,
