@@ -43,7 +43,8 @@ async function importData(filename?: string) {
     console.log(`   Subscriptions: ${data.subscriptions.length}`);
     console.log(`   Payments: ${data.payments.length}`);
     console.log(`   Reservations: ${data.reservations.length}`);
-    console.log(`   Swap Transactions: ${data.swapTransactions.length}\n`);
+    console.log(`   Swap Transactions: ${data.swapTransactions.length}`);
+    console.log(`   Supports: ${data.supports?.length || 0}\n`);
 
     console.log('🗑️  Clearing existing data...');
 
@@ -53,6 +54,7 @@ async function importData(filename?: string) {
     await prisma.payment.deleteMany();
     await prisma.subscription.deleteMany();
     await prisma.batteryServicePackage.deleteMany();
+    await prisma.support.deleteMany(); // Delete supports before users and stations
     await prisma.battery.deleteMany();
     await prisma.station.deleteMany();
     await prisma.vehicle.deleteMany();
@@ -63,26 +65,31 @@ async function importData(filename?: string) {
     console.log('📥 Importing data...');
 
     // Import data in correct order (respecting foreign key constraints)
-    if (data.users.length > 0) {
-      await prisma.user.createMany({ data: data.users, skipDuplicates: true });
-      console.log(`   ✓ Users: ${data.users.length}`);
-    }
-
+    // 1. Import stations first (no dependencies)
     if (data.stations.length > 0) {
       await prisma.station.createMany({ data: data.stations, skipDuplicates: true });
       console.log(`   ✓ Stations: ${data.stations.length}`);
     }
 
+    // 2. Import users (depends on stations)
+    if (data.users.length > 0) {
+      await prisma.user.createMany({ data: data.users, skipDuplicates: true });
+      console.log(`   ✓ Users: ${data.users.length}`);
+    }
+
+    // 3. Import batteries (depends on stations)
     if (data.batteries.length > 0) {
       await prisma.battery.createMany({ data: data.batteries, skipDuplicates: true });
       console.log(`   ✓ Batteries: ${data.batteries.length}`);
     }
 
+    // 4. Import vehicles (depends on users)
     if (data.vehicles.length > 0) {
       await prisma.vehicle.createMany({ data: data.vehicles, skipDuplicates: true });
       console.log(`   ✓ Vehicles: ${data.vehicles.length}`);
     }
 
+    // 5. Import battery service packages
     if (data.batteryServicePackages.length > 0) {
       await prisma.batteryServicePackage.createMany({ 
         data: data.batteryServicePackages, 
@@ -91,6 +98,7 @@ async function importData(filename?: string) {
       console.log(`   ✓ Battery Service Packages: ${data.batteryServicePackages.length}`);
     }
 
+    // 6. Import subscriptions (depends on users, packages, vehicles)
     if (data.subscriptions.length > 0) {
       await prisma.subscription.createMany({ 
         data: data.subscriptions, 
@@ -99,11 +107,13 @@ async function importData(filename?: string) {
       console.log(`   ✓ Subscriptions: ${data.subscriptions.length}`);
     }
 
+    // 7. Import payments (depends on users, packages, vehicles, subscriptions)
     if (data.payments.length > 0) {
       await prisma.payment.createMany({ data: data.payments, skipDuplicates: true });
       console.log(`   ✓ Payments: ${data.payments.length}`);
     }
 
+    // 8. Import reservations (depends on users, stations, batteries)
     if (data.reservations.length > 0) {
       await prisma.reservation.createMany({ 
         data: data.reservations, 
@@ -112,12 +122,22 @@ async function importData(filename?: string) {
       console.log(`   ✓ Reservations: ${data.reservations.length}`);
     }
 
+    // 9. Import swap transactions (depends on users, stations, vehicles, batteries, subscriptions)
     if (data.swapTransactions.length > 0) {
       await prisma.swapTransaction.createMany({ 
         data: data.swapTransactions, 
         skipDuplicates: true 
       });
       console.log(`   ✓ Swap Transactions: ${data.swapTransactions.length}`);
+    }
+
+    // 10. Import supports (depends on users and stations)
+    if (data.supports && data.supports.length > 0) {
+      await prisma.support.createMany({ 
+        data: data.supports, 
+        skipDuplicates: true 
+      });
+      console.log(`   ✓ Supports: ${data.supports.length}`);
     }
 
     console.log('\n✅ Data imported successfully!');

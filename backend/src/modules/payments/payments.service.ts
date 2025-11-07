@@ -291,6 +291,7 @@ export class PaymentsService {
   /**
    * Create subscription with deposit payment
    * Tách tiền thanh toán: phí gói + phí đặt cọc pin
+   * Đánh dấu deposit_paid = true
    */
   private async createSubscriptionWithDeposit(payment: any) {
     if (!payment.package) return;
@@ -312,6 +313,7 @@ export class PaymentsService {
         end_date: endDate,
         status: 'active',
         swap_used: 0,
+        deposit_paid: true, // Đã thanh toán cọc
       },
     });
 
@@ -320,9 +322,6 @@ export class PaymentsService {
       where: { payment_id: payment.payment_id },
       data: { subscription_id: subscription.subscription_id },
     });
-
-    // TODO: Lưu thông tin deposit vào user hoặc bảng khác
-    // await this.prisma.user.update({...})
 
     return subscription;
   }
@@ -686,7 +685,22 @@ export class PaymentsService {
       throw new BadRequestException('Package is not active');
     }
 
-    // 2. Calculate fee based on fee type
+    // 2. Check if user has existing subscription for this vehicle (to determine deposit status)
+    let existingSubscription: any = null;
+    if (createPaymentWithFeesDto.vehicle_id) {
+      existingSubscription = await this.prisma.subscription.findFirst({
+        where: {
+          user_id: createPaymentWithFeesDto.user_id,
+          vehicle_id: createPaymentWithFeesDto.vehicle_id,
+          status: SubscriptionStatus.active,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+    }
+
+    // 3. Calculate fee based on fee type
     let feeAmount = 0;
     let feeBreakdownText = '';
     let feeDetails: any = {
@@ -697,12 +711,21 @@ export class PaymentsService {
     // Call appropriate fee calculation method
     switch (createPaymentWithFeesDto.payment_type) {
       case 'subscription_with_deposit':
+        // Check deposit status from existing subscription
         const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
           createPaymentWithFeesDto.package_id,
+          existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
         );
         feeAmount = depositResult.deposit_fee;
-        feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        
+        // Update breakdown text based on whether deposit is included
+        if (depositResult.deposit_fee > 0) {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        } else {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        }
         feeDetails.depositFee = depositResult.deposit_fee;
+        feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
         break;
 
       case 'battery_replacement':
@@ -881,10 +904,18 @@ export class PaymentsService {
         case 'subscription_with_deposit':
           const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
             createPaymentWithFeesDto.package_id,
+            existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
           );
           feeAmount = depositResult.deposit_fee;
-          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          
+          // Update breakdown text based on whether deposit is included
+          if (depositResult.deposit_fee > 0) {
+            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          } else {
+            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          }
           feeDetails.depositFee = depositResult.deposit_fee;
+          feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
           break;
 
         case 'battery_replacement':
@@ -939,6 +970,9 @@ export class PaymentsService {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + servicePackage.duration_days);
 
+        // Set deposit_paid = true if payment type includes deposit
+        const depositPaid = createPaymentWithFeesDto.payment_type === 'subscription_with_deposit';
+
         subscription = await this.prisma.subscription.create({
           data: {
             user_id: createPaymentWithFeesDto.user_id,
@@ -948,6 +982,7 @@ export class PaymentsService {
             end_date: endDate,
             status: 'active',
             swap_used: 0,
+            deposit_paid: depositPaid, // Set based on payment type
           },
           include: {
             package: true,
