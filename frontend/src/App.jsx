@@ -34,6 +34,9 @@ import AdminReport from './pages/admin/AdminReport'
 import StationDetail from './pages/admin/StationDetail'
 import EditStation from './pages/admin/EditStation'
 import CreateStation from './pages/admin/CreateStation'
+import UserDetail from './pages/admin/UserDetail'
+import EditUser from './pages/admin/EditUser'
+import CreateUser from './pages/admin/CreateUser'
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -91,6 +94,10 @@ function App() {
           <Route path="stations/edit/:id" element={<EditStation />} />
 
           <Route path="users-list" element={<AdminUserList />} />
+          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="users/edit/:id" element={<EditUser />} />
+          <Route path="users/create" element={<CreateUser />} />
+
           <Route path="packages-list" element={<AdminPackageList />} />
           <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />
           <Route path="support-list" element={<AdminSupportList />} />
