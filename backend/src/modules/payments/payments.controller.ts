@@ -177,6 +177,24 @@ export class PaymentsController {
   }
 
   /**
+   * ⭐ NEW ENDPOINT - Cancel expired pending payments
+   * POST /payments/cancel-expired
+   * 
+   * Manually trigger cancellation of payments that have expired
+   */
+  @Post('cancel-expired')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  async cancelExpiredPayments() {
+    const count = await this.paymentsService.cancelExpiredPayments();
+    return {
+      success: true,
+      message: `Cancelled ${count} expired payment(s)`,
+      count,
+    };
+  }
+
+  /**
    * ⭐ NEW ENDPOINT - Create payment for battery deposit only
    * POST /payments/battery-deposit
    * 

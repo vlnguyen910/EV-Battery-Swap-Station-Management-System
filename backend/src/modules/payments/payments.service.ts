@@ -25,6 +25,8 @@ import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 @Injectable()
 export class PaymentsService {
+  private readonly PAYMENT_EXPIRY_MINUTES = 15; // Payment expires after 15 minutes
+
   constructor(
     private prisma: DatabaseService,
     @Inject(FeeCalculationService)
@@ -32,6 +34,38 @@ export class PaymentsService {
     private batteryServicePackage: BatteryServicePackagesService,
     private subscriptionsService: SubscriptionsService
   ) { }
+
+  /**
+   * Calculate payment expiry time
+   */
+  private getPaymentExpiryTime(): Date {
+    return moment().add(this.PAYMENT_EXPIRY_MINUTES, 'minutes').toDate();
+  }
+
+  /**
+   * Auto-cancel expired pending payments
+   */
+  async cancelExpiredPayments(): Promise<number> {
+    const now = new Date();
+    
+    const result = await this.prisma.payment.updateMany({
+      where: {
+        status: PaymentStatus.pending,
+        expires_at: {
+          lt: now, // Less than now = expired
+        },
+      },
+      data: {
+        status: PaymentStatus.cancelled,
+      },
+    });
+
+    if (result.count > 0) {
+      console.log(`🕐 Auto-cancelled ${result.count} expired payment(s)`);
+    }
+
+    return result.count;
+  }
 
 
   /**
@@ -76,6 +110,7 @@ export class PaymentsService {
         status: PaymentStatus.pending,
         payment_type: createPaymentDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
+        expires_at: this.getPaymentExpiryTime(),
         order_info:
           createPaymentDto.orderDescription ||
           (servicePackage ? `Thanh toan goi ${servicePackage.name}` : `Thanh toan ${createPaymentDto.payment_type}`),
