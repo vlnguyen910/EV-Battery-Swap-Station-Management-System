@@ -7,13 +7,20 @@ export enum DamageSeverityEnum {
 }
 
 /**
- * Calculate fee for subscription + deposit (fixed 400,000 VNĐ)
+ * Calculate fee for subscription + deposit (if not paid yet)
+ * - If subscriptionId provided: Check if deposit already paid
+ * - If no subscriptionId: Assume first time, include deposit
  */
 export class CalculateSubscriptionFeeDto {
   @IsNumber()
   @IsNotEmpty()
   @Min(1)
   packageId: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  subscriptionId?: number;
 }
 
 /**

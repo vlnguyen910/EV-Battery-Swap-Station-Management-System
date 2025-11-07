@@ -268,7 +268,9 @@ export class PaymentsController {
    */
 
   /**
-   * Calculate subscription + deposit fee (fixed 400,000 VNĐ)
+   * Calculate subscription + deposit fee (if not paid yet)
+   * - Nếu chưa đặt cọc: Tính phí gói + phí cọc (400,000 VNĐ)
+   * - Nếu đã đặt cọc: Chỉ tính phí gói
    * POST /payments/calculate/subscription-fee
    */
   @Post('calculate/subscription-fee')
@@ -277,6 +279,7 @@ export class PaymentsController {
   async calculateSubscriptionFee(@Body() dto: CalculateSubscriptionFeeDto) {
     const fee = await this.feeCalculationService.calculateSubscriptionWithDeposit(
       dto.packageId,
+      dto.subscriptionId,
     );
     return {
       ...fee,
