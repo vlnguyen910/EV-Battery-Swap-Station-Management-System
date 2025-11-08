@@ -568,6 +568,28 @@ export default function ManualSwapTransaction() {
         // If modal is open, close it. Otherwise navigate back to staff home.
         if (showModal) {
             setShowModal(false);
+
+            // If this was Luồng 1 (reservationId in URL), clear the URL params so they don't re-trigger modal on Luồng 2
+            if (reservationId) {
+                console.log('🔄 Closing Luồng 1 popup - clearing URL params and resetting form');
+                // Reset form data to empty
+                setFormData({
+                    user_id: '',
+                    vehicle_id: '',
+                    station_id: staffStationId || '',
+                    subscription_id: '',
+                    subscription_name: '',
+                    battery_taken_id: '',
+                    subscription_battery_returned_id: '',
+                });
+                // Reset display states
+                setUsername('');
+                setVehicleVin('');
+                setUserVehicles([]);
+                setApiErrors([]);
+                // Clear URL
+                navigate('/staff/manual-swap', { replace: true, state: null });
+            }
             return;
         }
         navigate('/staff');
@@ -674,11 +696,11 @@ export default function ManualSwapTransaction() {
             {/* Modal popup for Create New Swap Transaction */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
+                    <div className="absolute inset-0 bg-black/40" onClick={handleCancel} />
                     <div className="relative w-[920px] max-w-[calc(100%-2rem)] max-h-[90vh] overflow-auto mx-4 bg-white p-8 rounded-lg shadow-md z-10">
                         <div className="flex justify-between items-start mb-4">
                             <h2 className="text-2xl font-bold text-gray-900">Create New Swap Transaction</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                            <button onClick={handleCancel} className="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
