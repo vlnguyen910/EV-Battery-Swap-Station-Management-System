@@ -86,6 +86,7 @@ function App() {
           <Route path="inspection" element={<StaffInspection />} />
           <Route path="swap-requests" element={<StaffSwapRequests />} />
           <Route path="manual-swap" element={<ManualSwapTransaction />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Admin Routes */}
@@ -110,6 +111,7 @@ function App() {
           <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />
           <Route path="support-list" element={<AdminSupportList />} />
           <Route path="report" element={<AdminReport />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* 404 Not Found - Must be last */}

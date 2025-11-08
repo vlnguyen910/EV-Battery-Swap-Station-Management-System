@@ -5,6 +5,8 @@ import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
 import { swapService } from '../../services/swapService';
+import { subscriptionService } from '../../services/subscriptionService';
+import { stationService } from '../../services/stationService';
 import userService from '../../services/userService';
 import TransactionTimeFilter from '../transactions/TransactionTimeFilter';
 import TransactionSearchBar from '../transactions/TransactionSearchBar';
@@ -18,12 +20,14 @@ export default function ManualSwapTransaction() {
     const { getAllBatteries } = useBattery();
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
-    const { packages, getPackageById } = usePackage();
+    const { getPackageById } = usePackage();
 
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
     const [userVehicles, setUserVehicles] = useState([]);
+    const [username, setUsername] = useState(''); // Username for Luồng 1
+    const [vehicleVin, setVehicleVin] = useState(''); // VIN for Luồng 1
 
     // Track fetched user_id to prevent infinite loop
     const [fetchedUserId, setFetchedUserId] = useState(null);
@@ -33,6 +37,9 @@ export default function ManualSwapTransaction() {
     const [foundUser, setFoundUser] = useState(null);
     const [emailSearching, setEmailSearching] = useState(false);
     const [emailError, setEmailError] = useState('');
+
+    // Station name for display (fetch from stationId)
+    const [stationName, setStationName] = useState('');
 
     // Get data from URL params (passed from staff request list in Luồng 1)
     const reservationId = searchParams.get('reservationId');
@@ -112,6 +119,34 @@ export default function ManualSwapTransaction() {
             }));
         }
     }, [staffStationId, formData.station_id]);
+
+    // Fetch station name from staffStationId (not from formData.station_id)
+    useEffect(() => {
+        if (!staffStationId) {
+            setStationName('');
+            return;
+        }
+
+        const fetchStationName = async () => {
+            try {
+                const station = await stationService.getStationById(staffStationId);
+                console.log('📍 Full station object:', station);
+                console.log('📍 All station keys:', station ? Object.keys(station) : 'null');
+
+                // Try different field names for station name
+                const name = station?.name
+                    || `Station ${staffStationId}`;
+
+                setStationName(name);
+                console.log('✅ Resolved station name:', name);
+            } catch (err) {
+                console.warn('❌ Failed to fetch station name:', err);
+                setStationName(`Station ${staffStationId}`);
+            }
+        };
+
+        fetchStationName();
+    }, [staffStationId]);
 
     // Handler to search user by email (Luồng 2)
     const handleEmailSearch = async () => {
@@ -205,31 +240,50 @@ export default function ManualSwapTransaction() {
                 // Set user_id from URL params first (Luồng 1 always has urlUserId)
                 if (urlUserId) {
                     setFormData(prev => ({ ...prev, user_id: String(urlUserId) }));
+
+                    // Fetch username từ user_id
+                    try {
+                        const userData = await userService.getUserById(parseInt(urlUserId));
+                        setUsername(userData?.username || '');
+                        console.log('✅ Username fetched:', userData?.username);
+                    } catch (err) {
+                        console.error('❌ Error fetching username:', err);
+                    }
                 }
 
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
+
+                // Set VIN từ vehicle
+                if (vehicle?.vin) {
+                    setVehicleVin(vehicle.vin);
+                    console.log('✅ VIN fetched:', vehicle.vin);
+                }
+
                 if (vehicle?.vehicle_id) setFormData(prev => ({ ...prev, vehicle_id: String(vehicle.vehicle_id) }));
                 if (vehicle?.battery_id) setFormData(prev => ({ ...prev, battery_returned_id: String(vehicle.battery_id) }));
 
                 if (!urlSubscriptionId && urlUserId) {
-                    const subscription = await getActiveSubscription(parseInt(urlUserId));
-                    if (subscription) {
-                        const packageName = subscription.package?.package_name || subscription.package?.name
-                            || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
-                            || 'Chưa đăng ký';
-                        setFormData(prev => ({ ...prev, subscription_id: subscription.subscription_id.toString(), subscription_name: packageName }));
+                    try {
+                        const subscription = await getActiveSubscription(parseInt(urlUserId));
+                        if (subscription) {
+                            const packageName = subscription.package?.package_name || subscription.package?.name || 'Chưa đăng ký';
+                            setFormData(prev => ({ ...prev, subscription_id: subscription.subscription_id.toString(), subscription_name: packageName }));
+                        }
+                    } catch (subErr) {
+                        console.error('Error fetching subscription:', subErr);
                     }
                 }
-            } catch {
-                // keep minimal error handling; loading flag reset below
+            } catch (err) {
+                console.error('Error fetching vehicle data:', err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchVehicleData();
-    }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription, packages, getPackageById]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reservationId, urlVehicleId, urlUserId, urlSubscriptionId]);
 
     // When vehicle_id changes (manual selection in Luồng 2), fetch vehicle details AND subscription
     useEffect(() => {
@@ -258,19 +312,22 @@ export default function ManualSwapTransaction() {
                 if (!reservationId && formData.user_id) {
                     try {
                         const currentUserId = parseInt(formData.user_id);
-                        // Get ALL active subscriptions of user
-                        const subscriptions = await getActiveSubscription(currentUserId);
+                        // Get ALL subscriptions of user (not just active one)
+                        const subscriptions = await subscriptionService.getSubscriptionsByUserId(currentUserId);
 
-                        // If it's an array, find the one matching this vehicle
+                        console.log('📦 All user subscriptions:', subscriptions);
+
+                        // Find the subscription matching this vehicle
                         let subscription = null;
-                        if (Array.isArray(subscriptions)) {
-                            subscription = subscriptions.find(sub => sub.vehicle_id === currentVehicleId);
-                        } else if (subscriptions && subscriptions.vehicle_id === currentVehicleId) {
-                            subscription = subscriptions;
+                        if (Array.isArray(subscriptions) && subscriptions.length > 0) {
+                            subscription = subscriptions.find(sub =>
+                                sub.vehicle_id === currentVehicleId &&
+                                sub.status === 'active'
+                            );
                         }
 
                         if (subscription) {
-                            console.log('✅ Found subscription for vehicle:', subscription);
+                            console.log('✅ Found active subscription for vehicle:', subscription);
 
                             // Get package name from subscription
                             let packageName = subscription.package?.package_name
@@ -293,8 +350,8 @@ export default function ManualSwapTransaction() {
                                 subscription_name: packageName
                             }));
                         } else {
-                            // No subscription for this vehicle
-                            console.warn('⚠️ No subscription found for vehicle:', currentVehicleId);
+                            // No active subscription for this vehicle
+                            console.warn('⚠️ No active subscription found for vehicle:', currentVehicleId);
                             setFormData(prev => ({
                                 ...prev,
                                 subscription_id: '',
@@ -511,6 +568,28 @@ export default function ManualSwapTransaction() {
         // If modal is open, close it. Otherwise navigate back to staff home.
         if (showModal) {
             setShowModal(false);
+
+            // If this was Luồng 1 (reservationId in URL), clear the URL params so they don't re-trigger modal on Luồng 2
+            if (reservationId) {
+                console.log('🔄 Closing Luồng 1 popup - clearing URL params and resetting form');
+                // Reset form data to empty
+                setFormData({
+                    user_id: '',
+                    vehicle_id: '',
+                    station_id: staffStationId || '',
+                    subscription_id: '',
+                    subscription_name: '',
+                    battery_taken_id: '',
+                    subscription_battery_returned_id: '',
+                });
+                // Reset display states
+                setUsername('');
+                setVehicleVin('');
+                setUserVehicles([]);
+                setApiErrors([]);
+                // Clear URL
+                navigate('/staff/manual-swap', { replace: true, state: null });
+            }
             return;
         }
         navigate('/staff');
@@ -617,14 +696,34 @@ export default function ManualSwapTransaction() {
             {/* Modal popup for Create New Swap Transaction */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
+                    <div className="absolute inset-0 bg-black/40" onClick={handleCancel} />
                     <div className="relative w-[920px] max-w-[calc(100%-2rem)] max-h-[90vh] overflow-auto mx-4 bg-white p-8 rounded-lg shadow-md z-10">
                         <div className="flex justify-between items-start mb-4">
                             <h2 className="text-2xl font-bold text-gray-900">Create New Swap Transaction</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                            <button onClick={handleCancel} className="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Username - Luồng 1 only */}
+                                {reservationId && (
+                                    <div className="min-w-0">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="username">
+                                            Username
+                                        </label>
+                                        <div className="relative">
+                                            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">person</span>
+                                            <input
+                                                type="text"
+                                                id="username"
+                                                name="username"
+                                                value={username}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* User Email Search (Luồng 2) or User ID (Luồng 1) */}
                                 {!reservationId ? (
                                     <div className="md:col-span-2">
@@ -711,10 +810,10 @@ export default function ManualSwapTransaction() {
                                     </div>
                                 )}
 
-                                {/* Vehicle ID */}
+                                {/* Vehicle VIN - Luồng 1 shows VIN, Luồng 2 shows Vehicle dropdown */}
                                 <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="vehicle_id">
-                                        Vehicle ID
+                                        {reservationId ? 'Vehicle VIN' : 'Vehicle ID'}
                                     </label>
                                     <div className="relative">
                                         <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">electric_scooter</span>
@@ -723,8 +822,7 @@ export default function ManualSwapTransaction() {
                                                 type="text"
                                                 id="vehicle_id"
                                                 name="vehicle_id"
-                                                value={formData.vehicle_id}
-                                                onChange={handleChange}
+                                                value={vehicleVin || formData.vehicle_id}
                                                 className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
                                                 readOnly
                                             />
@@ -754,7 +852,7 @@ export default function ManualSwapTransaction() {
                                 {/* Station ID */}
                                 <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="station_id">
-                                        Station ID
+                                        Station Name
                                     </label>
                                     <div className="relative">
                                         <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">ev_station</span>
@@ -762,8 +860,7 @@ export default function ManualSwapTransaction() {
                                             type="text"
                                             id="station_id"
                                             name="station_id"
-                                            value={formData.station_id}
-                                            onChange={handleChange}
+                                            value={stationName || formData.station_id}
                                             className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
                                             readOnly
                                         />
@@ -825,49 +922,29 @@ export default function ManualSwapTransaction() {
                                     </div>
                                 )}
 
-                                {/* Battery info for Luồng 2 (Manual) - just informational */}
-                                {!reservationId && (
+                                {/* Battery Returned ID - Only show in Luồng 1 (Reservation) */}
+                                {reservationId && (
                                     <div className="min-w-0">
-                                        <label className="block text-sm font-medium text-gray-600 mb-1">
-                                            Battery Selection
+                                        <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="battery_returned_id">
+                                            Battery Returned ID
                                         </label>
                                         <div className="relative">
-                                            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 text-xl">auto_awesome</span>
+                                            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-red-500 text-xl">battery_alert</span>
                                             <input
                                                 type="text"
-                                                value="Auto-selected by system"
+                                                id="battery_returned_id"
+                                                name="battery_returned_id"
+                                                value={formData.battery_returned_id}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                                placeholder="Auto-filled from vehicle"
                                                 readOnly
-                                                className="w-full pl-12 pr-4 py-2 bg-blue-50 border border-blue-300 rounded-md text-blue-700"
                                             />
                                         </div>
-                                        <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                                            <span className="material-icons text-sm">info</span>
-                                            System will automatically select the best compatible battery
+                                        <p className="text-xs text-orange-600 mt-1">
+                                            Battery returned by driver (to be charged)
                                         </p>
                                     </div>
                                 )}
-
-                                {/* Battery Returned ID */}
-                                <div className="min-w-0">
-                                    <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="battery_returned_id">
-                                        Battery Returned ID
-                                    </label>
-                                    <div className="relative">
-                                        <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-red-500 text-xl">battery_alert</span>
-                                        <input
-                                            type="text"
-                                            id="battery_returned_id"
-                                            name="battery_returned_id"
-                                            value={formData.battery_returned_id}
-                                            className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
-                                            placeholder="Auto-filled from vehicle"
-                                            readOnly
-                                        />
-                                    </div>
-                                    <p className="text-xs text-orange-600 mt-1">
-                                        Battery returned by driver (to be charged)
-                                    </p>
-                                </div>
                             </div>
 
                             {/* API validation errors from backend */}

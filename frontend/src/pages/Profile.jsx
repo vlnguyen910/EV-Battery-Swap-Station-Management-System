@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useAuth } from '../hooks/useContext';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import VehiclesList from '../components/profile/VehiclesList';
@@ -7,14 +8,21 @@ import { vehicleService } from '../services/vehicleService';
 import { subscriptionService } from '../services/subscriptionService';
 
 export default function Profile() {
-  // Get user from parent (Driver.jsx) via Outlet context
-  const { user } = useOutletContext();
+  // Try to get user from outlet context first, fallback to AuthContext
+  const outletContext = useOutletContext();
+  const { user: authUser } = useAuth();
+  const user = outletContext?.user || authUser;
+
   const [vehicles, setVehicles] = useState([]);
 
   // Fetch enriched vehicles (with batteryLevel & soh) from service
   // Extract fetch function so child components can trigger refresh
   const fetchVehicles = async () => {
-    if (!user?.user_id) return;
+    // Only fetch vehicles if user is a driver
+    if (!user?.user_id || (user?.role && user.role !== 'driver')) {
+      setVehicles([]);
+      return;
+    }
 
     try {
       const [vehicles, subscriptions] = await Promise.all([
@@ -44,17 +52,20 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    // Only refetch when user id changes
+    // Only refetch when user id or role changes
     fetchVehicles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.user_id, user?.role]);
 
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="max-w-5xl ml-8 p-6">
         <ProfileHeader />
         <PersonalInfoCard user={user} />
-        <VehiclesList vehicles={vehicles} onAddVehicle={fetchVehicles} />
+        {/* Only show vehicles list if user is a driver */}
+        {user?.role === 'driver' && (
+          <VehiclesList vehicles={vehicles} onAddVehicle={fetchVehicles} />
+        )}
       </div>
     </div>
   );
