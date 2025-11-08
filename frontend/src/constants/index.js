@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
 
   USER: {
     CREATE_USER: "/users",
+    GET_BY_EMAIL: (email) => `/users/email/${email}`,
     GET_ALL_USERS: "/users",
     GET_USER: (id) => `/users/${id}`,
     UPDATE_USER: (id) => `/users/${id}`,
@@ -122,7 +123,7 @@ export const API_ENDPOINTS = {
     DAMAGE_FEE: "/payments/damage-fee",
     BATTERY_REPLACEMENT: "/payments/battery-replacement",
     DIRECT_WITH_FEES: "/payments/direct-with-fees",
-    
+
     // Fee calculation endpoints
     CALCULATE_SUBSCRIPTION_FEE: "/payments/calculate/subscription-fee",
     CALCULATE_OVERCHARGE_FEE: "/payments/calculate/overcharge-fee",
