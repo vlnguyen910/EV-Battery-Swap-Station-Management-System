@@ -517,6 +517,7 @@ async function main() {
             user_id: driver1.user_id,
             vehicle_id: vehicle1.vehicle_id,
             station_id: station1.station_id,
+            cabinet_id: cabinet1.cabinet_id, // Add this
             battery_taken_id: batteries[0].battery_id,
             battery_returned_id: batteries[1].battery_id,
             status: 'completed',
@@ -529,6 +530,7 @@ async function main() {
             user_id: driver2.user_id,
             vehicle_id: vehicle2.vehicle_id,
             station_id: station2.station_id,
+            cabinet_id: cabinet2.cabinet_id, // Add this
             battery_taken_id: batteries[5].battery_id,
             battery_returned_id: batteries[6].battery_id,
             status: 'completed',
@@ -541,6 +543,7 @@ async function main() {
             user_id: driver1.user_id,
             vehicle_id: vehicle1.vehicle_id,
             station_id: station1.station_id,
+            cabinet_id: cabinet1.cabinet_id, // Add this
             battery_taken_id: batteries[2].battery_id,
             status: 'completed',
             subscription_id: subscription1.subscription_id,
@@ -552,6 +555,7 @@ async function main() {
             user_id: driver1.user_id,
             vehicle_id: vehicle1.vehicle_id,
             station_id: station2.station_id,
+            cabinet_id: cabinet2.cabinet_id, // Add this
             battery_taken_id: batteries[7].battery_id,
             battery_returned_id: batteries[8].battery_id,
             status: 'failed',
