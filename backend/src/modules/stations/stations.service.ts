@@ -115,13 +115,14 @@ export class StationsService {
           status: station.status,
           available_batteries: station._count.batteries,
           distance: this.calculateDistance(
-            new Decimal(userLatitude.toString()),
-            new Decimal(userLongitude.toString()),
+            new Decimal(userLatitude),
+            new Decimal(userLongitude),
             station.latitude,
             station.longitude
           )
         }))
-        .filter(station => station.distance < radiusKm);
+        .filter(station => station.distance <= radiusKm) // Add this line
+        .sort((a, b) => a.distance - b.distance);
 
       if (result.length === 0) {
         throw new NotFoundException(`No available stations found within ${radiusKm} km radius`);
