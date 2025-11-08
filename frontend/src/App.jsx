@@ -37,6 +37,10 @@ import CreateStation from './pages/admin/CreateStation'
 import UserDetail from './pages/admin/UserDetail'
 import EditUser from './pages/admin/EditUser'
 import CreateUser from './pages/admin/CreateUser'
+import EditPackage from './pages/admin/EditPackage'
+import CreatePackage from './pages/admin/CreatePackage'
+import PackageDetail from './pages/admin/PackageDetail'
+
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -99,6 +103,10 @@ function App() {
           <Route path="users/create" element={<CreateUser />} />
 
           <Route path="packages-list" element={<AdminPackageList />} />
+          <Route path="packages/edit/:id" element={<EditPackage />} />
+          <Route path="packages/create" element={<CreatePackage />} />
+          <Route path="packages/:id" element={<PackageDetail />} />
+
           <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />
           <Route path="support-list" element={<AdminSupportList />} />
           <Route path="report" element={<AdminReport />} />

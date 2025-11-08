@@ -11,13 +11,9 @@ import { toast } from 'sonner';
 
 // Validation Schema
 const validationSchema = Yup.object({
-  username: Yup.string()
-    .required('Username is required')
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must not exceed 50 characters'),
+  username: Yup.string(),
   role: Yup.string()
-    .required('Role is required')
-    .oneOf(['admin', 'driver', 'station_staff'], 'Invalid role selected'),
+    .oneOf(['driver', 'station_staff'], 'Invalid role selected'),
   station_id: Yup.number()
     .nullable()
     .typeError('Station ID must be a number'),
@@ -67,12 +63,18 @@ export default function EditUser() {
       try {
         setSubmitting(true);
         
-        // Only send editable fields to backend
-        const updateData = {
-          username: values.username,
-          role: values.role,
-          station_id: values.station_id ? Number(values.station_id) : null,
-        };
+        // Only send editable fields based on role
+        const updateData = {};
+        
+        // Only station_staff can have station_id edited
+        if (values.role === 'station_staff') {
+          if (values.station_id) {
+            updateData.station_id = Number(values.station_id);
+          }
+        }
+        
+        // Admin and Driver: no editable fields, read-only only
+        // Station Staff: only station_id is editable
 
         // Call API to update user
         await userService.updateUser(id, updateData);
@@ -226,27 +228,17 @@ export default function EditUser() {
                     />
                   </div>
 
-                  {/* Username (Editable) */}
+                  {/* Username (Read-only) */}
                   <div className="flex flex-col col-span-1">
                     <label className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2">
-                      Username <span className="text-red-500">*</span>
+                      Username
                     </label>
                     <input
                       type="text"
-                      name="username"
                       value={formik.values.username}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`form-input flex w-full rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 border bg-slate-50 dark:bg-slate-800/50 h-11 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-3 text-sm ${
-                        formik.touched.username && formik.errors.username
-                          ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
-                          : 'border-slate-300 dark:border-slate-700 focus:ring-primary/50 focus:border-primary'
-                      }`}
-                      placeholder="Enter username"
+                      className="form-input flex w-full rounded-lg text-slate-500 dark:text-slate-400 focus:outline-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 h-11 p-3 text-sm cursor-not-allowed"
+                      readOnly
                     />
-                    {formik.touched.username && formik.errors.username && (
-                      <p className="text-red-500 text-xs mt-1">{formik.errors.username}</p>
-                    )}
                   </div>
 
                   {/* Email (Read-only) */}
@@ -262,7 +254,18 @@ export default function EditUser() {
                     />
                   </div>
 
-
+                  {/* Role (Read-only) */}
+                  <div className="flex flex-col col-span-1">
+                    <label className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2">
+                      Role
+                    </label>
+                    <input
+                      type="text"
+                      value={formik.values.role === 'station_staff' ? 'Station Staff' : formik.values.role === 'driver' ? 'Driver' : formik.values.role}
+                      className="form-input flex w-full rounded-lg text-slate-500 dark:text-slate-400 focus:outline-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 h-11 p-3 text-sm cursor-not-allowed"
+                      readOnly
+                    />
+                  </div>
                   {/* Station ID (Editable - only for station_staff) */}
                   {formik.values.role === 'station_staff' && (
                     <div className="flex flex-col col-span-1">

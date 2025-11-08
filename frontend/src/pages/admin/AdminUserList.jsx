@@ -43,9 +43,11 @@ export default function AdminUserList() {
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.username?.toLowerCase().includes(searchQuery.toLowerCase())
 
+    // Only show driver and station_staff, exclude admin
+    const isNonAdmin = user.role === 'driver' || user.role === 'station_staff'
     const matchesRole = roleFilter === 'all' || user.role === roleFilter
 
-    return matchesSearch && matchesRole
+    return matchesSearch && matchesRole && isNonAdmin
   })
 
   // Pagination logic
@@ -155,12 +157,6 @@ export default function AdminUserList() {
                       className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg text-gray-700 dark:text-gray-300"
                     >
                       All Roles
-                    </button>
-                    <button
-                      onClick={() => { setRoleFilter('admin'); setShowRoleDropdown(false) }}
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                    >
-                      Admin
                     </button>
                     <button
                       onClick={() => { setRoleFilter('driver'); setShowRoleDropdown(false) }}
