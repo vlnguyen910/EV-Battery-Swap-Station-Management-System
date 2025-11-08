@@ -20,12 +20,14 @@ export default function ManualSwapTransaction() {
     const { getAllBatteries } = useBattery();
     const { user } = useAuth(); // Get logged-in staff info
     const { getActiveSubscription } = useSubscription();
-    const { packages, getPackageById } = usePackage();
+    const { getPackageById } = usePackage();
 
     // Start as true if Luồng 1 (reservationId exists), false nếu Luồng 2
     const [loading, setLoading] = useState(!!searchParams.get('reservationId'));
     const [_vehicleData, setVehicleData] = useState(null);
     const [userVehicles, setUserVehicles] = useState([]);
+    const [username, setUsername] = useState(''); // Username for Luồng 1
+    const [vehicleVin, setVehicleVin] = useState(''); // VIN for Luồng 1
 
     // Track fetched user_id to prevent infinite loop
     const [fetchedUserId, setFetchedUserId] = useState(null);
@@ -238,31 +240,50 @@ export default function ManualSwapTransaction() {
                 // Set user_id from URL params first (Luồng 1 always has urlUserId)
                 if (urlUserId) {
                     setFormData(prev => ({ ...prev, user_id: String(urlUserId) }));
+
+                    // Fetch username từ user_id
+                    try {
+                        const userData = await userService.getUserById(parseInt(urlUserId));
+                        setUsername(userData?.username || '');
+                        console.log('✅ Username fetched:', userData?.username);
+                    } catch (err) {
+                        console.error('❌ Error fetching username:', err);
+                    }
                 }
 
                 const vehicle = await vehicleService.getVehicleById(urlVehicleId);
                 setVehicleData(vehicle);
+
+                // Set VIN từ vehicle
+                if (vehicle?.vin) {
+                    setVehicleVin(vehicle.vin);
+                    console.log('✅ VIN fetched:', vehicle.vin);
+                }
+
                 if (vehicle?.vehicle_id) setFormData(prev => ({ ...prev, vehicle_id: String(vehicle.vehicle_id) }));
                 if (vehicle?.battery_id) setFormData(prev => ({ ...prev, battery_returned_id: String(vehicle.battery_id) }));
 
                 if (!urlSubscriptionId && urlUserId) {
-                    const subscription = await getActiveSubscription(parseInt(urlUserId));
-                    if (subscription) {
-                        const packageName = subscription.package?.package_name || subscription.package?.name
-                            || (Array.isArray(packages) && packages.find(p => String(p.package_id) === String(subscription.package_id))?.package_name)
-                            || 'Chưa đăng ký';
-                        setFormData(prev => ({ ...prev, subscription_id: subscription.subscription_id.toString(), subscription_name: packageName }));
+                    try {
+                        const subscription = await getActiveSubscription(parseInt(urlUserId));
+                        if (subscription) {
+                            const packageName = subscription.package?.package_name || subscription.package?.name || 'Chưa đăng ký';
+                            setFormData(prev => ({ ...prev, subscription_id: subscription.subscription_id.toString(), subscription_name: packageName }));
+                        }
+                    } catch (subErr) {
+                        console.error('Error fetching subscription:', subErr);
                     }
                 }
-            } catch {
-                // keep minimal error handling; loading flag reset below
+            } catch (err) {
+                console.error('Error fetching vehicle data:', err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchVehicleData();
-    }, [reservationId, urlVehicleId, urlSubscriptionId, urlUserId, getActiveSubscription, packages, getPackageById]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reservationId, urlVehicleId, urlUserId, urlSubscriptionId]);
 
     // When vehicle_id changes (manual selection in Luồng 2), fetch vehicle details AND subscription
     useEffect(() => {
@@ -661,6 +682,26 @@ export default function ManualSwapTransaction() {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Username - Luồng 1 only */}
+                                {reservationId && (
+                                    <div className="min-w-0">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="username">
+                                            Username
+                                        </label>
+                                        <div className="relative">
+                                            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">person</span>
+                                            <input
+                                                type="text"
+                                                id="username"
+                                                name="username"
+                                                value={username}
+                                                className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* User Email Search (Luồng 2) or User ID (Luồng 1) */}
                                 {!reservationId ? (
                                     <div className="md:col-span-2">
@@ -747,10 +788,10 @@ export default function ManualSwapTransaction() {
                                     </div>
                                 )}
 
-                                {/* Vehicle ID */}
+                                {/* Vehicle VIN - Luồng 1 shows VIN, Luồng 2 shows Vehicle dropdown */}
                                 <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="vehicle_id">
-                                        Vehicle ID
+                                        {reservationId ? 'Vehicle VIN' : 'Vehicle ID'}
                                     </label>
                                     <div className="relative">
                                         <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">electric_scooter</span>
@@ -759,8 +800,7 @@ export default function ManualSwapTransaction() {
                                                 type="text"
                                                 id="vehicle_id"
                                                 name="vehicle_id"
-                                                value={formData.vehicle_id}
-                                                onChange={handleChange}
+                                                value={vehicleVin || formData.vehicle_id}
                                                 className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-green-500 focus:border-green-500"
                                                 readOnly
                                             />
