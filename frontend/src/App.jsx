@@ -29,6 +29,9 @@ import AdminStationList from './pages/admin/AdminStationList'
 import AdminUserList from './pages/admin/AdminUserList'
 import AdminPackageList from './pages/admin/AdminPackageList'
 import AdminBatteryTransferReq from './pages/admin/AdminBatteryTransferReq'
+import BatteryTransferDetail from './pages/admin/BatteryTransferDetail'
+import AdminBatteryTransferList from './pages/admin/AdminBatteryTransferList'
+import EditBatteryTransfer from './pages/admin/EditBatteryTransfer'
 import AdminSupportList from './pages/admin/AdminSupportList'
 import AdminReport from './pages/admin/AdminReport'
 import StationDetail from './pages/admin/StationDetail'
@@ -108,7 +111,11 @@ function App() {
           <Route path="packages/create" element={<CreatePackage />} />
           <Route path="packages/:id" element={<PackageDetail />} />
 
-          <Route path="battery-transfer-req" element={<AdminBatteryTransferReq />} />
+          <Route path="battery-transfer-requests" element={<AdminBatteryTransferList />} />
+          <Route path="battery-transfer-requests/create" element={<AdminBatteryTransferReq />} />
+          <Route path="battery-transfer-requests/:id" element={<BatteryTransferDetail />} />
+          <Route path="battery-transfer-requests/edit/:id" element={<EditBatteryTransfer />} />
+          
           <Route path="support-list" element={<AdminSupportList />} />
           <Route path="report" element={<AdminReport />} />
           <Route path="profile" element={<Profile />} />

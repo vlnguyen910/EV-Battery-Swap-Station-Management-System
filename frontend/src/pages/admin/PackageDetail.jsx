@@ -153,14 +153,14 @@ export default function PackageDetail() {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
-          <div className="flex flex-col gap-8 lg:col-span-2">
+          <div className="flex flex-col gap-8">
             {/* Package Details Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">Package Information</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-12 pr-12 gap-4 ">
                   <div className="flex flex-col">
                     <span className="font-medium text-slate-500 dark:text-slate-400 text-sm mb-1">
                       Package Name
