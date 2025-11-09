@@ -76,6 +76,7 @@ export default function EditBatteryTransfer() {
           quantity: parseInt(values.quantity),
           from_station_id: parseInt(values.from_station_id),
           to_station_id: parseInt(values.to_station_id),
+          status: transferRequest?.status,
         });
         toast.success('Transfer request updated successfully');
         navigate(`/admin/battery-transfer-requests/${id}`);
