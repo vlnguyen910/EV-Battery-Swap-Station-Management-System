@@ -154,6 +154,7 @@ export const API_ENDPOINTS = {
     GET_ALL_REQUESTS: "/battery-transfer-request",
     GET_REQUEST: (id) => `/battery-transfer-request/${id}`,
     UPDATE_REQUEST: (id) => `/battery-transfer-request/${id}`,
+    DELETE_REQUEST: (id) => `/battery-transfer-request/${id}`,
   },
 
   BATTERY_TRANSFER_TICKET: {
