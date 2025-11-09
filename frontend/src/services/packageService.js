@@ -53,7 +53,7 @@ const deletePackage = async (packageId) => {
 
 const updatePackage = async (packageId, packageData) => {
   try {
-    const response = await api.put(
+    const response = await api.patch(
       API_ENDPOINTS.BATTERY_SERVICE_PACKAGE.UPDATE_PACKAGE(packageId),
       packageData
     );
