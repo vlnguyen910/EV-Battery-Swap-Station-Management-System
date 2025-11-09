@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { batteryTransferService } from '../../services/batteryTransferService';
 import { stationService } from '../../services/stationService';
 import { toast } from 'sonner';
@@ -17,38 +17,50 @@ const validationSchema = Yup.object().shape({
   to_station_id: Yup.number().required('Destination station is required'),
 });
 
-export default function AdminBatteryTransferReq() {
+export default function EditBatteryTransfer() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [submitting, setSubmitting] = useState(false);
   const [stations, setStations] = useState([]);
-  const [loadingStations, setLoadingStations] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [transferRequest, setTransferRequest] = useState(null);
 
-  // Fetch stations on mount
+  // Fetch transfer request and stations on mount
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchData = async () => {
       try {
-        setLoadingStations(true);
-        const data = await stationService.getAllStations();
-        setStations(Array.isArray(data) ? data : data?.data || []);
+        setLoading(true);
+        setError(null);
+
+        // Fetch transfer request details
+        const requestData = await batteryTransferService.getRequestById(id);
+        setTransferRequest(requestData);
+
+        // Fetch stations
+        const stationsData = await stationService.getAllStations();
+        setStations(Array.isArray(stationsData) ? stationsData : stationsData?.data || []);
       } catch (err) {
-        console.error('Error fetching stations:', err);
-        toast.error('Failed to load stations');
+        console.error('Error fetching data:', err);
+        setError(err.response?.data?.message || 'Failed to load transfer request');
+        toast.error('Failed to load transfer request details');
       } finally {
-        setLoadingStations(false);
+        setLoading(false);
       }
     };
-    fetchStations();
-  }, []);
+    fetchData();
+  }, [id]);
 
   const formik = useFormik({
     initialValues: {
-      battery_model: '',
-      battery_type: '',
-      quantity: 1,
-      from_station_id: '',
-      to_station_id: '',
+      battery_model: transferRequest?.battery_model || '',
+      battery_type: transferRequest?.battery_type || '',
+      quantity: transferRequest?.quantity || 1,
+      from_station_id: transferRequest?.from_station_id || '',
+      to_station_id: transferRequest?.to_station_id || '',
     },
     validationSchema,
+    enableReinitialize: true,
     onSubmit: async (values) => {
       // Validate that source and destination are different
       if (values.from_station_id === values.to_station_id) {
@@ -58,18 +70,18 @@ export default function AdminBatteryTransferReq() {
 
       try {
         setSubmitting(true);
-        const newRequest = await batteryTransferService.createRequest({
+        await batteryTransferService.updateRequest(id, {
           battery_model: values.battery_model,
           battery_type: values.battery_type,
           quantity: parseInt(values.quantity),
           from_station_id: parseInt(values.from_station_id),
           to_station_id: parseInt(values.to_station_id),
         });
-        toast.success('Transfer request created successfully');
-        navigate(`/admin/battery-transfer-requests`);
+        toast.success('Transfer request updated successfully');
+        navigate(`/admin/battery-transfer-requests/${id}`);
       } catch (err) {
-        console.error('Error creating transfer request:', err);
-        toast.error(err.response?.data?.message || 'Failed to create transfer request');
+        console.error('Error updating transfer request:', err);
+        toast.error(err.response?.data?.message || 'Failed to update transfer request');
       } finally {
         setSubmitting(false);
       }
@@ -80,16 +92,35 @@ export default function AdminBatteryTransferReq() {
     if (formik.dirty && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
       return;
     }
-    navigate('/admin/battery-transfer-requests');
+    navigate(`/admin/battery-transfer-requests/${id}`);
   };
 
-  if (loadingStations) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-slate-600 dark:text-slate-400">Loading stations...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading transfer request...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-6 flex items-center justify-center">
+        <Card className="bg-white dark:bg-slate-900 border-red-200 dark:border-red-900 w-full max-w-md">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Error</h2>
+            </div>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
+            <Button onClick={() => navigate('/admin/battery-transfer-requests')} className="w-full">
+              Back to List
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -107,13 +138,13 @@ export default function AdminBatteryTransferReq() {
             Battery Transfer
           </a>
           <ChevronRight className="h-4 w-4 text-slate-400" />
-          <span className="text-slate-900 dark:text-slate-100 font-medium">Create Request</span>
+          <span className="text-slate-900 dark:text-slate-100 font-medium">Edit Request #{id}</span>
         </div>
 
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Create Transfer Request</h1>
-          <p className="text-slate-600 dark:text-slate-400">Create a new battery transfer request between stations</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Edit Transfer Request</h1>
+          <p className="text-slate-600 dark:text-slate-400">Update battery transfer request details</p>
         </div>
 
         {/* Form Card */}
@@ -242,10 +273,10 @@ export default function AdminBatteryTransferReq() {
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
+                    Updating...
                   </>
                 ) : (
-                  'Create Request'
+                  'Update Request'
                 )}
               </Button>
             </div>
