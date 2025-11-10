@@ -76,6 +76,16 @@ export class BatteriesController {
     );
   }
 
+  /**
+   * ⭐ MARK BATTERY AS REPAIRED - Đánh dấu pin đã sửa xong
+   * POST /batteries/:id/mark-repaired
+   * Allow defective batteries to return to service
+   */
+  @Post(':id/mark-repaired')
+  markBatteryRepaired(@Param('id') id: string) {
+    return this.batteriesService.markBatteryRepaired(+id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.batteriesService.remove(+id);
