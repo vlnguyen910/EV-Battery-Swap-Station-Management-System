@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import TransferTicketCard from './TransferTicketCard'
 import { useAuth } from '../../hooks/useContext'
 import batteryTransferService from '../../services/batteryTransferService'
 import { toast } from 'sonner'
@@ -182,37 +183,22 @@ function StaffTransfer() {
                             </div>
 
                             {currentExport ? (
-                                <div className="flex flex-col items-stretch justify-start rounded-lg border-2 border-orange-500 bg-white dark:bg-gray-900 shadow-sm min-h-[220px]">
-                                    <div className="flex w-full grow flex-col items-stretch justify-between gap-4 p-6">
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-orange-500 text-sm font-bold leading-normal tracking-wider">EXPORT</p>
-                                            </div>
-                                            <p className="text-[#212529] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
-                                                From: {currentExport.fromStation?.station_name || 'Unknown'} (Your Station)
-                                            </p>
-                                            <div className="flex flex-col gap-1">
-                                                <p className="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">
-                                                    To: {currentExport.toStation?.station_name || 'Unknown'}
-                                                </p>
-                                                <p className="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">
-                                                    Quantity: {currentExport.quantity} | Model: {currentExport.battery_model || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-end">
-                                            <button
-                                                onClick={() => handleConfirm(currentExport)}
-                                                className="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                            >
-                                                <span className="truncate">Confirm & Prepare for Dispatch</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <TransferTicketCard
+                                    type="export"
+                                    stationLabel={`From: ${currentExport.fromStation?.station_name || 'Unknown'} (Your Station)`}
+                                    fromStation={currentExport.fromStation?.station_name || 'Unknown'}
+                                    toStation={currentExport.toStation?.station_name || 'Unknown'}
+                                    quantity={currentExport.quantity}
+                                    model={currentExport.battery_model || 'N/A'}
+                                    buttonText="Confirm & Prepare for Dispatch"
+                                    onConfirm={() => handleConfirm(currentExport)}
+                                    borderColor="border-orange-500"
+                                    icon="north_east"
+                                    iconColor="text-orange-500"
+                                />
                             ) : (
                                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-orange-300 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/10 min-h-[220px]">
-                                    <p className="text-orange-600 dark:text-orange-400 font-medium">No pending exports</p>
+                                    <p className="text-orange-600 dark:text-orange-400 font-medium text-lg">No pending exports</p>
                                 </div>
                             )}
                         </div>
@@ -253,37 +239,22 @@ function StaffTransfer() {
                             </div>
 
                             {currentImport ? (
-                                <div className="flex flex-col items-stretch justify-start rounded-lg border-2 border-green-500 bg-white dark:bg-gray-900 shadow-sm min-h-[220px]">
-                                    <div className="flex w-full grow flex-col items-stretch justify-between gap-4 p-6">
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-green-500 text-sm font-bold leading-normal tracking-wider">IMPORT</p>
-                                            </div>
-                                            <p className="text-[#212529] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
-                                                To: {currentImport.toStation?.station_name || 'Unknown'} (Your Station)
-                                            </p>
-                                            <div className="flex flex-col gap-1">
-                                                <p className="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">
-                                                    From: {currentImport.fromStation?.station_name || 'Unknown'}
-                                                </p>
-                                                <p className="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">
-                                                    Quantity: {currentImport.quantity} | Model: {currentImport.battery_model || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-end">
-                                            <button
-                                                onClick={() => handleConfirm(currentImport)}
-                                                className="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                            >
-                                                <span className="truncate">Receive & Confirm Inventory</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <TransferTicketCard
+                                    type="import"
+                                    stationLabel={`To: ${currentImport.toStation?.station_name || 'Unknown'} (Your Station)`}
+                                    fromStation={currentImport.fromStation?.station_name || 'Unknown'}
+                                    toStation={currentImport.toStation?.station_name || 'Unknown'}
+                                    quantity={currentImport.quantity}
+                                    model={currentImport.battery_model || 'N/A'}
+                                    buttonText="Receive & Confirm Inventory"
+                                    onConfirm={() => handleConfirm(currentImport)}
+                                    borderColor="border-green-500"
+                                    icon="south_west"
+                                    iconColor="text-green-500"
+                                />
                             ) : (
                                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-green-300 dark:border-green-900/50 bg-green-50 dark:bg-green-900/10 min-h-[220px]">
-                                    <p className="text-green-600 dark:text-green-400 font-medium">No pending imports</p>
+                                    <p className="text-green-600 dark:text-green-400 font-medium text-lg">No pending imports</p>
                                 </div>
                             )}
                         </div>
