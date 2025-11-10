@@ -4,7 +4,6 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
 import { VehicleStatus } from '@prisma/client';
 import { UsersService } from '../users/users.service';
-import { BatteriesService } from '../batteries/batteries.service';
 
 @Injectable()
 export class VehiclesService {
@@ -13,8 +12,6 @@ export class VehiclesService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userService: UsersService,
-    @Inject(forwardRef(() => BatteriesService))
-    private readonly batteriesService: BatteriesService,
   ) { }
 
   async create(createVehicleDto: CreateVehicleDto) {
@@ -125,31 +122,14 @@ export class VehiclesService {
 
   async updateBatteryId(vehicle_id: number, battery_id: number, tx?: any) {
     const prisma = tx || this.databaseService;
-    
+
     // ✅ Validate vehicle exists
     const vehicle = await this.findOne(vehicle_id);
-    
-    // ✅ Validate battery exists
-    const battery = await this.batteriesService.findOne(battery_id);
-    
-    // ✅ Validate battery compatibility - model match
-    if (battery.model !== vehicle.battery_model) {
-      throw new BadRequestException(
-        `Battery model mismatch: vehicle requires '${vehicle.battery_model}', but battery has '${battery.model}'`
-      );
-    }
-    
-    // ✅ Validate battery compatibility - type match
-    if (battery.type !== vehicle.battery_type) {
-      throw new BadRequestException(
-        `Battery type mismatch: vehicle requires '${vehicle.battery_type}', but battery has '${battery.type}'`
-      );
-    }
-    
+
     this.logger.log(
-      `Updating vehicle ${vehicle_id} with battery ${battery_id} (${battery.model}/${battery.type})`
+      `Updating vehicle ${vehicle_id} with battery ${battery_id}`
     );
-    
+
     return await prisma.vehicle.update({
       where: { vehicle_id },
       data: { battery_id },
@@ -174,19 +154,9 @@ export class VehiclesService {
         );
       }
 
-      // ✅ Get battery info to check status
-      const battery = await this.batteriesService.findOne(vehicle.battery_id);
-
-      // ✅ Prevent removing battery that's currently in use
-      if (battery.status === 'in_use') {
-        throw new BadRequestException(
-          `Cannot remove battery ${battery.battery_id} - it is currently in use. ` +
-          `Please return the battery to a station first.`
-        );
-      }
 
       this.logger.log(
-        `Removing battery ${vehicle.battery_id} (status: ${battery.status}) from vehicle ${vehicle_id}`
+        `Removing battery ${vehicle.battery_id} from vehicle ${vehicle_id}`
       );
 
       return await tx.vehicle.update({
@@ -204,7 +174,7 @@ export class VehiclesService {
     try {
       // ✅ Check if user exists
       await this.userService.findOneById(assignVehicleDto.user_id);
-      
+
       // ✅ Check if vehicle exists
       const vehicle = await this.findByVin(assignVehicleDto.vin);
 
@@ -242,7 +212,7 @@ export class VehiclesService {
       this.logger.log(
         `Assigned Vehicle with VIN ${assignVehicleDto.vin} to User with ID ${assignVehicleDto.user_id}`
       );
-      
+
       return await this.databaseService.vehicle.update({
         where: { vin: assignVehicleDto.vin },
         data: { user_id: assignVehicleDto.user_id },
