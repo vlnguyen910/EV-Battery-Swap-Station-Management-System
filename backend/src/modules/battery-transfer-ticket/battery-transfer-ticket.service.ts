@@ -245,6 +245,7 @@ export class BatteryTransferTicketService {
         throw new BadRequestException('Invalid ticket type');
       }
 
+      //check có đủ pin để xuất không
       const availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
 
       if (availableBatteries.length < transferRequest.quantity) {
