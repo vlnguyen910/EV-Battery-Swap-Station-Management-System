@@ -245,10 +245,11 @@ export class BatteryTransferTicketService {
           );
         }
       } else if (dto.ticket_type === TicketType.import) {
-        // Import: pin phải đang in_transit
-        availableBatteries = await this.databaseService.batteryTransferTicket.findMany({
+        // Import: pin phải đang in_transit (từ export ticket)
+        const exportTickets = await this.databaseService.batteryTransferTicket.findMany({
           where: {
             transfer_request_id: dto.transfer_request_id,
+            ticket_type: TicketType.export,
           },
           select: {
             batteries: {
@@ -259,8 +260,17 @@ export class BatteryTransferTicketService {
           },
         });
 
+        if (exportTickets.length === 0) {
+          throw new BadRequestException('No export ticket found for this transfer request');
+        }
+
+        // Flatten batteries from export tickets
+        availableBatteries = exportTickets.flatMap(ticket =>
+          ticket.batteries.map(bt => bt.battery)
+        );
+
         if (availableBatteries.length === 0) {
-          throw new BadRequestException('No batteries found for import transfer request');
+          throw new BadRequestException('No batteries found in export ticket');
         }
       } else {
         throw new BadRequestException('Invalid ticket type');

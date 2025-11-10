@@ -25,10 +25,10 @@ function ConfirmReceiveBatteriesModal({
     const fetchExportedBatteries = async () => {
         try {
             setLoading(true)
-            // Get available batteries that were exported
+            // Get available batteries for import (what was exported by source station)
             const data = await batteryTransferService.getAvailableBatteriesEnriched(
                 transferRequestId,
-                'export', // Export ticket to see what was sent
+                'import', // Import ticket to see what needs to be received
                 stationId
             )
 
