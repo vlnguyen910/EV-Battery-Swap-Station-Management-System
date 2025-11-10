@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { StationStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { CreateStationDto } from './dto/create-station.dto';
@@ -10,6 +10,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class StationsService {
+  private logger = new Logger(StationsService.name);
+
   constructor(
     private vehiclesService: VehiclesService,
     private databaseService: DatabaseService,
@@ -59,13 +61,14 @@ export class StationsService {
 
       // If vehicle_id is not provided, get all active stations
       if (!dto.vehicle_id || !dto.latitude || !dto.longitude) {
+        this.logger.log('Longitude and latitude not provide, return all station')
         const availableStations = await this.findAll(StationStatus.active);
         return availableStations;
       }
 
       // Type assertion - TypeScript biết chắc chắn không phải undefined
-      const userLatitude = dto.latitude as number;
-      const userLongitude = dto.longitude as number;
+      const userLatitude: Decimal = new Decimal(dto.latitude);
+      const userLongitude: Decimal = new Decimal(dto.longitude);
 
       const vehicle = await this.vehiclesService.findOne(dto.vehicle_id);
 
@@ -115,13 +118,14 @@ export class StationsService {
           status: station.status,
           available_batteries: station._count.batteries,
           distance: this.calculateDistance(
-            new Decimal(userLatitude.toString()),
-            new Decimal(userLongitude.toString()),
+            userLatitude,
+            userLongitude,
             station.latitude,
             station.longitude
           )
         }))
-        .filter(station => station.distance < radiusKm);
+        .filter(station => station.distance <= radiusKm) // Add this line
+        .sort((a, b) => a.distance - b.distance);
 
       if (result.length === 0) {
         throw new NotFoundException(`No available stations found within ${radiusKm} km radius`);
