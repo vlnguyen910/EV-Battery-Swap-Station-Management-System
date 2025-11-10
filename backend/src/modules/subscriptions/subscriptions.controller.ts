@@ -19,13 +19,21 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
+import { $Enums } from '@prisma/client';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('subscriptions')
+@ApiBearerAuth('access-token')
 @Controller('subscriptions')
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard, EmailVerifiedGuard)
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) { }
 
+  @Roles($Enums.Role.driver)
   @Post()
+  @ApiOperation({ summary: 'Create a new subscription' })
+  @ApiResponse({ status: 201, description: 'The subscription has been successfully created.' })
   create(@Body() createSubscriptionDto: CreateSubscriptionDto) {
     return this.subscriptionsService.create(createSubscriptionDto);
   }
@@ -33,19 +41,25 @@ export class SubscriptionsController {
   // StatusCode = 200 do ko tạo mới
   @HttpCode(HttpStatus.OK)
   @Post('expire-subscriptions')
-  @Roles('admin')
+  @Roles($Enums.Role.admin)
+  @ApiOperation({ summary: 'Expire subscriptions that have passed their end date' })
+  @ApiResponse({ status: 200, description: 'Subscriptions have been checked and expired if necessary.' })
   expireSubscriptions() {
     return this.subscriptionsService.updateExpiredSubscriptions();
   }
 
   @Get()
-  @Roles('admin', 'station_staff')
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
+  @ApiOperation({ summary: 'Get all subscriptions' })
+  @ApiResponse({ status: 200, description: 'List of all subscriptions.' })
   findAll() {
     return this.subscriptionsService.findAll();
   }
 
   @Get(':id')
-  @Roles('driver', 'admin', 'station_staff')
+  @Roles($Enums.Role.driver, $Enums.Role.admin, $Enums.Role.station_staff)
+  @ApiOperation({ summary: 'Get a subscription by ID' })
+  @ApiResponse({ status: 200, description: 'The subscription details.' })
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
@@ -56,17 +70,23 @@ export class SubscriptionsController {
   }
 
   @Get('user/:userId')
+  @ApiOperation({ summary: 'Get subscriptions by user ID' })
+  @ApiResponse({ status: 200, description: 'List of subscriptions for the specified user.' })
   findByUser(@Param('userId', ParseIntPipe) userId: number) {
     return this.subscriptionsService.findByUser(userId);
   }
 
   @Get('user/:userId/active')
+  @ApiOperation({ summary: 'Get active subscriptions by user ID' })
+  @ApiResponse({ status: 200, description: 'List of active subscriptions for the specified user.' })
   findActiveByUser(@Param('userId', ParseIntPipe) userId: number) {
     return this.subscriptionsService.findActiveByUser(userId);
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles($Enums.Role.admin)
+  @ApiOperation({ summary: 'Update a subscription by ID' })
+  @ApiResponse({ status: 200, description: 'The subscription has been successfully updated.' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSubscriptionDto: UpdateSubscriptionDto,
@@ -75,13 +95,17 @@ export class SubscriptionsController {
   }
 
   @Patch(':id/cancel')
-  @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Cancel a subscription by ID' })
+  @ApiResponse({ status: 200, description: 'The subscription has been successfully canceled.' })
+  @Roles($Enums.Role.driver, $Enums.Role.admin)
   cancel(@Param('id', ParseIntPipe) id: number) {
     return this.subscriptionsService.cancel(id);
   }
 
   @Patch(':id/increment-swap')
-  @Roles('station_staff', 'admin')
+  @Roles($Enums.Role.station_staff, $Enums.Role.admin)
+  @ApiOperation({ summary: 'Increment the swap used count for a subscription by ID' })
+  @ApiResponse({ status: 200, description: 'The swap used count has been successfully incremented.' })
   incrementSwapUsed(@Param('id', ParseIntPipe) id: number) {
     return this.subscriptionsService.incrementSwapUsed(id);
   }
