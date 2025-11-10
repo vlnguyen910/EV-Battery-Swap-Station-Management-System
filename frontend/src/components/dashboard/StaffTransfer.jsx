@@ -246,7 +246,7 @@ function StaffTransfer() {
                             {currentExport ? (
                                 <TransferTicketCard
                                     type="export"
-                                    stationLabel={`From: ${currentExport.fromStation?.station_name || 'Unknown'} (Your Station)`}
+                                    stationLabel={`From: ${currentExport.fromStation?.station_name || 'Unknown'}`}
                                     fromStation={currentExport.fromStation?.station_name || 'Unknown'}
                                     toStation={currentExport.toStation?.station_name || 'Unknown'}
                                     quantity={currentExport.quantity}
@@ -302,7 +302,7 @@ function StaffTransfer() {
                             {currentImport ? (
                                 <TransferTicketCard
                                     type="import"
-                                    stationLabel={`To: ${currentImport.toStation?.station_name || 'Unknown'} (Your Station)`}
+                                    stationLabel={`To: ${currentImport.toStation?.station_name || 'Unknown'}`}
                                     fromStation={currentImport.fromStation?.station_name || 'Unknown'}
                                     toStation={currentImport.toStation?.station_name || 'Unknown'}
                                     quantity={currentImport.quantity}
