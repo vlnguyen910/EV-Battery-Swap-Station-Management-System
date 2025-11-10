@@ -7,9 +7,8 @@ import { BatteriesModule } from '../batteries/batteries.module';
 
 @Module({
   imports: [
-    DatabaseModule, 
+    DatabaseModule,
     UsersModule,
-    forwardRef(() => BatteriesModule), // Resolve circular dependency
   ],
   controllers: [VehiclesController],
   providers: [VehiclesService],
