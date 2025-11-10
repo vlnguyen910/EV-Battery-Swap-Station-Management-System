@@ -12,12 +12,12 @@ import { $Enums } from '@prisma/client';
 @UseGuards(AuthGuard, RolesGuard, EmailVerifiedGuard)
 @ApiTags('battery-transfer-request')
 @ApiBearerAuth('access-token')
-@Roles($Enums.Role.admin)
 @Controller('battery-transfer-request')
 export class BatteryTransferRequestController {
   constructor(private readonly batteryTransferRequestService: BatteryTransferRequestService) { }
 
   @Post()
+  @Roles($Enums.Role.admin)
   @ApiOperation({ summary: 'Create a new battery transfer request' })
   @ApiResponse({ status: 201, description: 'The battery transfer request has been successfully created.' })
   create(@Body() createBatteryTransferRequestDto: CreateBatteryTransferRequestDto) {
@@ -39,6 +39,7 @@ export class BatteryTransferRequestController {
   }
 
   @Patch(':id')
+  @Roles($Enums.Role.admin)
   @ApiOperation({ summary: 'Update a battery transfer request by ID' })
   @ApiResponse({ status: 200, description: 'The battery transfer request has been successfully updated.' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateBatteryTransferRequestDto: UpdateBatteryTransferRequestDto) {

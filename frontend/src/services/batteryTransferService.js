@@ -27,18 +27,13 @@ const getTicketByStationId = async (stationId) => {
   }
 };
 
-const getAvailableBatteries = async (
-  transferRequestId,
-  ticketType,
-  stationId
-) => {
+const getAvailableBatteries = async (transferRequestId, ticketType) => {
   try {
     const response = await api.post(
       API_ENDPOINTS.BATTERY_TRANSFER_TICKET.GET_AVAILABLE_BATTERIES,
       {
         transfer_request_id: transferRequestId,
         ticket_type: ticketType,
-        station_id: stationId,
       }
     );
     return response.data;
@@ -169,8 +164,7 @@ const getAvailableBatteriesEnriched = async (
     // Step 1: Get available battery list
     const availableData = await getAvailableBatteries(
       transferRequestId,
-      ticketType,
-      stationId
+      ticketType
     );
     const batteryIds =
       availableData.available_batteries?.map((b) => b.battery_id || b.id) || [];
@@ -309,6 +303,7 @@ const enrichTicketsWithTransferRequestInfo = async (tickets) => {
         transferRequestMap.get(ticket.transfer_request_id) || {};
       return {
         ...ticket,
+        status: transferRequest.status || "in_progress",
         fromStation: stationMap.get(transferRequest.from_station_id)
           ? {
               station_id: stationMap.get(transferRequest.from_station_id)
