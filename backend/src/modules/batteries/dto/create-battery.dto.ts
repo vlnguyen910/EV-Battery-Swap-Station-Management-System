@@ -3,16 +3,19 @@ import {
     IsString,
     IsNumber,
     Min,
-    Max,
-    IsOptional,
-    IsEnum,
     MinLength,
     MaxLength,
-    IsPositive
+    IsEnum,
 } from "class-validator";
 import { Type } from 'class-transformer';
+import { BatteryStatus } from "@prisma/client";
 
 export class CreateBatteryDto {
+    @IsNotEmpty({ message: 'Serial number is required' })
+    @IsString({ message: 'Serial number must be a string' })
+    @MinLength(12, { message: 'Serial number must be at least 2 characters long' })
+    serial_number: string;
+
     @IsNotEmpty({ message: 'Model is required' })
     @IsString({ message: 'Model must be a string' })
     @MinLength(2, { message: 'Model must be at least 2 characters long' })
@@ -30,17 +33,14 @@ export class CreateBatteryDto {
     @Min(1, { message: 'Capacity must be at least 1 kWh' })
     capacity_kwh: number;
 
-    @IsNotEmpty({ message: 'Current charge is required' })
-    @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Current charge must be a number with max 2 decimal places' })
-    @Type(() => Number)
-    @Min(0, { message: 'Current charge cannot be negative' })
-    @Max(100, { message: 'Current charge cannot exceed 100%' })
-    current_charge: number;
+    @IsNotEmpty({ message: 'Status is required' })
+    @IsEnum(BatteryStatus, { message: 'Status must be a valid BatteryStatus enum value' })
+    status: BatteryStatus;
 
-    @IsNotEmpty({ message: 'State of health is required' })
-    @IsNumber({ maxDecimalPlaces: 2 }, { message: 'SOH must be a number with max 2 decimal places' })
-    @Type(() => Number)
-    @Min(0, { message: 'SOH cannot be negative' })
-    @Max(100, { message: 'SOH cannot exceed 100%' })
-    soh: number;
+    current_charge?: number; // Optional, defaults to 0
+    soh?: number; // Optional, defaults to 100
+    vehicle_id?: number | null; // Optional, can be null if not assigned to a vehicle
+    station_id?: number | null; // Optional, can be null if not assigned to a station
+    cabinet_id?: number | null; // Optional, can be null if not assigned to a cabinet
+    slot_id?: number | null; // Optional, can be null if not assigned to a slot
 }
