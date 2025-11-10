@@ -201,4 +201,157 @@ export class BatteriesService {
   remove(id: number) {
     return `This action removes a #${id} battery`;
   }
+
+  /**
+   * Simulate battery discharge (driver di chuyển)
+   * Giảm current_charge của battery
+   */
+  async simulateDischarge(battery_id: number, new_charge?: number, decrease_amount?: number) {
+    const battery = await this.findOne(battery_id);
+
+    if (battery.status !== BatteryStatus.in_use) {
+      throw new BadRequestException(
+        `Cannot simulate discharge for battery with status ${battery.status}. Only batteries in_use can be discharged.`
+      );
+    }
+
+    let targetCharge: number;
+
+    if (new_charge !== undefined) {
+      // Sử dụng new_charge được cung cấp
+      targetCharge = new_charge;
+    } else if (decrease_amount !== undefined) {
+      // Giảm theo số lượng cụ thể
+      targetCharge = Math.max(0, Number(battery.current_charge) - decrease_amount);
+    } else {
+      // Random decrease 5-20%
+      const randomDecrease = Math.floor(Math.random() * 16) + 5; // 5-20
+      targetCharge = Math.max(0, Number(battery.current_charge) - randomDecrease);
+    }
+
+    const updatedBattery = await this.databaseService.battery.update({
+      where: { battery_id },
+      data: { current_charge: targetCharge },
+      include: {
+        vehicle: {
+          select: {
+            vehicle_id: true,
+            vin: true,
+            user_id: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Battery ${battery_id} discharged from ${battery.current_charge}% to ${targetCharge}%`
+    );
+
+    return {
+      battery_id: updatedBattery.battery_id,
+      previous_charge: Number(battery.current_charge),
+      current_charge: Number(updatedBattery.current_charge),
+      decrease_amount: Number(battery.current_charge) - targetCharge,
+      status: updatedBattery.status,
+      vehicle: updatedBattery.vehicle,
+      message: `Battery discharged from ${battery.current_charge}% to ${targetCharge}%`,
+    };
+  }
+
+  /**
+   * Set battery charge to specific value (admin only)
+   * Dùng để test hoặc admin điều chỉnh
+   */
+  async setBatteryCharge(battery_id: number, charge_percentage: number) {
+    const battery = await this.findOne(battery_id);
+
+    const previousCharge = Number(battery.current_charge);
+    
+    const updatedBattery = await this.databaseService.battery.update({
+      where: { battery_id },
+      data: { current_charge: charge_percentage },
+      include: {
+        vehicle: {
+          select: {
+            vehicle_id: true,
+            vin: true,
+            user_id: true,
+          },
+        },
+        station: {
+          select: {
+            station_id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Battery ${battery_id} charge set from ${previousCharge}% to ${charge_percentage}%`
+    );
+
+    return {
+      battery_id: updatedBattery.battery_id,
+      previous_charge: previousCharge,
+      current_charge: Number(updatedBattery.current_charge),
+      change_amount: charge_percentage - previousCharge,
+      status: updatedBattery.status,
+      vehicle: updatedBattery.vehicle,
+      station: updatedBattery.station,
+      message: `Battery charge set to ${charge_percentage}%`,
+    };
+  }
+
+  /**
+   * Simulate charging battery (tăng charge)
+   * Dùng khi battery đang charging tại station
+   */
+  async simulateCharging(battery_id: number, increase_amount?: number) {
+    const battery = await this.findOne(battery_id);
+
+    if (battery.status !== BatteryStatus.charging) {
+      throw new BadRequestException(
+        `Cannot charge battery with status ${battery.status}. Only batteries with status 'charging' can be charged.`
+      );
+    }
+
+    const currentCharge = Number(battery.current_charge);
+    const increaseBy = increase_amount ?? Math.floor(Math.random() * 21) + 10; // 10-30% random
+    const targetCharge = Math.min(100, currentCharge + increaseBy);
+
+    const updatedBattery = await this.databaseService.battery.update({
+      where: { battery_id },
+      data: {
+        current_charge: targetCharge,
+        // Nếu đạt 100%, chuyển sang full
+        status: targetCharge >= 100 ? BatteryStatus.full : BatteryStatus.charging,
+      },
+      include: {
+        station: {
+          select: {
+            station_id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Battery ${battery_id} charged from ${currentCharge}% to ${targetCharge}%`
+    );
+
+    return {
+      battery_id: updatedBattery.battery_id,
+      previous_charge: currentCharge,
+      current_charge: Number(updatedBattery.current_charge),
+      increase_amount: targetCharge - currentCharge,
+      status: updatedBattery.status,
+      is_full: targetCharge >= 100,
+      station: updatedBattery.station,
+      message: targetCharge >= 100 
+        ? `Battery fully charged and status changed to 'full'` 
+        : `Battery charging: ${currentCharge}% → ${targetCharge}%`,
+    };
+  }
 }
