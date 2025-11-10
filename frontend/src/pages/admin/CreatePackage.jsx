@@ -14,7 +14,6 @@ const validationSchema = Yup.object().shape({
   base_distance: Yup.number().positive('Base distance must be positive').required('Base distance is required'),
   swap_count: Yup.number().integer('Swap count must be an integer').positive('Swap count must be positive').required('Swap count is required'),
   duration_days: Yup.number().integer('Duration must be in days').positive('Duration must be positive').required('Duration is required'),
-  penalty_fee: Yup.number().positive('Penalty fee must be positive').required('Penalty fee is required'),
   description: Yup.string().optional(),
   active: Yup.boolean().required('Active status is required'),
 });
@@ -30,7 +29,6 @@ export default function CreatePackage() {
       base_distance: 0,
       swap_count: 1,
       duration_days: 30,
-      penalty_fee: 0,
       description: '',
       active: true,
     },
@@ -185,26 +183,6 @@ export default function CreatePackage() {
                     placeholder="30"
                   />
                   {formik.touched.duration_days && formik.errors.duration_days && <p className="text-red-500 text-xs mt-1">{formik.errors.duration_days}</p>}
-                </div>
-
-                {/* Penalty Fee */}
-                <div className="flex flex-col col-span-1">
-                  <label className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2">
-                    Penalty Fee (₫) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="penalty_fee"
-                    value={formik.values.penalty_fee}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    step="0.01"
-                    className={`form-input flex w-full rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 border bg-slate-50 dark:bg-slate-800/50 h-11 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-3 text-sm ${
-                      formik.touched.penalty_fee && formik.errors.penalty_fee ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-primary/50 focus:border-primary'
-                    }`}
-                    placeholder="0.00"
-                  />
-                  {formik.touched.penalty_fee && formik.errors.penalty_fee && <p className="text-red-500 text-xs mt-1">{formik.errors.penalty_fee}</p>}
                 </div>
 
                 {/* Description */}
