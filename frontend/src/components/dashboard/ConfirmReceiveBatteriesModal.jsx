@@ -49,7 +49,18 @@ function ConfirmReceiveBatteriesModal({
         }
 
         // Call parent with battery IDs to confirm import
-        const batteryIds = batteries.map(b => b.battery_id || b.id)
+        // IMPORTANT: Convert to integers as backend expects number[]
+        const batteryIds = batteries.map(b => {
+            const id = b.battery_id || b.id
+            const numId = Number(id)
+            if (isNaN(numId)) {
+                console.error(`Invalid battery ID: ${id}`, b)
+                throw new Error(`Invalid battery ID: ${id}`)
+            }
+            return numId
+        })
+
+        console.log('Sending battery IDs to backend:', batteryIds, 'Type:', typeof batteryIds[0])
         onConfirm(batteryIds)
 
         // Reset state
@@ -119,38 +130,14 @@ function ConfirmReceiveBatteriesModal({
                                                     {battery.model || battery.battery_model || 'N/A'}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 max-w-xs">
-                                                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                                                                    style={{
-                                                                        width: `${battery.current_charge || battery.soc || battery.state_of_charge || 0}%`
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-fit">
-                                                            {battery.current_charge || battery.soc || battery.state_of_charge || 0}%
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {battery.current_charge || battery.soc || battery.state_of_charge || 0}%
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 max-w-xs">
-                                                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                                                                    style={{
-                                                                        width: `${battery.soh || 0}%`
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-fit">
-                                                            {battery.soh || battery.state_of_health || 0}%
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {battery.soh || battery.state_of_health || 0}%
+                                                    </span>
                                                 </td>
                                             </tr>
                                         )

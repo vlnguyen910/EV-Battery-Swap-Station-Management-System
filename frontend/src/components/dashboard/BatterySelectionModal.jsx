@@ -10,7 +10,7 @@ function BatterySelectionModal({ isOpen, ticketId, requiredQuantity, transferReq
 
     // Fetch available batteries when modal opens
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && transferRequestId && ticketType && stationId) {
             fetchAvailableBatteries()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,38 +185,14 @@ function BatterySelectionModal({ isOpen, ticketId, requiredQuantity, transferReq
                                                     {battery.model || battery.battery_model || 'N/A'}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 max-w-xs">
-                                                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                                                                    style={{
-                                                                        width: `${battery.current_charge || battery.soc || battery.state_of_charge || 0}%`
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-fit">
-                                                            {battery.current_charge || battery.soc || battery.state_of_charge || 0}%
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {battery.current_charge || battery.soc || battery.state_of_charge || 0}%
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 max-w-xs">
-                                                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                                                                    style={{
-                                                                        width: `${battery.soh || 0}%`
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-fit">
-                                                            {battery.soh || battery.state_of_health || 0}%
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {battery.soh || battery.state_of_health || 0}%
+                                                    </span>
                                                 </td>
                                             </tr>
                                         )

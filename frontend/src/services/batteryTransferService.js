@@ -303,6 +303,7 @@ const enrichTicketsWithTransferRequestInfo = async (tickets) => {
         transferRequestMap.get(ticket.transfer_request_id) || {};
       return {
         ...ticket,
+        status: transferRequest.status || "in_progress",
         fromStation: stationMap.get(transferRequest.from_station_id)
           ? {
               station_id: stationMap.get(transferRequest.from_station_id)

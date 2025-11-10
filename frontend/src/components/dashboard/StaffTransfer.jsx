@@ -152,6 +152,13 @@ function StaffTransfer() {
 
     const handleConfirmReceiveBatteries = async (receivedBatteryIds) => {
         try {
+            console.log('Creating import ticket with:')
+            console.log('  transfer_request_id:', selectedTransfer.transfer_request_id)
+            console.log('  ticket_type: import')
+            console.log('  station_id:', user.station_id)
+            console.log('  staff_id:', user.user_id)
+            console.log('  battery_ids:', receivedBatteryIds, 'Types:', receivedBatteryIds.map(id => typeof id))
+
             // Create import ticket with received batteries
             await batteryTransferService.createTicket({
                 transfer_request_id: selectedTransfer.transfer_request_id,
@@ -167,7 +174,8 @@ function StaffTransfer() {
             fetchData()
         } catch (error) {
             console.error('Error confirming received batteries:', error)
-            toast.error('Failed to confirm received batteries')
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to confirm received batteries'
+            toast.error(errorMsg)
         }
     }
 
@@ -180,9 +188,26 @@ function StaffTransfer() {
         })
     }
 
+    // Get list of transfer_request_ids that already have tickets created
+    const requestsWithExportTickets = new Set()
+    const requestsWithImportTickets = new Set()
+
+    allRequests.forEach(ticket => {
+        if (ticket.ticket_type === 'export') {
+            requestsWithExportTickets.add(ticket.transfer_request_id)
+        } else if (ticket.ticket_type === 'import') {
+            requestsWithImportTickets.add(ticket.transfer_request_id)
+        }
+    })
+
     // Separate pending requests into exports and imports
-    const pendingExports = pendingRequests.filter(req => req.from_station_id === user?.station_id)
-    const pendingImports = pendingRequests.filter(req => req.to_station_id === user?.station_id)
+    // IMPORTANT: Exclude requests that already have tickets created
+    const pendingExports = pendingRequests.filter(req =>
+        req.from_station_id === user?.station_id && !requestsWithExportTickets.has(req.transfer_request_id)
+    )
+    const pendingImports = pendingRequests.filter(req =>
+        req.to_station_id === user?.station_id && !requestsWithImportTickets.has(req.transfer_request_id)
+    )
 
     const currentExport = pendingExports[exportIndex]
     const currentImport = pendingImports[importIndex]
@@ -420,7 +445,7 @@ function StaffTransfer() {
                                                 <td className="px-6 py-4">{formatDate(ticket.created_at)}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center gap-1.5 rounded-full ${typeBg} px-2 py-1 text-xs font-medium ${typeText}`}>
-                                                        <i className={`ri ${isImport ? 'ri-arrow-right-up-line' : 'ri-arrow-left-down-line'} !text-sm`}></i>
+                                                        <i className={`ri ${isImport ? 'ri-arrow-left-down-line' : 'ri-arrow-right-up-line'} !text-sm`}></i>
                                                         {isImport ? 'IMPORT' : 'EXPORT'}
                                                     </span>
                                                 </td>
