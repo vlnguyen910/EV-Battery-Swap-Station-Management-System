@@ -1,12 +1,33 @@
 import { MapPin } from 'lucide-react';
 import { useStation } from '../../hooks/useContext';
+import { useState, useEffect } from 'react';
 
 export default function StaffWelcomeHeader({ user }) {
-  const { stations } = useStation();
-  
-  // Get staff's assigned station (giả sử staff_id có liên kết với station)
-  // Tạm thời lấy station đầu tiên
-  const currentStation = stations && stations.length > 0 ? stations[0] : null;
+  const { getStationById } = useStation();
+  const [currentStation, setCurrentStation] = useState(null);
+
+  // Fetch staff's assigned station by station_id
+  useEffect(() => {
+    const fetchStaffStation = async () => {
+      const staffStationId = user?.station_id;
+
+      if (!staffStationId) {
+        console.warn('Staff has no station_id assigned');
+        return;
+      }
+
+      try {
+        const station = await getStationById(staffStationId);
+        setCurrentStation(station);
+      } catch (err) {
+        console.error('Error fetching staff station:', err);
+      }
+    };
+
+    if (user?.station_id) {
+      fetchStaffStation();
+    }
+  }, [user?.station_id, getStationById]);
 
   return (
     <div className="flex flex-col gap-2">

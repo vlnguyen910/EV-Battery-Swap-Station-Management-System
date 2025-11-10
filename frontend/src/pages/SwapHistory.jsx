@@ -12,12 +12,12 @@ export default function SwapHistory() {
 
   // Pagination state for swaps
   const [swapCurrentPage, setSwapCurrentPage] = useState(1);
-  const [swapResultsPerPage, setSwapResultsPerPage] = useState(20);
+  const [swapResultsPerPage, setSwapResultsPerPage] = useState(10);
   const [swapTotalResults, setSwapTotalResults] = useState(0);
 
   // Pagination state for payments
   const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
-  const [paymentResultsPerPage, setPaymentResultsPerPage] = useState(20);
+  const [paymentResultsPerPage, setPaymentResultsPerPage] = useState(10);
   const [paymentTotalResults, setPaymentTotalResults] = useState(0);
 
   // Sorting state

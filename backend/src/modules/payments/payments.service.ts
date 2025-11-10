@@ -23,6 +23,8 @@ import { FeeCalculationService } from './services/fee-calculation.service';
 import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
 import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SystemConfigService } from '../config/system-config.service';
+
 @Injectable()
 export class PaymentsService {
   constructor(
@@ -30,8 +32,45 @@ export class PaymentsService {
     @Inject(FeeCalculationService)
     private feeCalculationService: FeeCalculationService,
     private batteryServicePackage: BatteryServicePackagesService,
-    private subscriptionsService: SubscriptionsService
+    private subscriptionsService: SubscriptionsService,
+    private systemConfigService: SystemConfigService,
   ) { }
+
+  /**
+   * Calculate payment expiry time from database config (loaded at startup)
+   */
+  private getPaymentExpiryTime(): Date {
+    const expiryMinutes = this.systemConfigService.getNumber(
+      'Payment_Expiry_Minutes',
+      15, // Default fallback
+    );
+    return moment().add(expiryMinutes, 'minutes').toDate();
+  }
+
+  /**
+   * Auto-cancel expired pending payments
+   */
+  async cancelExpiredPayments(): Promise<number> {
+    const now = new Date();
+    
+    const result = await this.prisma.payment.updateMany({
+      where: {
+        status: PaymentStatus.pending,
+        expires_at: {
+          lt: now, // Less than now = expired
+        },
+      },
+      data: {
+        status: PaymentStatus.cancelled,
+      },
+    });
+
+    if (result.count > 0) {
+      console.log(`🕐 Auto-cancelled ${result.count} expired payment(s)`);
+    }
+
+    return result.count;
+  }
 
 
   /**
@@ -65,6 +104,7 @@ export class PaymentsService {
 
     // 2. Create payment record with pending status
     const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime(); // Sync call now
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -76,6 +116,7 @@ export class PaymentsService {
         status: PaymentStatus.pending,
         payment_type: createPaymentDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
+        expires_at: expiresAt,
         order_info:
           createPaymentDto.orderDescription ||
           (servicePackage ? `Thanh toan goi ${servicePackage.name}` : `Thanh toan ${createPaymentDto.payment_type}`),
@@ -291,6 +332,7 @@ export class PaymentsService {
   /**
    * Create subscription with deposit payment
    * Tách tiền thanh toán: phí gói + phí đặt cọc pin
+   * Đánh dấu deposit_paid = true
    */
   private async createSubscriptionWithDeposit(payment: any) {
     if (!payment.package) return;
@@ -312,6 +354,7 @@ export class PaymentsService {
         end_date: endDate,
         status: 'active',
         swap_used: 0,
+        deposit_paid: true, // Đã thanh toán cọc
       },
     });
 
@@ -320,9 +363,6 @@ export class PaymentsService {
       where: { payment_id: payment.payment_id },
       data: { subscription_id: subscription.subscription_id },
     });
-
-    // TODO: Lưu thông tin deposit vào user hoặc bảng khác
-    // await this.prisma.user.update({...})
 
     return subscription;
   }
@@ -531,6 +571,13 @@ export class PaymentsService {
    * Mock payment for testing (simulate VNPAY flow without redirect)
    */
   async mockPayment(mockPaymentDto: MockPaymentDto) {
+    console.log('🔍 mockPayment called with:', {
+      user_id: mockPaymentDto.user_id,
+      package_id: mockPaymentDto.package_id,
+      payment_type: mockPaymentDto.payment_type,
+      vehicle_id: mockPaymentDto.vehicle_id,
+    });
+
     // 1. Get package information
     const servicePackage = await this.prisma.batteryServicePackage.findUnique({
       where: { package_id: mockPaymentDto.package_id },
@@ -544,26 +591,142 @@ export class PaymentsService {
       throw new BadRequestException('Package is not active');
     }
 
-    // 2. Create payment record
+    console.log('✅ Package found:', servicePackage.name);
+
+    // 2. Check if user has existing subscription for this vehicle (to determine deposit status)
+    let existingSubscription: any = null;
+    if (mockPaymentDto.vehicle_id) {
+      // First, validate that vehicle exists and belongs to user
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { vehicle_id: mockPaymentDto.vehicle_id },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException(`Vehicle with ID ${mockPaymentDto.vehicle_id} not found`);
+      }
+
+      if (vehicle.user_id !== mockPaymentDto.user_id) {
+        throw new BadRequestException(`Vehicle does not belong to this user`);
+      }
+
+      existingSubscription = await this.prisma.subscription.findFirst({
+        where: {
+          user_id: mockPaymentDto.user_id,
+          vehicle_id: mockPaymentDto.vehicle_id,
+          status: SubscriptionStatus.active,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+    }
+
+    // 3. Calculate fee based on fee type (same logic as createPaymentUrlWithFees)
+    let feeAmount = 0;
+    let feeBreakdownText = '';
+    let feeDetails: any = {
+      baseAmount: servicePackage.base_price.toNumber(),
+      totalAmount: 0,
+    };
+
+    // Call appropriate fee calculation method
+    switch (mockPaymentDto.payment_type) {
+      case 'subscription_with_deposit':
+        // Check deposit status from existing subscription
+        const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
+          mockPaymentDto.package_id,
+          existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
+        );
+        feeAmount = depositResult.deposit_fee;
+        
+        // Update breakdown text based on whether deposit is included
+        if (depositResult.deposit_fee > 0) {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        } else {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        }
+        feeDetails.depositFee = depositResult.deposit_fee;
+        feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
+        break;
+
+      case 'battery_replacement':
+        // Nếu có distance_traveled, tính overcharge fee
+        if (mockPaymentDto.distance_traveled) {
+          // Cần subscription_id - nếu không có, skip overcharge
+          // Trong trường hợp này, ta sẽ không tính overcharge vì không có subscription context
+          feeAmount = 0;
+          feeBreakdownText = `Thanh toán thay pin: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+        }
+        break;
+
+      case 'damage_fee':
+        if (mockPaymentDto.damage_type) {
+          // Map damage_type từ DTO sang service (low->minor, medium->moderate, high->severe)
+          const damageTypeMapping = {
+            'low': 'minor',
+            'medium': 'moderate',
+            'high': 'severe',
+          };
+          const mappedDamageType = damageTypeMapping[mockPaymentDto.damage_type] as 'minor' | 'moderate' | 'severe';
+
+          const damageResult = await this.feeCalculationService.calculateDamageFee(mappedDamageType);
+          feeAmount = damageResult.damage_fee;
+          feeBreakdownText = `Phí hư hỏng: ${damageResult.damage_fee.toLocaleString('vi-VN')} VND`;
+          feeDetails.damageFee = damageResult.damage_fee;
+        }
+        break;
+
+      case 'subscription':
+      case 'other':
+      default:
+        // Không tính phí, chỉ dùng giá gói
+        feeAmount = 0;
+        feeBreakdownText = `Tổng tiền: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+        break;
+    }
+
+    // 4. Calculate total amount
+    const totalAmount = servicePackage.base_price.toNumber() + feeAmount;
+    feeDetails.totalAmount = totalAmount;
+    feeDetails.breakdown_text = feeBreakdownText;
+
+    console.log('💰 Fee calculation:', {
+      baseAmount: feeDetails.baseAmount,
+      feeAmount,
+      totalAmount,
+      breakdown: feeBreakdownText,
+    });
+
+    // 5. Create payment record with calculated total amount
     const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime();
     const responseCode = mockPaymentDto.vnp_response_code || '00'; // Default success
 
     const payment = await this.prisma.payment.create({
       data: {
         user_id: mockPaymentDto.user_id,
         package_id: mockPaymentDto.package_id,
-        vehicle_id: mockPaymentDto.vehicle_id, // Save vehicle_id for subscription
-        amount: servicePackage.base_price,
+        vehicle_id: mockPaymentDto.vehicle_id,
+        amount: totalAmount, // Total amount including fee
         method: PaymentMethod.vnpay,
         status: PaymentStatus.pending,
+        payment_type: mockPaymentDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
-        order_info: `Mock payment for ${servicePackage.name}`,
+        expires_at: expiresAt,
+        order_info: `Mock payment for ${servicePackage.name}${feeAmount > 0 ? ' + phí' : ''}`,
       },
     });
 
-    // 3. Simulate VNPAY response
+    console.log('✅ Payment record created:', {
+      payment_id: payment.payment_id,
+      vnp_txn_ref: vnpTxnRef,
+      amount: totalAmount,
+      expires_at: expiresAt,
+    });
+
+    // 6. Simulate VNPAY response
     const mockVnpParams = {
-      vnp_Amount: (servicePackage.base_price.toNumber() * 100).toString(),
+      vnp_Amount: (totalAmount * 100).toString(), // Use total amount
       vnp_BankCode: mockPaymentDto.vnp_bank_code || 'NCB',
       vnp_BankTranNo: `MOCK${moment().format('YYYYMMDDHHmmss')}`,
       vnp_CardType: mockPaymentDto.vnp_card_type || 'ATM',
@@ -576,7 +739,7 @@ export class PaymentsService {
       vnp_TxnRef: vnpTxnRef,
     };
 
-    // 4. Determine payment status
+    // 7. Determine payment status
     let paymentStatus: PaymentStatus;
     if (responseCode === '00') {
       paymentStatus = PaymentStatus.success;
@@ -586,7 +749,7 @@ export class PaymentsService {
       paymentStatus = PaymentStatus.failed;
     }
 
-    // 5. Update payment
+    // 8. Update payment
     const updatedPayment = await this.prisma.payment.update({
       where: { payment_id: payment.payment_id },
       data: {
@@ -613,12 +776,22 @@ export class PaymentsService {
       },
     });
 
-    // 6. If success, create subscription
+    // 9. If success, create subscription (only for subscription payment types)
     let subscription: any = null;
-    if (paymentStatus === PaymentStatus.success && servicePackage) {
+    const isSubscriptionPayment = ['subscription', 'subscription_with_deposit'].includes(mockPaymentDto.payment_type || '');
+    
+    if (paymentStatus === PaymentStatus.success && isSubscriptionPayment && servicePackage) {
+      // Validate vehicle_id for subscription payments
+      if (!mockPaymentDto.vehicle_id) {
+        throw new BadRequestException('vehicle_id is required for subscription payments');
+      }
+
       const startDate = new Date();
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + servicePackage.duration_days);
+
+      // Determine if deposit was paid in this payment
+      const depositPaidInThisPayment = mockPaymentDto.payment_type === 'subscription_with_deposit' && feeAmount > 0;
 
       subscription = await this.prisma.subscription.create({
         data: {
@@ -629,11 +802,17 @@ export class PaymentsService {
           end_date: endDate,
           status: 'active',
           swap_used: 0,
+          deposit_paid: depositPaidInThisPayment || existingSubscription?.deposit_paid || false,
         },
         include: {
           package: true,
           vehicle: true,
         },
+      });
+
+      console.log('✅ Subscription created:', {
+        subscription_id: subscription.subscription_id,
+        deposit_paid: subscription.deposit_paid,
       });
 
       // Link payment to subscription
@@ -649,10 +828,11 @@ export class PaymentsService {
       success: paymentStatus === PaymentStatus.success,
       payment: updatedPayment,
       subscription,
+      feeBreakdown: feeDetails,
       mock_response: mockVnpParams,
       message:
         paymentStatus === PaymentStatus.success
-          ? 'Payment successful, subscription created'
+          ? 'Payment successful' + (subscription ? ', subscription created' : '')
           : paymentStatus === PaymentStatus.cancelled
             ? 'Payment cancelled by user'
             : 'Payment failed',
@@ -673,6 +853,13 @@ export class PaymentsService {
     createPaymentWithFeesDto: CreatePaymentWithFeesDto,
     ipAddr: string,
   ): Promise<PaymentWithFeesResponse> {
+    console.log('🔍 createPaymentUrlWithFees called with:', {
+      user_id: createPaymentWithFeesDto.user_id,
+      package_id: createPaymentWithFeesDto.package_id,
+      payment_type: createPaymentWithFeesDto.payment_type,
+      vehicle_id: createPaymentWithFeesDto.vehicle_id,
+    });
+
     // 1. Get package information
     const servicePackage = await this.prisma.batteryServicePackage.findUnique({
       where: { package_id: createPaymentWithFeesDto.package_id },
@@ -686,7 +873,37 @@ export class PaymentsService {
       throw new BadRequestException('Package is not active');
     }
 
-    // 2. Calculate fee based on fee type
+    console.log('✅ Package found:', servicePackage.name);
+
+    // 2. Check if user has existing subscription for this vehicle (to determine deposit status)
+    let existingSubscription: any = null;
+    if (createPaymentWithFeesDto.vehicle_id) {
+      // First, validate that vehicle exists and belongs to user
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { vehicle_id: createPaymentWithFeesDto.vehicle_id },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException(`Vehicle with ID ${createPaymentWithFeesDto.vehicle_id} not found`);
+      }
+
+      if (vehicle.user_id !== createPaymentWithFeesDto.user_id) {
+        throw new BadRequestException(`Vehicle does not belong to this user`);
+      }
+
+      existingSubscription = await this.prisma.subscription.findFirst({
+        where: {
+          user_id: createPaymentWithFeesDto.user_id,
+          vehicle_id: createPaymentWithFeesDto.vehicle_id,
+          status: SubscriptionStatus.active,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+    }
+
+    // 3. Calculate fee based on fee type
     let feeAmount = 0;
     let feeBreakdownText = '';
     let feeDetails: any = {
@@ -697,12 +914,21 @@ export class PaymentsService {
     // Call appropriate fee calculation method
     switch (createPaymentWithFeesDto.payment_type) {
       case 'subscription_with_deposit':
+        // Check deposit status from existing subscription
         const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
           createPaymentWithFeesDto.package_id,
+          existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
         );
         feeAmount = depositResult.deposit_fee;
-        feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        
+        // Update breakdown text based on whether deposit is included
+        if (depositResult.deposit_fee > 0) {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        } else {
+          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+        }
         feeDetails.depositFee = depositResult.deposit_fee;
+        feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
         break;
 
       case 'battery_replacement':
@@ -748,6 +974,7 @@ export class PaymentsService {
 
     // 4. Create payment record with calculated total amount
     const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime();
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -759,10 +986,18 @@ export class PaymentsService {
         status: PaymentStatus.pending,
         payment_type: createPaymentWithFeesDto.payment_type as any,
         vnp_txn_ref: vnpTxnRef,
+        expires_at: expiresAt,
         order_info:
           createPaymentWithFeesDto.order_info ||
           `Thanh toan ${servicePackage.name}${feeAmount > 0 ? ' + phí' : ''}`,
       },
+    });
+
+    console.log('✅ Payment record created:', {
+      payment_id: payment.payment_id,
+      vnp_txn_ref: vnpTxnRef,
+      amount: totalAmount,
+      expires_at: expiresAt,
     });
 
     // 5. Build VNPAY payment URL with total amount
@@ -881,10 +1116,18 @@ export class PaymentsService {
         case 'subscription_with_deposit':
           const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
             createPaymentWithFeesDto.package_id,
+            existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
           );
           feeAmount = depositResult.deposit_fee;
-          feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          
+          // Update breakdown text based on whether deposit is included
+          if (depositResult.deposit_fee > 0) {
+            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          } else {
+            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+          }
           feeDetails.depositFee = depositResult.deposit_fee;
+          feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
           break;
 
         case 'battery_replacement':
@@ -939,6 +1182,9 @@ export class PaymentsService {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + servicePackage.duration_days);
 
+        // Set deposit_paid = true if payment type includes deposit
+        const depositPaid = createPaymentWithFeesDto.payment_type === 'subscription_with_deposit';
+
         subscription = await this.prisma.subscription.create({
           data: {
             user_id: createPaymentWithFeesDto.user_id,
@@ -948,6 +1194,7 @@ export class PaymentsService {
             end_date: endDate,
             status: 'active',
             swap_used: 0,
+            deposit_paid: depositPaid, // Set based on payment type
           },
           include: {
             package: true,

@@ -5,6 +5,7 @@ import { DatabaseService } from '../database/database.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { BatteryStatus } from '@prisma/client';
 import { StationsService } from '../stations/stations.service';
+import { findBatteryAvailibleForTicket } from './dto/find-availiable-batteries-ticket.dto';
 
 @Injectable()
 export class BatteriesService {
@@ -117,8 +118,26 @@ export class BatteriesService {
     return battery;
   }
 
-  async findManyByStation(station_id: number) {
+  async findBatteryAvailibleForTicket(dto: findBatteryAvailibleForTicket) {
+    const availableBatteries = await this.databaseService.battery.findMany({
+      where: {
+        model: dto.model,
+        type: dto.type,
+        station_id: dto.station_id,
+        status: dto.status
+      },
+      take: dto.quantity, // Giới hạn theo số lượng cần
+      select: {
+        battery_id: true,
+        model: true,
+        type: true,
+        soh: true,
+        status: true,
+        station_id: true,
+      },
+    });
 
+    return availableBatteries;
   }
 
   async assignBatteryToVehicle(

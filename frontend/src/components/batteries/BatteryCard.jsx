@@ -1,97 +1,95 @@
-import { getChargePercentage, getBatteryStatusInfo } from '../../hooks/useBatteryHandler';
+import { MoreVertical } from 'lucide-react';
 
 export default function BatteryCard({ battery }) {
   if (!battery) return null;
 
-  const percentage = getChargePercentage(battery);
-  const statusInfo = getBatteryStatusInfo(battery);
+  // Calculate percentage from database values
+  const percentage = battery.capacity && battery.current_charge
+    ? Math.max(0, Math.min(100, Math.round((battery.current_charge / battery.capacity) * 100)))
+    : 0;
 
-  const getStatusBadgeColor = (status) => {
-    const colors = {
-      charging: 'bg-yellow-500 text-black',
-      full: 'bg-green-500 text-white',
-      in_use: 'bg-blue-500 text-white',
-      booked: 'bg-orange-500 text-white',
-      defective: 'bg-red-500 text-white'
+  // Format status label and get badge color
+  const getStatusInfo = (status) => {
+    const statusMap = {
+      full: { label: 'Available', color: 'bg-green-100 text-green-800' },
+      charging: { label: 'Charging', color: 'bg-yellow-100 text-yellow-800' },
+      in_use: { label: 'In Use', color: 'bg-blue-100 text-blue-800' },
+      booked: { label: 'Booked', color: 'bg-orange-100 text-orange-800' },
+      defective: { label: 'Maintenance', color: 'bg-red-100 text-red-800' }
     };
-    return colors[status] || 'bg-gray-500 text-white';
+    return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
   };
 
-  const getChargeBarColor = (percentage) => {
-    if (percentage >= 80) return 'bg-green-500';
-    if (percentage >= 50) return 'bg-yellow-500';
-    if (percentage >= 20) return 'bg-orange-500';
+  const getChargeBarColor = (percent) => {
+    if (percent >= 80) return 'bg-green-500';
+    if (percent >= 40) return 'bg-yellow-500';
     return 'bg-red-500';
   };
 
-  const getSOHBarColor = (soh) => {
-    if (soh >= 90) return 'bg-green-600';
-    if (soh >= 80) return 'bg-yellow-600';
-    if (soh >= 60) return 'bg-orange-600';
-    return 'bg-red-600';
+  const getSOHColor = (soh) => {
+    if (soh >= 80) return { bar: 'bg-green-500', text: 'text-gray-800' };
+    return { bar: 'bg-red-500', text: 'text-red-600' };
   };
 
+  const statusInfo = getStatusInfo(battery.status);
+  const sohColor = getSOHColor(battery.soh);
+  const borderClass = battery.status === 'defective' ? 'border-red-300' : 'border-gray-200';
+
   return (
-    <div className="bg-[#0f172a] text-white p-2 rounded-lg w-[355px] shadow-md border border-gray-700 flex-shrink-0">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-semibold">BAT{String(battery.battery_id).padStart(3, '0')}</h2>
-        <span className={`text-sm px-2 py-0.5 rounded-full ${getStatusBadgeColor(battery.status)}`}>
+    <div className={`flex flex-col rounded-xl border ${borderClass} bg-white p-5 shadow-sm transition-shadow hover:shadow-lg`}>
+      {/* Header with battery name and status badge */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-lg font-bold text-gray-900">
+          Battery #{battery.battery_id}
+        </p>
+        <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.color}`}>
           {statusInfo.label}
-        </span>
-      </div>
-
-      <p className="text-gray-300 text-sm mb-1">Slot {battery.slot_number}</p>
-      <p className="text-gray-300 text-sm">
-        Model: <span className="font-semibold text-white">{battery.model}</span>
-      </p>
-
-      {/* State of Charge */}
-      <div className="mt-3">
-        <p className="text-gray-300 text-sm mb-1">State of Charge:</p>
-        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
-          <div
-            className={`h-2.5 rounded-full ${getChargeBarColor(percentage)}`}
-            style={{ width: `${percentage}%` }}
-          ></div>
         </div>
-        <p className="text-right text-sm font-semibold">{percentage}%</p>
       </div>
 
-      {/* State of Health */}
-      <div className="mt-3">
-        <p className="text-gray-300 text-sm mb-1">State of Health:</p>
-        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
-          <div
-            className={`h-2.5 rounded-full ${getSOHBarColor(battery.soh)}`}
-            style={{ width: `${battery.soh}%` }}
-          ></div>
-        </div>
-        <p className="text-right text-sm font-semibold">{battery.soh}%</p>
+      {/* Model and Slot info */}
+      <div className="flex justify-between text-sm text-gray-500 mb-4">
+        <span>Model: <span className="font-medium text-gray-700">{battery.model || 'Unknown'}</span></span>
+        <span>Slot: <span className="font-medium text-gray-700">{battery.slot_number || 'N/A'}</span></span>
       </div>
 
-      {/* Alerts */}
-      {statusInfo.alerts.length > 0 && (
-        <div className="mt-3 space-y-2">
-          {statusInfo.alerts.map((alert, index) => (
+      {/* Progress bars */}
+      <div className="space-y-3">
+        {/* State of Charge */}
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-medium text-gray-600">State of Charge</span>
+            <span className="font-semibold text-gray-800">{percentage}%</span>
+          </div>
+          <div className="w-full overflow-hidden rounded-full bg-gray-200 h-2">
             <div
-              key={index}
-              className={`flex items-center gap-2 px-2 py-1 rounded-md text-sm border ${alert.type === 'warning'
-                ? 'bg-yellow-900/40 border-yellow-600 text-yellow-400'
-                : 'bg-red-900/40 border-red-700 text-red-400'
-                }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {alert.type === 'warning' ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.74-3L13.73 5a2 2 0 00-3.46 0L3.33 16a2 2 0 001.74 3z" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                )}
-              </svg>
-              <span>{alert.message}</span>
-            </div>
-          ))}
+              className={`h-2 rounded-full ${getChargeBarColor(percentage)}`}
+              style={{ width: `${percentage}%` }}
+            ></div>
+          </div>
         </div>
-      )}
+
+        {/* State of Health */}
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-medium text-gray-600">State of Health</span>
+            <span className={`font-semibold ${sohColor.text}`}>{battery.soh}%</span>
+          </div>
+          <div className="w-full overflow-hidden rounded-full bg-gray-200 h-2">
+            <div
+              className={`h-2 rounded-full ${sohColor.bar}`}
+              style={{ width: `${battery.soh}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* More options button */}
+      <div className="mt-auto pt-4 text-right">
+        <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100">
+          <MoreVertical size={20} />
+        </button>
+      </div>
     </div>
   );
 }

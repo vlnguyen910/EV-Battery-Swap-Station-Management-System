@@ -12,38 +12,55 @@ const getAllStations = async () => {
   }
 };
 
-const getAvailableStations = async (userId, vehicleId = null, longitude = null, latitude = null) => {
+const getAvailableStations = async (
+  userId,
+  vehicleId = null,
+  longitude = null,
+  latitude = null
+) => {
   try {
     if (!userId) {
-      throw new Error('user_id is required to fetch available stations');
+      throw new Error("user_id is required to fetch available stations");
     }
 
     // Validate coordinates - they should be provided by caller
     if (longitude === null || latitude === null) {
-      throw new Error('Coordinates (longitude, latitude) are required');
+      throw new Error("Coordinates (longitude, latitude) are required");
     }
 
     // Prepare request body with all parameters
     const body = {
       user_id: parseInt(userId),
       latitude,
-      longitude
+      longitude,
     };
-    
+
     if (vehicleId) {
       body.vehicle_id = parseInt(vehicleId);
     }
-    
-    console.log('Calling getAvailableStations with body:', body);
-    
+
+    console.log("Calling getAvailableStations with body:", body);
+
     const response = await api.post(
       API_ENDPOINTS.STATION.GET_AVAILABLE_STATIONS,
       body
     );
-    
-    console.log('getAvailableStations response:', response.data);
+
+    console.log("getAvailableStations response:", response.data);
     return response.data;
   } catch (error) {
+    // Handle 404 as "no stations found nearby" - not a hard error
+    if (error.response?.status === 404) {
+      const message =
+        error.response?.data?.message || "No available stations found";
+      console.warn("⚠️ No stations found:", message);
+      console.log(
+        "This usually means no stations within 20km radius or no compatible batteries"
+      );
+      return []; // Return empty array instead of throwing
+    }
+
+    // For other errors, log details and throw
     console.error("Error fetching available stations:", error);
     console.error("Error response data:", error.response?.data);
     console.error("Error details:", {
@@ -53,7 +70,7 @@ const getAvailableStations = async (userId, vehicleId = null, longitude = null, 
       validationErrors: error.response?.data?.errors,
       status: error.response?.status,
       userId,
-      vehicleId
+      vehicleId,
     });
     throw error;
   }
@@ -71,10 +88,37 @@ const getStationById = async (id) => {
   }
 };
 
+const createStation = async (stationData) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.STATION.CREATE_STATION, stationData);  
+    return response.data; 
+  } catch (error) {
+    console.error("Error creating station:", error);
+    throw error;
+  } 
+};
 
+const updateStation = async (id, stationData) => {
+  try {
+    // console.log('Updating station with ID:', id);
+    // console.log('Station data being sent:', stationData);
+    // console.log('API endpoint:', API_ENDPOINTS.STATION.UPDATE_STATION(id));
+    
+    const response = await api.patch(API_ENDPOINTS.STATION.UPDATE_STATION(id), stationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating station:", error);
+    console.error("Error response data:", error.response?.data);
+    console.error("Error response status:", error.response?.status);
+    console.error("Error response headers:", error.response?.headers);
+    throw error;
+  }
+};
 
 export const stationService = {
   getAllStations,
   getStationById,
   getAvailableStations,
+  createStation,
+  updateStation,
 };

@@ -7,6 +7,7 @@ model Subscription {
   end_date          DateTime
   status            SubscriptionStatus
   swap_used         Int                   @default(0)
+  deposit_paid      Boolean               @default(false)
   created_at        DateTime              @default(now())
   updated_at        DateTime              @updatedAt
   distance_traveled Float                 @default(0)

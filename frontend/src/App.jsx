@@ -1,9 +1,10 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import GuestPage from './pages/GuestPage'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import GoogleCallback from './components/auth/GoogleCallback'
-import AdminPage from './pages/AdminPage'
+import AdminPage from './pages/admin/AdminPage'
 import StaffPage from './pages/StaffPage'
 import NotFound from './pages/NotFound'
 import MapPage from './pages/Map'
@@ -23,16 +24,36 @@ import Payment from './pages/Payment'
 import VerifyEmail from './pages/VerifyEmail'
 import ResetPassword from './pages/ResetPassword'
 import ForgetPassword from './pages/ForgetPassword'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminStationList from './pages/admin/AdminStationList'
+import AdminUserList from './pages/admin/AdminUserList'
+import AdminPackageList from './pages/admin/AdminPackageList'
+import AdminBatteryTransferReq from './pages/admin/AdminBatteryTransferReq'
+import BatteryTransferDetail from './pages/admin/BatteryTransferDetail'
+import AdminBatteryTransferList from './pages/admin/AdminBatteryTransferList'
+import EditBatteryTransfer from './pages/admin/EditBatteryTransfer'
+import AdminSupportList from './pages/admin/AdminSupportList'
+import AdminReport from './pages/admin/AdminReport'
+import StationDetail from './pages/admin/StationDetail'
+import EditStation from './pages/admin/EditStation'
+import CreateStation from './pages/admin/CreateStation'
+import UserDetail from './pages/admin/UserDetail'
+import EditUser from './pages/admin/EditUser'
+import CreateUser from './pages/admin/CreateUser'
+import EditPackage from './pages/admin/EditPackage'
+import CreatePackage from './pages/admin/CreatePackage'
+import PackageDetail from './pages/admin/PackageDetail'
+
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
     <div className="App">
+      <Toaster position="top-right" richColors closeButton />
       {/* <Navigation /> */}
       <Routes>
-        <Route path="/driver" element={<Driver />} />
+        {/* Public Routes */}
         <Route path="/" element={<GuestPage />} />
-        <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<GoogleCallback />} />
@@ -43,25 +64,9 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-        <Route path="/admin" element={<AdminPage />} />
-
-
-        {/* Staff Routes with Nested Routing */}
-        <Route path="/staff" element={<StaffPage />}>
-          {/* Route con   */}
-          <Route index element={<StaffDashboard />} />
-          <Route path="inventory" element={<StaffInventory />} />
-          <Route path="inspection" element={<StaffInspection />} />
-          <Route path="swap-requests" element={<StaffSwapRequests />} />
-          <Route path="manual-swap" element={<ManualSwapTransaction />} />
-        </Route>
-
-        {/* Payment Routes (outside Driver layout for clean UI) */}
-
-
         {/* Driver Routes with Nested Routing */}
         <Route path="/driver" element={<Driver />}>
-          {/* Route con */}
+          {/* Route container for User */}
           <Route index element={<User />} />
           <Route path="booking" element={<BookingContainer />} />
           <Route path="booking/:stationId" element={<BookingContainer />} />
@@ -70,13 +75,57 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
+          {/* Payment Routes*/}
           <Route path="payment/success" element={<Payment />} />
           <Route path="payment/failed" element={<Payment />} />
           <Route path="payment/error" element={<Payment />} />
         </Route>
+
+        {/* Staff Routes with Nested Routing */}
+        <Route path="/staff" element={<StaffPage />}>
+          {/* Route container for Staff */}
+          <Route index element={<StaffDashboard />} />
+          <Route path="inventory" element={<StaffInventory />} />
+          <Route path="inspection" element={<StaffInspection />} />
+          <Route path="swap-requests" element={<StaffSwapRequests />} />
+          <Route path="manual-swap" element={<ManualSwapTransaction />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminPage />}>
+          <Route index element={<AdminDashboard />} />
+          {/* Add nested routes for Admin here */}
+          <Route path="stations-list" element={<AdminStationList />} />
+          <Route path="stations/create" element={<CreateStation />} />
+          <Route path="stations/:id" element={<StationDetail />} />
+          <Route path="stations/edit/:id" element={<EditStation />} />
+
+          <Route path="users-list" element={<AdminUserList />} />
+          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="users/edit/:id" element={<EditUser />} />
+          <Route path="users/create" element={<CreateUser />} />
+
+          <Route path="packages-list" element={<AdminPackageList />} />
+          <Route path="packages/edit/:id" element={<EditPackage />} />
+          <Route path="packages/create" element={<CreatePackage />} />
+          <Route path="packages/:id" element={<PackageDetail />} />
+
+          <Route path="battery-transfer-requests" element={<AdminBatteryTransferList />} />
+          <Route path="battery-transfer-requests/create" element={<AdminBatteryTransferReq />} />
+          <Route path="battery-transfer-requests/:id" element={<BatteryTransferDetail />} />
+          <Route path="battery-transfer-requests/edit/:id" element={<EditBatteryTransfer />} />
+          
+          <Route path="support-list" element={<AdminSupportList />} />
+          <Route path="report" element={<AdminReport />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
+
+        {/* 404 Not Found - Must be last */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
 }
-export default App;
 
+export default App;

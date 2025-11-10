@@ -26,7 +26,7 @@ export class ReservationsController {
   @Roles($Enums.Role.station_staff)
   @Get('/station/:id')
   findAllByStationId(@Param('id', ParseIntPipe) stationId: number) {
-    return this.reservationsService.findManyStationId(stationId);
+    return this.reservationsService.findManyByStationId(stationId);
   }
 
   @Get(':id')

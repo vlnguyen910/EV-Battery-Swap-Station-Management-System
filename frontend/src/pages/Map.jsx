@@ -49,6 +49,10 @@ export default function MapPage() {
         const availableBatteries = (batteries || []).filter(
           (b) => b.station_id === s.station_id && String(b.status || '').toLowerCase() === 'full'
         ).length;
+        // Count total batteries for this station
+        const totalBatteries = (batteries || []).filter(
+          (b) => b.station_id === s.station_id
+        ).length;
 
         if (loc && s?.latitude != null && s?.longitude != null) {
           const meters = distanceMeters(loc.latitude, loc.longitude, s.latitude, s.longitude);
@@ -57,9 +61,10 @@ export default function MapPage() {
             distanceValue: meters,
             distance: `${(meters / 1000).toFixed(1)} km`,
             availableBatteries,
+            totalBatteries,
           };
         }
-        return { ...s, distanceValue: Number.POSITIVE_INFINITY, distance: undefined, availableBatteries };
+        return { ...s, distanceValue: Number.POSITIVE_INFINITY, distance: undefined, availableBatteries, totalBatteries };
       });
       enriched.sort((a, b) => (a.distanceValue || Infinity) - (b.distanceValue || Infinity));
       return enriched;

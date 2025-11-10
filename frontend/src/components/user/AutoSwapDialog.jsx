@@ -4,9 +4,17 @@ import { Button } from '../ui/button';
 import { useStation } from '../../hooks/useContext';
 import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
+import { batteryService } from '../../services/batteryService';
 
 export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }) {
-    const { stations } = useStation();
+    const { stations, getAvailableStations, loading: stationsLoading } = useStation();
+    // Fetch available stations when dialog opens if not already loaded
+    useEffect(() => {
+        if (open && (!stations || stations.length === 0)) {
+            getAvailableStations();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
     const [loading, setLoading] = useState(false);
     const [vehicles, setVehicles] = useState([]);
     const [errors, setErrors] = useState([]);
@@ -20,6 +28,9 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
         vehicle_id: '',
         station_id: '',
     });
+
+    // State to hold stations with batteries info
+    const [stationsWithBatteries, setStationsWithBatteries] = useState([]);
 
     // Map backend error responses to friendly UI messages
     const mapServerErrorToMessage = (resp) => {
@@ -63,6 +74,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
         fetchVehicles();
     }, [open, userId]);
 
+
     // Reset form when dialog closes
     useEffect(() => {
         if (!open) {
@@ -73,6 +85,14 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
             setErrors([]);
         }
     }, [open, userId]);
+
+    // Fetch available stations when dialog opens if not already loaded
+    useEffect(() => {
+        if (open && (!stations || stations.length === 0)) {
+            getAvailableStations();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     // Close suggestions when clicking outside
     useEffect(() => {
@@ -86,12 +106,41 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter stations with available batteries
-    const availableStations = (stations || []).filter(station => {
-        const batteries = station.batteries || [];
-        const fullBatteries = batteries.filter(b => String(b.status || '').toLowerCase() === 'full');
-        return fullBatteries.length > 0;
-    });
+    // Fetch batteries for each station when stations change
+    useEffect(() => {
+        const fetchBatteryData = async () => {
+            if (!stations || stations.length === 0) {
+                setStationsWithBatteries([]);
+                return;
+            }
+            const stationsWithBatteryCounts = await Promise.all(
+                stations.map(async (station) => {
+                    try {
+                        const stationId = station.station_id || station.id;
+                        if (!stationId) return { ...station, available: 0, total: 0 };
+                        const batteries = await batteryService.getBatteriesByStationId(stationId);
+                        const availableBatteries = batteries.filter(
+                            battery => battery.status === 'full' || battery.status === 'available'
+                        ).length;
+                        const totalBatteries = batteries.length;
+                        return {
+                            ...station,
+                            station_id: stationId,
+                            available: availableBatteries,
+                            total: totalBatteries,
+                        };
+                    } catch (error) {
+                        return { ...station, available: 0, total: 0 };
+                    }
+                })
+            );
+            setStationsWithBatteries(stationsWithBatteryCounts);
+        };
+        fetchBatteryData();
+    }, [stations]);
+
+    // Use stationsWithBatteries for rendering
+    const availableStations = stationsWithBatteries;
 
     // Filter stations by search query
     const filteredStations = availableStations.filter(station => {
@@ -208,7 +257,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
                         )}
                     </div>
 
-                    {/* Station Selection with Search */}
+                    {/* Station Selection with Search and List */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Search Station
@@ -224,31 +273,28 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
                                 autoComplete="off"
                             />
 
-                            {/* Suggestions Dropdown */}
-                            {showSuggestions && stationSearch && (
+                            {/* Always show available stations in a scrollable box */}
+                            {showSuggestions && (
                                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                    {filteredStations.length > 0 ? (
-                                        filteredStations.map((station) => {
-                                            const fullBatteries = (station.batteries || []).filter(
-                                                b => String(b.status || '').toLowerCase() === 'full'
-                                            );
-                                            return (
-                                                <div
-                                                    key={station.station_id}
-                                                    onClick={() => handleSelectStation(station)}
-                                                    className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
-                                                >
-                                                    <div className="font-medium text-gray-900">{station.name}</div>
-                                                    <div className="text-sm text-gray-600">{station.address}</div>
-                                                    <div className="text-xs text-green-600 mt-1">
-                                                        {fullBatteries.length} batteries available
-                                                    </div>
+                                    {(stationSearch ? filteredStations : availableStations).length > 0 ? (
+                                        (stationSearch ? filteredStations : availableStations).map((station) => (
+                                            <div
+                                                key={station.station_id}
+                                                onClick={() => handleSelectStation(station)}
+                                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                            >
+                                                <div className="font-medium text-gray-900">{station.name}</div>
+                                                <div className="text-sm text-gray-600">{station.address}</div>
+                                                <div className="text-xs text-green-600 mt-1">
+                                                    {station.available} batteries available
                                                 </div>
-                                            );
-                                        })
+                                            </div>
+                                        ))
                                     ) : (
                                         <div className="p-3 text-sm text-gray-500 text-center">
-                                            No stations found matching "{stationSearch}"
+                                            {stationSearch
+                                                ? `No stations found matching "${stationSearch}"`
+                                                : 'No stations with available batteries'}
                                         </div>
                                     )}
                                 </div>
@@ -263,7 +309,9 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
                             )}
                         </div>
 
-                        {availableStations.length === 0 && (
+                        {stationsLoading ? (
+                            <p className="text-sm text-gray-500 mt-1">Loading stations...</p>
+                        ) : availableStations.length === 0 && (
                             <p className="text-sm text-gray-500 mt-1">No stations with available batteries</p>
                         )}
                     </div>

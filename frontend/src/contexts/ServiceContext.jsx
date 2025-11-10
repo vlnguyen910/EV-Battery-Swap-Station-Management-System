@@ -216,8 +216,12 @@ export const ServiceProvider = ({ children }) => {
     };
 
     // ============ EFFECTS ============
+    // Get user from AuthContext
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
+    const { token } = authContext || {};
+
     // Load packages on mount
-    const { token } = useContext(AuthContext);
     useEffect(() => {
         if (!token) return;
         let mounted = true;
@@ -241,6 +245,30 @@ export const ServiceProvider = ({ children }) => {
             mounted = false;
         };
     }, [token]);
+
+    // Load subscriptions for driver on mount/login
+    useEffect(() => {
+        const userId = user?.user_id || user?.id;
+
+        if (!token || !userId) {
+            console.log('ServiceContext: No token or user - skipping subscriptions fetch');
+            return;
+        }
+
+        // Only fetch subscriptions for driver role
+        if (user.role !== 'driver') {
+            console.log(`ServiceContext: User role is ${user.role} - skipping subscriptions fetch (driver only)`);
+            return;
+        }
+
+        if (subscriptions.length === 0 && !subscriptionLoading) {
+            console.log('ServiceContext: Fetching subscriptions for driver user:', userId);
+            getSubscriptionsByUserId(userId).catch(err => {
+                console.error('ServiceContext: Failed to fetch subscriptions:', err);
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, user?.user_id, user?.id, user?.role]);
 
     // Combined loading/error for backward compatibility
     const loading = packageLoading || subscriptionLoading;

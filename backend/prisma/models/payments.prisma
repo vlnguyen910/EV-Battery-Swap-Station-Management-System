@@ -18,6 +18,7 @@ model Payment {
   vnp_card_type     String?                @db.VarChar(50)
   vnp_response_code String?                @db.VarChar(10)
   vnp_txn_ref       String?                @unique @db.VarChar(100)
+  expires_at        DateTime?              // Payment expiry time (for pending payments)
   package           BatteryServicePackage? @relation(fields: [package_id], references: [package_id])
   subscription      Subscription?          @relation(fields: [subscription_id], references: [subscription_id])
   user              User                   @relation(fields: [user_id], references: [user_id])

@@ -177,6 +177,24 @@ export class PaymentsController {
   }
 
   /**
+   * ⭐ NEW ENDPOINT - Cancel expired pending payments
+   * POST /payments/cancel-expired
+   * 
+   * Manually trigger cancellation of payments that have expired
+   */
+  @Post('cancel-expired')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  async cancelExpiredPayments() {
+    const count = await this.paymentsService.cancelExpiredPayments();
+    return {
+      success: true,
+      message: `Cancelled ${count} expired payment(s)`,
+      count,
+    };
+  }
+
+  /**
    * ⭐ NEW ENDPOINT - Create payment for battery deposit only
    * POST /payments/battery-deposit
    * 
@@ -268,7 +286,9 @@ export class PaymentsController {
    */
 
   /**
-   * Calculate subscription + deposit fee (fixed 400,000 VNĐ)
+   * Calculate subscription + deposit fee (if not paid yet)
+   * - Nếu chưa đặt cọc: Tính phí gói + phí cọc (400,000 VNĐ)
+   * - Nếu đã đặt cọc: Chỉ tính phí gói
    * POST /payments/calculate/subscription-fee
    */
   @Post('calculate/subscription-fee')
@@ -277,6 +297,7 @@ export class PaymentsController {
   async calculateSubscriptionFee(@Body() dto: CalculateSubscriptionFeeDto) {
     const fee = await this.feeCalculationService.calculateSubscriptionWithDeposit(
       dto.packageId,
+      dto.subscriptionId,
     );
     return {
       ...fee,
@@ -385,8 +406,7 @@ export class PaymentsController {
  * - When VNPAY is unavailable
  */
   @Post('direct-with-fees')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('driver', 'admin', 'station_staff')
+  @UseGuards(AuthGuard)
   async createDirectPaymentWithFees(
     @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
   ) {

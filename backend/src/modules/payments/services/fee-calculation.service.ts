@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 
 export interface FeeCalculation {
@@ -21,12 +21,14 @@ export class FeeCalculationService {
   constructor(private prisma: DatabaseService) {}
 
   /**
-   * Tính phí đăng ký gói + cọc pin
-   * Sử dụng khi khách hàng lần đầu tiên thanh toán hoặc cần thêm cọc
+   * Tính phí đăng ký gói + cọc pin (nếu chưa đặt cọc)
+   * - Nếu subscription chưa đặt cọc (deposit_paid = false): Tính cả phí gói + phí cọc
+   * - Nếu đã đặt cọc (deposit_paid = true): Chỉ tính phí gói
    * Phí cọc mặc định: 400,000 VNĐ
    */
   async calculateSubscriptionWithDeposit(
     packageId: number,
+    subscriptionId?: number,
   ): Promise<FeeCalculation> {
     // 1. Lấy thông tin gói
     const pkg = await this.prisma.batteryServicePackage.findUnique({
@@ -37,15 +39,29 @@ export class FeeCalculationService {
       throw new NotFoundException('Package not found');
     }
 
-    // 2. Phí cọc mặc định: 400,000 VNĐ
-    const depositAmount = 400000;
+    // 2. Kiểm tra xem đã đặt cọc chưa
+    let depositRequired = true; // Mặc định là cần đặt cọc
+    
+    if (subscriptionId) {
+      const subscription = await this.prisma.subscription.findUnique({
+        where: { subscription_id: subscriptionId },
+      });
+      
+      if (subscription && subscription.deposit_paid) {
+        depositRequired = false; // Đã đặt cọc rồi, không tính nữa
+      }
+    }
+
+    // 3. Tính phí
+    const depositAmount = depositRequired ? 400000 : 0;
+    const totalFee = pkg.base_price.toNumber() + depositAmount;
 
     return {
       subscription_fee: pkg.base_price.toNumber(),
       deposit_fee: depositAmount,
       overcharge_fee: 0,
       damage_fee: 0,
-      total_fee: pkg.base_price.toNumber() + depositAmount,
+      total_fee: totalFee,
       breakdown: {
         package_price: pkg.base_price.toNumber(),
         deposit_amount: depositAmount,
@@ -59,6 +75,7 @@ export class FeeCalculationService {
   /**
    * Tính phí khi khách hàng vượt quá số km cơ bản
    * Tương tự như tiền điện - nhiều bậc phí khác nhau
+   * Yêu cầu: Subscription phải đã đặt cọc (deposit_paid = true)
    */
   async calculateOverchargeFee(
     subscriptionId: number,
@@ -74,11 +91,18 @@ export class FeeCalculationService {
       throw new NotFoundException('Subscription not found');
     }
 
-    // 2. Tính km vượt quá
+    // 2. Kiểm tra đã đặt cọc chưa
+    if (!subscription.deposit_paid) {
+      throw new BadRequestException(
+        'Bạn cần thanh toán tiền cọc trước khi tính phí vượt km. Vui lòng thanh toán phí subscription + deposit trước.',
+      );
+    }
+
+    // 3. Tính km vượt quá
     const baseDistance = subscription.package?.base_distance || 0;
     const overchargeKm = Math.max(0, actualDistanceTraveled - baseDistance);
 
-    // 3. Tính phí vượt km theo bậc (như tiền điện)
+    // 4. Tính phí vượt km theo bậc (như tiền điện)
     let overchargeCost = 0;
 
     if (overchargeKm > 0) {
@@ -93,9 +117,9 @@ export class FeeCalculationService {
         where: { name: 'Overcharge_Fee_Tier3' },
       });
 
-      const tier1Price = tier1?.value.toNumber() || 0;  // VNĐ/km
-      const tier2Price = tier2?.value.toNumber() || 0;  // VNĐ/km
-      const tier3Price = tier3?.value.toNumber() || 0;  // VNĐ/km
+      const tier1Price = tier1?.value?.toNumber() || 0;  // VNĐ/km
+      const tier2Price = tier2?.value?.toNumber() || 0;  // VNĐ/km
+      const tier3Price = tier3?.value?.toNumber() || 0;  // VNĐ/km
 
       // Tính phí theo bậc (tương tự tiền điện)
       // Tier 1: 0-2000km vượt quá
@@ -145,7 +169,7 @@ export class FeeCalculationService {
       where: { name: damageConfigName },
     });
 
-    const damageCost = damageConfig?.value.toNumber() || 0;
+    const damageCost = damageConfig?.value?.toNumber() || 0;
 
     return {
       subscription_fee: 0,
@@ -191,6 +215,7 @@ export class FeeCalculationService {
     if (options.packageId) {
       const subscriptionFee = await this.calculateSubscriptionWithDeposit(
         options.packageId,
+        options.subscriptionId, // Truyền subscriptionId để check đã đặt cọc chưa
       );
       totalFee.subscription_fee = subscriptionFee.subscription_fee;
       totalFee.deposit_fee = subscriptionFee.deposit_fee;

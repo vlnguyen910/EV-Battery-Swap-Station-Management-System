@@ -1,5 +1,6 @@
-import { IsNumber, IsInt, IsNotEmpty, IsOptional, Min, Max, IsString } from "class-validator";
+import { IsNumber, IsInt, IsNotEmpty, IsOptional, IsNumberString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 
 export class findAvailibaleStationsDto {
     @ApiProperty({ example: '1', description: 'User to find stations' })
@@ -12,17 +13,13 @@ export class findAvailibaleStationsDto {
     @IsInt()
     vehicle_id?: number;
 
-    @ApiProperty({ example: '10.762622', description: 'Latitude of the user location' })
     @IsOptional()
-    @IsNumber()
-    @Min(-90)
-    @Max(90)
-    latitude?: number;
+    @IsNumber() // 3. Finally, validates that the result is a number
+    @Type(() => Number) // 2. Transforms the incoming string ("10.8793731") to a number
+    latitude?: number; // 1. The final type we want
 
-    @ApiProperty({ example: '106.660172', description: 'Longitude of the user location' })
     @IsOptional()
     @IsNumber()
-    @Min(-180)
-    @Max(180)
+    @Type(() => Number) // Same for longitude
     longitude?: number;
 }

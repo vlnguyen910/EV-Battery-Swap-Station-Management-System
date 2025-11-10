@@ -19,6 +19,7 @@ async function exportData() {
       payments: await prisma.payment.findMany(),
       reservations: await prisma.reservation.findMany(),
       swapTransactions: await prisma.swapTransaction.findMany(),
+      supports: await prisma.support.findMany(),
     };
 
     // Count records
@@ -32,6 +33,7 @@ async function exportData() {
       payments: data.payments.length,
       reservations: data.reservations.length,
       swapTransactions: data.swapTransactions.length,
+      supports: data.supports.length,
     };
 
     console.log('📊 Records found:');
@@ -44,6 +46,7 @@ async function exportData() {
     console.log(`   Payments: ${counts.payments}`);
     console.log(`   Reservations: ${counts.reservations}`);
     console.log(`   Swap Transactions: ${counts.swapTransactions}`);
+    console.log(`   Supports: ${counts.supports}`);
     console.log(`   Total: ${Object.values(counts).reduce((a, b) => a + b, 0)}\n`);
 
     // Create backup directory if it doesn't exist

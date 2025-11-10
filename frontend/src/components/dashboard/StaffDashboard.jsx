@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth, useBattery } from '../../hooks/useContext';
 import StaffWelcomeHeader from '../staff-dashboard/StaffWelcomeHeader';
@@ -6,12 +7,21 @@ import TransactionsTable from '../staff-dashboard/TransactionsTable';
 
 export default function StaffDashboard() {
     const { user } = useAuth();
-    const { batteries, loading: batteriesLoading } = useBattery();
+    const { batteries, loading: batteriesLoading, getAllBatteriesByStationId } = useBattery();
     const [stats, setStats] = useState({
         fullBatteries: 0,
         chargingBatteries: 0,
         maintenanceBatteries: 0
     });
+
+    // Fetch batteries for assigned station on mount (for station staff)
+    useEffect(() => {
+        if (user?.role === 'station_staff' && user?.station_id) {
+            getAllBatteriesByStationId(user.station_id);
+        }
+        // Optionally, clear batteries if user logs out or role changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, user?.station_id]);
 
     useEffect(() => {
         if (batteries && batteries.length > 0) {
@@ -23,6 +33,12 @@ export default function StaffDashboard() {
                 fullBatteries: full,
                 chargingBatteries: charging,
                 maintenanceBatteries: maintenance
+            });
+        } else {
+            setStats({
+                fullBatteries: 0,
+                chargingBatteries: 0,
+                maintenanceBatteries: 0
             });
         }
     }, [batteries]);

@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
 
   USER: {
     CREATE_USER: "/users",
+    GET_BY_EMAIL: (email) => `/users/email/${email}`,
     GET_ALL_USERS: "/users",
     GET_USER: (id) => `/users/${id}`,
     UPDATE_USER: (id) => `/users/${id}`,
@@ -41,6 +42,7 @@ export const API_ENDPOINTS = {
     GET_ACTIVE_STATIONS: "/stations/active",
     GET_AVAILABLE_STATIONS: "/stations/available",
     GET_SEARCH_STATIONS: "/stations/search",
+    CREATE_STATION: "/stations",
     GET_STATION: (id) => `/stations/${id}`,
     UPDATE_STATION: (id) => `/stations/${id}`,
     DELETE_STATION: (id) => `/stations/${id}`,
@@ -51,6 +53,7 @@ export const API_ENDPOINTS = {
     GET_ALL_BATTERIES: "/batteries",
     GET_BEST_BATTERY: "/batteries/best",
     GET_BATTERY: (id) => `/batteries/${id}`,
+    GET_BY_STATION: (stationId) => `/batteries/station/${stationId}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
   },
 
@@ -119,6 +122,7 @@ export const API_ENDPOINTS = {
     BATTERY_DEPOSIT: "/payments/battery-deposit",
     DAMAGE_FEE: "/payments/damage-fee",
     BATTERY_REPLACEMENT: "/payments/battery-replacement",
+    DIRECT_WITH_FEES: "/payments/direct-with-fees",
 
     // Fee calculation endpoints
     CALCULATE_SUBSCRIPTION_FEE: "/payments/calculate/subscription-fee",
@@ -151,6 +155,7 @@ export const API_ENDPOINTS = {
     GET_ALL_REQUESTS: "/battery-transfer-request",
     GET_REQUEST: (id) => `/battery-transfer-request/${id}`,
     UPDATE_REQUEST: (id) => `/battery-transfer-request/${id}`,
+    DELETE_REQUEST: (id) => `/battery-transfer-request/${id}`,
   },
 
   BATTERY_TRANSFER_TICKET: {

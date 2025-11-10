@@ -136,7 +136,7 @@ export class ReservationsService {
     });
   }
 
-  async findManyStationId(stationId: number) {
+  async findManyByStationId(stationId: number) {
     return await this.databaseService.reservation.findMany({
       where: { station_id: stationId },
       orderBy: { scheduled_time: 'desc' }
