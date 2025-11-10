@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { BatteryTransferTicketService } from './battery-transfer-ticket.service';
 import { CreateBatteryTransferTicketDto } from './dto/create-battery-transfer-ticket.dto';
 import { UpdateBatteryTransferTicketDto } from './dto/update-battery-transfer-ticket.dto';
+import { findBatteryAvailibleForTransfers } from './dto/get-availibale-batteries-transfer.dto';
 
 @Controller('battery-transfer-ticket')
 export class BatteryTransferTicketController {
-  constructor(private readonly batteryTransferTicketService: BatteryTransferTicketService) {}
+  constructor(private readonly batteryTransferTicketService: BatteryTransferTicketService) { }
 
   @Post()
   create(@Body() createBatteryTransferTicketDto: CreateBatteryTransferTicketDto) {
@@ -18,8 +19,19 @@ export class BatteryTransferTicketController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.batteryTransferTicketService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.batteryTransferTicketService.findOne(id);
+  }
+
+  @Get('station/:id')
+  findOneByStation(@Param('id', ParseIntPipe) id: number) {
+    return this.batteryTransferTicketService.findBatteryTicketByStation(id);
+  }
+
+
+  @Post('availiable-batteries')
+  findAvailibaleBatteries(@Body() dto: findBatteryAvailibleForTransfers) {
+    return this.batteryTransferTicketService.getAvailableBatteriesForTransfer(dto);
   }
 
   @Patch(':id')
