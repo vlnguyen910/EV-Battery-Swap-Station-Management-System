@@ -3,7 +3,8 @@ import { CreateBatteryTransferRequestDto } from './dto/create-battery-transfer-r
 import { UpdateBatteryTransferRequestDto } from './dto/update-battery-transfer-request.dto';
 import { StationsService } from '../stations/stations.service';
 import { DatabaseService } from '../database/database.service';
-import { TransferStatus } from '@prisma/client/wasm';
+import { BatteryStatus, TransferStatus } from '@prisma/client/wasm';
+import { BatteriesService } from '../batteries/batteries.service';
 
 @Injectable()
 export class BatteryTransferRequestService {
@@ -12,6 +13,7 @@ export class BatteryTransferRequestService {
   constructor(
     private readonly stationsService: StationsService,
     private readonly databaseService: DatabaseService,
+    private readonly batteriesService: BatteriesService,
   ) { }
 
   // Better validation with more specific checks
@@ -31,6 +33,22 @@ export class BatteryTransferRequestService {
       // Validate quantity > 0
       if (dto.quantity <= 0) {
         throw new BadRequestException('Quantity must be greater than 0');
+      }
+
+      const findBatteryAvailibleBatteriesDto = {
+        model: dto.battery_model,
+        type: dto.battery_type,
+        station_id: from_station.station_id,
+        status: BatteryStatus.full || BatteryStatus.charging,
+        quantity: dto.quantity,
+      };
+
+      const availiableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findBatteryAvailibleBatteriesDto);
+
+      if (availiableBatteries.length < dto.quantity) {
+        throw new BadRequestException(
+          `Not enough available batteries at station ID ${from_station.station_id}, requested: ${dto.quantity}, available: ${availiableBatteries.length}`
+        );
       }
 
       // Check for existing in-progress request
