@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateBatteryTransferTicketDto } from './dto/create-battery-transfer-ticket.dto';
 import { UpdateBatteryTransferTicketDto } from './dto/update-battery-transfer-ticket.dto';
 import { DatabaseService } from '../database/database.service';
@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service';
 import { BatteriesService } from '../batteries/batteries.service';
 import { BatteryTransferRequestService } from '../battery-transfer-request/battery-transfer-request.service';
 import { BatteryStatus, TicketType, TransferStatus } from '@prisma/client';
+import { findBatteryAvailibleForTransfers } from './dto/get-availibale-batteries-transfer.dto';
 
 @Injectable()
 export class BatteryTransferTicketService {
@@ -25,6 +26,7 @@ export class BatteryTransferTicketService {
       const transferRequest = await this.batteryTransferRequestService.findOne(dto.transfer_request_id);
 
       // Kiểm tra status của transfer request
+      //Nếu đã nhập pin thành công thì ko cần tạo thêm ticket với request đó nữa
       if (transferRequest.status === TransferStatus.completed) {
         throw new BadRequestException('Transfer request already completed');
       }
@@ -169,16 +171,100 @@ export class BatteryTransferTicketService {
     }
   }
 
-  findAll() {
-    return `This action returns all batteryTransferTicket`;
+  async findAll() {
+    return await this.databaseService.batteryTransferTicket.findMany({
+      include: {
+        station: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} batteryTransferTicket`;
+  async findOne(id: number) {
+    const ticket = await this.databaseService.batteryTransferTicket.findUnique({
+      where: { ticket_id: id },
+      include: {
+        station: true,
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException(`Battery Transfer Ticket with ID ${id} not found`);
+    }
+
+    return ticket;
   }
 
-  update(id: number, updateBatteryTransferTicketDto: UpdateBatteryTransferTicketDto) {
-    return `This action updates a #${id} batteryTransferTicket`;
+  async update(id: number, updateBatteryTransferTicketDto: UpdateBatteryTransferTicketDto) {
+    const ticket = await this.findOne(id);
+
+    const updatedTicket = await this.databaseService.batteryTransferTicket.update({
+      where: { ticket_id: id },
+      data: {
+        ...updateBatteryTransferTicketDto,
+      },
+    });
+
+    return updatedTicket;
+  }
+
+  async findBatteryTicketByStation(station_id: number) {
+    return await this.databaseService.batteryTransferTicket.findMany({
+      where: { station_id },
+    });
+  }
+
+  async getAvailableBatteriesForTransfer(dto: findBatteryAvailibleForTransfers) {
+    try {
+      const transferRequest = await this.batteryTransferRequestService.findOne(
+        dto.transfer_request_id
+      );
+
+      // ✅ Tìm pin khớp model + type
+      let findDto: any = {
+        model: transferRequest.battery_model,
+        type: transferRequest.battery_type,
+        quantity: transferRequest.quantity
+      };
+
+      // ✅ Dựa vào ticket type để filter
+      if (dto.ticket_type === TicketType.export) {
+        // Export: pin phải ở station, không in_transit
+        findDto = {
+          ...findDto,
+          station_id: dto.station_id,
+          status: BatteryStatus.full || BatteryStatus.charging
+        };
+      } else if (dto.ticket_type === TicketType.import) {
+        // Import: pin phải đang in_transit
+        findDto = {
+          ...findDto,
+          status: BatteryStatus.in_transit,
+          station_id: null,
+        };
+      } else {
+        throw new BadRequestException('Invalid ticket type');
+      }
+
+      const availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
+
+      if (availableBatteries.length < transferRequest.quantity) {
+        throw new BadRequestException(
+          `Not enough available batteries. Required: ${transferRequest.quantity}, Available: ${availableBatteries.length}`
+        );
+      }
+
+      return {
+        transfer_request: transferRequest,
+        required_quantity: transferRequest.quantity,
+        available_batteries: availableBatteries,
+        available_count: availableBatteries.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get available batteries: ${error.message}`
+      );
+      throw error;
+    }
   }
 
   remove(id: number) {
