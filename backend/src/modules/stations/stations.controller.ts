@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, ParseFloatPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, ParseFloatPipe, HttpCode, HttpStatus } from '@nestjs/common';
 import { StationsService } from './stations.service';
 import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
@@ -35,6 +35,7 @@ export class StationsController {
     return this.stationsService.findByName(name);
   }
 
+  @HttpCode(HttpStatus.OK)
   @Roles($Enums.Role.driver)
   @Post('available')
   async findAllAvailable(
