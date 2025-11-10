@@ -177,12 +177,22 @@ export class BatteriesService {
         data: { vehicle_id: null },
       });
 
-      // Assign battery to vehicle
+      // ✅ CONSOLIDATED: Assign battery to vehicle (updates BOTH sides in one method)
       this.logger.log(`Assigning battery ${battery_id} to vehicle ${vehicle_id}`);
-      return await db.battery.update({
+      
+      // Update battery side
+      const updatedBattery = await db.battery.update({
         where: { battery_id },
         data: { vehicle_id, station_id: null, status: BatteryStatus.in_use },
       });
+
+      // ✅ Update vehicle side (consolidated here to avoid duplicate calls)
+      await db.vehicle.update({
+        where: { vehicle_id },
+        data: { battery_id },
+      });
+
+      return updatedBattery;
     } catch (error) {
       this.logger.error(`Error assigning battery to vehicle: ${error.message}`);
       throw error;
