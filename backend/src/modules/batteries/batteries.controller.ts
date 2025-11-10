@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { BatteriesService } from './batteries.service';
 import { CreateBatteryDto } from './dto/create-battery.dto';
 import { UpdateBatteryDto } from './dto/update-battery.dto';
+import { SimulateBatteryDischargeDto, SetBatteryChargeDto } from './dto/simulate-discharge.dto';
 
 @Controller('batteries')
 export class BatteriesController {
@@ -33,6 +34,46 @@ export class BatteriesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.batteriesService.findOne(+id);
+  }
+
+  /**
+   * ⭐ SIMULATE BATTERY DISCHARGE - Giả lập driver di chuyển
+   * POST /batteries/simulate-discharge
+   * Giảm current_charge của battery để simulate việc sử dụng
+   */
+  @Post('simulate-discharge')
+  simulateDischarge(@Body() dto: SimulateBatteryDischargeDto) {
+    return this.batteriesService.simulateDischarge(
+      dto.battery_id,
+      dto.new_charge,
+      dto.decrease_amount
+    );
+  }
+
+  /**
+   * ⭐ SET BATTERY CHARGE - Set charge cụ thể (admin)
+   * PATCH /batteries/set-charge
+   * Set current_charge của battery đến giá trị cụ thể
+   */
+  @Patch('set-charge')
+  setBatteryCharge(@Body() dto: SetBatteryChargeDto) {
+    return this.batteriesService.setBatteryCharge(
+      dto.battery_id,
+      dto.charge_percentage
+    );
+  }
+
+  /**
+   * ⭐ SIMULATE BATTERY CHARGING - Giả lập sạc pin
+   * POST /batteries/simulate-charging
+   * Tăng current_charge của battery (dành cho battery đang charging)
+   */
+  @Post('simulate-charging')
+  simulateCharging(@Body() body: { battery_id: number; increase_amount?: number }) {
+    return this.batteriesService.simulateCharging(
+      body.battery_id,
+      body.increase_amount
+    );
   }
 
   @Delete(':id')

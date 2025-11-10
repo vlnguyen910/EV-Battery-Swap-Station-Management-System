@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supportService } from '../../services/supportService'
-import { Search, Plus, X, Eye, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Search, Plus, X, Eye, ChevronLeft, ChevronRight, AlertCircle, Star } from 'lucide-react'
 
 export default function AdminSupportList() {
   const [supports, setSupports] = useState([])
@@ -263,7 +263,14 @@ export default function AdminSupportList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                      {ticket.rating ? `${ticket.rating}⭐` : '—'}
+                      {ticket.rating ? (
+                        <div className="flex items-center gap-1">
+                          <span>{ticket.rating.toFixed(1)}</span>
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        </div>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Link
