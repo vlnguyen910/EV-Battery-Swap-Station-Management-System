@@ -1,6 +1,5 @@
-import { IsNumber, IsInt, IsNotEmpty, IsOptional, Min, Max, IsString, IsNumberString } from "class-validator";
+import { IsNumber, IsInt, IsNotEmpty, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
 
 export class findAvailibaleStationsDto {
     @ApiProperty({ example: '1', description: 'User to find stations' })
@@ -15,11 +14,9 @@ export class findAvailibaleStationsDto {
 
     @IsOptional()
     @IsNumber()
-    @Type(() => Number)
     latitude?: number;
 
     @IsOptional()
     @IsNumber()
-    @Type(() => Number)
     longitude?: number;
 }
