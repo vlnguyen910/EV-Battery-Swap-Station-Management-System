@@ -42,7 +42,6 @@ export const API_ENDPOINTS = {
     GET_ACTIVE_STATIONS: "/stations/active",
     GET_AVAILABLE_STATIONS: "/stations/available",
     GET_SEARCH_STATIONS: "/stations/search",
-    CREATE_STATION: "/stations",
     GET_STATION: (id) => `/stations/${id}`,
     UPDATE_STATION: (id) => `/stations/${id}`,
     DELETE_STATION: (id) => `/stations/${id}`,
@@ -164,6 +163,9 @@ export const API_ENDPOINTS = {
     GET_TICKET: (id) => `/battery-transfer-ticket/${id}`,
     UPDATE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
     DELETE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
+    GET_BY_STATION: (stationId) =>
+      `/battery-transfer-ticket/station/${stationId}`,
+    GET_AVAILABLE_BATTERIES: "/battery-transfer-ticket/available-batteries", // typo từ backend
   },
 
   CONFIG: {
@@ -174,7 +176,37 @@ export const API_ENDPOINTS = {
     GET_VALUE: (name) => `/config/value/${name}`,
     UPDATE_CONFIG: (id) => `/config/${id}`,
     TOGGLE_ACTIVE: (id) => `/config/${id}/toggle`,
+    GET_SYSTEM_ALL: "/config/system/all",
+    GET_SYSTEM_KEY: (key) => `/config/system/${key}`,
     DELETE_CONFIG: (id) => `/config/${id}`,
+  },
+
+  STATISTICS: {
+    GET_DASHBOARD: "/admin/statistics/dashboard",
+    GET_REVENUE_BY_PACKAGE: "/admin/statistics/revenue/by-package",
+    GET_REVENUE_CURRENT_MONTH: "/admin/statistics/revenue/current-month",
+    GET_TOP_STATIONS: "/admin/statistics/top-stations", // Supports ?limit=10 query param
+    GET_TOP_PACKAGES: "/admin/statistics/top-packages", // Supports ?limit=10 query param
+    GET_CANCELLATIONS_CURRENT_MONTH: "/admin/statistics/cancellations/current-month",
+    GET_SUPPORT_STATS: "/admin/statistics/support-stats",
+    GET_BATTERY_TRANSFERS: "/admin/statistics/battery-transfers",
+    GET_STATION_STATS: "/admin/statistics/stations",
+  },
+
+  ADMIN: {
+    GET_DASHBOARD: "/admin/statistics/dashboard",
+    GET_REVENUE_BY_PACKAGE: "/admin/statistics/revenue/by-package",
+    GET_REVENUE_CURRENT_MONTH: "/admin/statistics/revenue/current-month",
+    GET_TOP_STATIONS: "/admin/statistics/top-stations", // Supports ?limit=10 query param
+    GET_TOP_PACKAGES: "/admin/statistics/top-packages", // Supports ?limit=10 query param
+    GET_CANCELLATIONS_CURRENT_MONTH: "/admin/statistics/cancellations/current-month",
+    GET_SUPPORT_STATS: "/admin/statistics/support-stats",
+    GET_BATTERY_TRANSFERS: "/admin/statistics/battery-transfers",
+    GET_STATION_STATS: "/admin/statistics/stations",
+  },
+
+  AI: {
+    ANALYZE_STATION_UPGRADES: "/ai/analyze-station-upgrades",
   },
 };
 
@@ -188,6 +220,22 @@ export const ROUTES = {
   ADMIN: "/admin",
   GUEST: "/guest",
   STAFF: "/staff",
+
+  // Admin Routes
+  ADMIN_DASHBOARD: "/admin/dashboard",
+  ADMIN_STATISTICS: "/admin/statistics",
+
+  // Pages
+  BOOKING: "/booking",
+  MAP: "/map",
+  PLANS: "/plans",
+  SWAP_HISTORY: "/swap-history",
+  PAYMENT: "/payment",
+  PROFILE: "/profile",
+  SUPPORT: "/support",
+  VERIFY_EMAIL: "/verify-email",
+  FORGET_PASSWORD: "/forget-password",
+  RESET_PASSWORD: "/reset-password",
 
   NOT_FOUND: "/404",
   UNAUTHORIZED: "/unauthorized",

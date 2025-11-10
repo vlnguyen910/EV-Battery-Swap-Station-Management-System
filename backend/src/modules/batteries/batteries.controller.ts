@@ -8,6 +8,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { $Enums } from '.prisma/client';
+import { SimulateBatteryDischargeDto, SetBatteryChargeDto } from './dto/simulate-discharge.dto';
 
 @UseGuards(AuthGuard, RolesGuard, EmailVerifiedGuard)
 @ApiBearerAuth('access-token')
@@ -53,6 +54,56 @@ export class BatteriesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.batteriesService.findOne(+id);
+  }
+
+  /**
+   * ⭐ SIMULATE BATTERY DISCHARGE - Giả lập driver di chuyển
+   * POST /batteries/simulate-discharge
+   * Giảm current_charge của battery để simulate việc sử dụng
+   */
+  @Post('simulate-discharge')
+  simulateDischarge(@Body() dto: SimulateBatteryDischargeDto) {
+    return this.batteriesService.simulateDischarge(
+      dto.battery_id,
+      dto.new_charge,
+      dto.decrease_amount
+    );
+  }
+
+  /**
+   * ⭐ SET BATTERY CHARGE - Set charge cụ thể (admin)
+   * PATCH /batteries/set-charge
+   * Set current_charge của battery đến giá trị cụ thể
+   */
+  @Patch('set-charge')
+  setBatteryCharge(@Body() dto: SetBatteryChargeDto) {
+    return this.batteriesService.setBatteryCharge(
+      dto.battery_id,
+      dto.charge_percentage
+    );
+  }
+
+  /**
+   * ⭐ SIMULATE BATTERY CHARGING - Giả lập sạc pin
+   * POST /batteries/simulate-charging
+   * Tăng current_charge của battery (dành cho battery đang charging)
+   */
+  @Post('simulate-charging')
+  simulateCharging(@Body() body: { battery_id: number; increase_amount?: number }) {
+    return this.batteriesService.simulateCharging(
+      body.battery_id,
+      body.increase_amount
+    );
+  }
+
+  /**
+   * ⭐ MARK BATTERY AS REPAIRED - Đánh dấu pin đã sửa xong
+   * POST /batteries/:id/mark-repaired
+   * Allow defective batteries to return to service
+   */
+  @Post(':id/mark-repaired')
+  markBatteryRepaired(@Param('id') id: string) {
+    return this.batteriesService.markBatteryRepaired(+id);
   }
 
   @Delete(':id')
