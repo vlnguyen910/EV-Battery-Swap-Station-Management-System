@@ -6,6 +6,7 @@ import { statisticService } from '../../services/statisticService';
 import MetricCards from '../../components/dashboard/MetricCards';
 import BatteryTransferStats from '../../components/dashboard/BatteryTransferStats';
 import RevenueAnalytics from '../../components/dashboard/RevenueAnalytics';
+import RevenueTrend from '../../components/dashboard/RevenueTrend';
 import TopPerformers from '../../components/dashboard/TopPerformers';
 import CancellationAnalysis from '../../components/dashboard/CancellationAnalysis';
 import SupportStats from '../../components/dashboard/SupportStats';
@@ -85,16 +86,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={loading}
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">Last 30 Days</span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
+          <div className="flex items-center flex-wrap">
             <Button
               onClick={fetchDashboard}
               disabled={loading}
@@ -131,23 +123,32 @@ export default function AdminDashboard() {
             {/* Key Metrics Cards */}
             <MetricCards data={dashboardData} />
 
-            {/* Battery Transfer Stats */}
-            <BatteryTransferStats data={dashboardData} />
 
-            {/* Revenue Analytics */}
-            <RevenueAnalytics data={dashboardData} />
+            {/* Analytics - 3 Column Row */}
+            <div className="grid grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
+              {/* Revenue Analytics */}
+              <RevenueAnalytics data={dashboardData} />
 
-            {/* Top Performers Section */}
+              {/* Revenue Trend */}
+              <RevenueTrend data={dashboardData} />
+
+              {/* Cancellation Analysis */}
+              <CancellationAnalysis data={dashboardData} />
+            </div>
+
+            {/* Top Performers */}
             <TopPerformers data={dashboardData} />
 
-            {/* Cancellation Analysis */}
-            <CancellationAnalysis data={dashboardData} />
 
-            {/* Support Stats */}
-            <SupportStats data={dashboardData} />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* Swap Analytics */}
+              <SwapAnalytics data={dashboardData} />
 
-            {/* Swap Analytics */}
-            <SwapAnalytics data={dashboardData} />
+              {/* Battery Transfer Stats */}
+              <BatteryTransferStats data={dashboardData} />
+
+            </div>
+
           </>
         )}
       </main>

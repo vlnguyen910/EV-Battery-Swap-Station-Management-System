@@ -115,7 +115,7 @@ export default function TopPerformers({ data }) {
                           {pkg.total_subscriptions}
                         </p>
                         <p className="text-xs text-success">
-                          Active: {pkg.active_subscriptions}
+                          User using: {pkg.active_subscriptions}
                         </p>
                       </div>
                     </td>
