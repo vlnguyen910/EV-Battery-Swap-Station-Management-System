@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import TransferTicketCard from './TransferTicketCard'
 import BatterySelectionModal from './BatterySelectionModal'
+import ConfirmReceiveBatteriesModal from './ConfirmReceiveBatteriesModal'
 import { useAuth } from '../../hooks/useContext'
 import batteryTransferService from '../../services/batteryTransferService'
 import { toast } from 'sonner'
@@ -26,6 +27,9 @@ function StaffTransfer() {
     const [showBatteryModal, setShowBatteryModal] = useState(false)
     const [selectedTransfer, setSelectedTransfer] = useState(null)
     const [selectedTicketType, setSelectedTicketType] = useState(null)
+
+    // Modal state for confirm receive batteries
+    const [showConfirmReceiveModal, setShowConfirmReceiveModal] = useState(false)
 
     useEffect(() => {
         if (user?.station_id) {
@@ -58,7 +62,7 @@ function StaffTransfer() {
 
             setPendingRequests(pending)
 
-            // Get tickets for history section (by station_id)
+            // Get tickets for history section (by station_id) - THIS IS TICKETS, NOT REQUESTS
             const ticketsResponse = await batteryTransferService.getTicketByStationId(user.station_id)
             let tickets = Array.isArray(ticketsResponse) ? ticketsResponse : ticketsResponse.data || [];
 
@@ -115,7 +119,14 @@ function StaffTransfer() {
         const ticketType = request.from_station_id === user?.station_id ? 'export' : 'import'
         setSelectedTransfer(request)
         setSelectedTicketType(ticketType)
-        setShowBatteryModal(true)
+
+        // For export: show battery selection modal to pick which batteries to export
+        // For import: show confirm receive modal to verify received batteries
+        if (ticketType === 'export') {
+            setShowBatteryModal(true)
+        } else {
+            setShowConfirmReceiveModal(true)
+        }
     }
 
     const handleBatterySelectionConfirm = async (selectedBatteryIds) => {
@@ -139,10 +150,25 @@ function StaffTransfer() {
         }
     }
 
-    const getStatusLabel = (status) => {
-        if (status === 'completed') return 'Completed'
-        if (status === 'in_progress') return 'In Transit'
-        return 'Pending'
+    const handleConfirmReceiveBatteries = async (receivedBatteryIds) => {
+        try {
+            // Create import ticket with received batteries
+            await batteryTransferService.createTicket({
+                transfer_request_id: selectedTransfer.transfer_request_id,
+                ticket_type: 'import',
+                station_id: user.station_id,
+                staff_id: user.user_id,
+                battery_ids: receivedBatteryIds
+            })
+            toast.success('Batteries confirmed and added to inventory')
+            setShowConfirmReceiveModal(false)
+            setSelectedTransfer(null)
+            setSelectedTicketType(null)
+            fetchData()
+        } catch (error) {
+            console.error('Error confirming received batteries:', error)
+            toast.error('Failed to confirm received batteries')
+        }
     }
 
     const formatDate = (dateString) => {
@@ -333,7 +359,7 @@ function StaffTransfer() {
                                     className="w-full sm:w-auto h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm"
                                 >
                                     <option value="">From Station</option>
-                                    {[...new Set(allRequests.map(r => r.fromStation?.station_name))].filter(Boolean).map(station => (
+                                    {[...new Set(allRequests.map(t => t.fromStation?.station_name))].filter(Boolean).map(station => (
                                         <option key={station} value={station}>{station}</option>
                                     ))}
                                 </select>
@@ -343,7 +369,7 @@ function StaffTransfer() {
                                     className="w-full sm:w-auto h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm"
                                 >
                                     <option value="">To Station</option>
-                                    {[...new Set(allRequests.map(r => r.toStation?.station_name))].filter(Boolean).map(station => (
+                                    {[...new Set(allRequests.map(t => t.toStation?.station_name))].filter(Boolean).map(station => (
                                         <option key={station} value={station}>{station}</option>
                                     ))}
                                 </select>
@@ -372,8 +398,8 @@ function StaffTransfer() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredRequests.map((request) => {
-                                        const isImport = request.to_station_id === user?.station_id
+                                    {filteredRequests.map((ticket) => {
+                                        const isImport = ticket.ticket_type === 'import'
                                         const typeBg = isImport
                                             ? 'bg-green-100 dark:bg-green-900/50'
                                             : 'bg-orange-100 dark:bg-orange-900/50'
@@ -381,36 +407,30 @@ function StaffTransfer() {
                                             ? 'text-green-700 dark:text-green-300'
                                             : 'text-orange-700 dark:text-orange-300'
 
+                                        // Ticket status is always "pending" unless explicitly marked otherwise
                                         let statusBg = 'bg-gray-100 dark:bg-gray-900/50'
                                         let statusText = 'text-gray-700 dark:text-gray-300'
-
-                                        if (request.status === 'completed') {
-                                            statusBg = 'bg-green-100 dark:bg-green-900/50'
-                                            statusText = 'text-green-800 dark:text-green-300'
-                                        } else if (request.status === 'in_progress') {
-                                            statusBg = 'bg-yellow-100 dark:bg-yellow-900/50'
-                                            statusText = 'text-yellow-800 dark:text-yellow-300'
-                                        }
+                                        let statusLabel = 'Pending'
 
                                         return (
-                                            <tr key={request.transfer_request_id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <tr key={ticket.ticket_id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                                    #{request.transfer_request_id || 'N/A'}
+                                                    #{ticket.ticket_id || 'N/A'}
                                                 </td>
-                                                <td className="px-6 py-4">{formatDate(request.created_at)}</td>
+                                                <td className="px-6 py-4">{formatDate(ticket.created_at)}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center gap-1.5 rounded-full ${typeBg} px-2 py-1 text-xs font-medium ${typeText}`}>
                                                         <i className={`ri ${isImport ? 'ri-arrow-right-up-line' : 'ri-arrow-left-down-line'} !text-sm`}></i>
                                                         {isImport ? 'IMPORT' : 'EXPORT'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">{request.fromStation?.station_name || 'Unknown'}</td>
-                                                <td className="px-6 py-4">{request.toStation?.station_name || 'Unknown'}</td>
-                                                <td className="px-6 py-4 text-right">{request.quantity || 'N/A'}</td>
-                                                <td className="px-6 py-4">{request.battery_model || 'N/A'}</td>
+                                                <td className="px-6 py-4">{ticket.fromStation?.station_name || 'Unknown'}</td>
+                                                <td className="px-6 py-4">{ticket.toStation?.station_name || 'Unknown'}</td>
+                                                <td className="px-6 py-4 text-right">{ticket.quantity || 'N/A'}</td>
+                                                <td className="px-6 py-4">{ticket.battery_model || 'N/A'}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center rounded-full ${statusBg} px-2.5 py-0.5 text-xs font-medium ${statusText}`}>
-                                                        {getStatusLabel(request.status)}
+                                                        {statusLabel}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -438,6 +458,22 @@ function StaffTransfer() {
                         setSelectedTicketType(null)
                     }}
                     onConfirm={handleBatterySelectionConfirm}
+                />
+            )}
+
+            {/* Confirm Receive Batteries Modal */}
+            {selectedTransfer && (
+                <ConfirmReceiveBatteriesModal
+                    isOpen={showConfirmReceiveModal}
+                    ticketId={selectedTransfer.transfer_request_id}
+                    transferRequestId={selectedTransfer.transfer_request_id}
+                    stationId={user?.station_id}
+                    onClose={() => {
+                        setShowConfirmReceiveModal(false)
+                        setSelectedTransfer(null)
+                        setSelectedTicketType(null)
+                    }}
+                    onConfirm={handleConfirmReceiveBatteries}
                 />
             )}
         </div>
