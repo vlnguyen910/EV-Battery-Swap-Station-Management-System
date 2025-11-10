@@ -133,7 +133,7 @@ export default function Navigation({ type = "main" }) {
             </Link>
 
             <Link
-              to="/staff/swap-requests"
+              to="/staff/transfer-requests"
               className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
             >
               <i className="ri-arrow-left-right-line mr-2 text-green-500"></i>
