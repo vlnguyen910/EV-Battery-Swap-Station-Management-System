@@ -216,15 +216,6 @@ export default function PackageDetail() {
 
                   <div className="flex flex-col">
                     <span className="font-medium text-slate-500 dark:text-slate-400 text-sm mb-1">
-                      Penalty Fee
-                    </span>
-                    <span className="text-slate-800 dark:text-slate-200 text-base">
-                      ₫{Number(pkg.penalty_fee).toLocaleString('vi-VN')}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col">
-                    <span className="font-medium text-slate-500 dark:text-slate-400 text-sm mb-1">
                       Status
                     </span>
                     <span className={`text-base font-medium ${pkg.active ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
