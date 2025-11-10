@@ -21,6 +21,7 @@ import { BatteryTransferTicketModule } from './modules/battery-transfer-ticket/b
 import { MailModule } from './modules/mail/mail.module';
 import { SystemConfigModule } from './modules/config/config.module';
 import { AiModule } from './modules/ai/ai.module';
+import { CabinetsModule } from './modules/cabinets/cabinets.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AiModule } from './modules/ai/ai.module';
     MailModule,
     SystemConfigModule,
     AiModule,
+    CabinetsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
