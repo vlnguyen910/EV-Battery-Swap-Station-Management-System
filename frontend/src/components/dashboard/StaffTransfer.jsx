@@ -69,6 +69,15 @@ function StaffTransfer() {
             // Enrich tickets with transfer request and station info
             tickets = await batteryTransferService.enrichTicketsWithTransferRequestInfo(tickets)
 
+            // Add transfer request status to each ticket for display purposes
+            tickets = tickets.map(ticket => {
+                const transferRequest = allRequests.find(req => req.transfer_request_id === ticket.transfer_request_id)
+                return {
+                    ...ticket,
+                    transfer_request_status: transferRequest?.status || 'unknown'
+                }
+            })
+
             setAllRequests(tickets)
         } catch (error) {
             console.error('Error fetching transfer data:', error)
@@ -432,10 +441,38 @@ function StaffTransfer() {
                                             ? 'text-green-700 dark:text-green-300'
                                             : 'text-orange-700 dark:text-orange-300'
 
-                                        // Ticket status is always "pending" unless explicitly marked otherwise
+                                        // Status logic: Based on transfer_request_id status
+                                        // - If transfer_request_status === 'in_progress': Show "In Transit" (export) or "Pending" (import)
+                                        // - If transfer_request_status === 'completed': Show "Completed"
                                         let statusBg = 'bg-gray-100 dark:bg-gray-900/50'
                                         let statusText = 'text-gray-700 dark:text-gray-300'
                                         let statusLabel = 'Pending'
+                                        let statusIcon = 'ri-time-line'
+
+                                        const transferRequestStatus = ticket.transfer_request_status || 'unknown'
+
+                                        if (transferRequestStatus === 'completed') {
+                                            // Transfer request completed = both export and import are done
+                                            statusBg = 'bg-green-100 dark:bg-green-900/50'
+                                            statusText = 'text-green-700 dark:text-green-300'
+                                            statusLabel = 'Completed'
+                                            statusIcon = 'ri-check-double-line'
+                                        } else if (transferRequestStatus === 'in_progress') {
+                                            // Transfer request still in progress
+                                            if (isImport) {
+                                                // Import ticket created but transfer_request not completed yet
+                                                statusBg = 'bg-yellow-100 dark:bg-yellow-900/50'
+                                                statusText = 'text-yellow-700 dark:text-yellow-300'
+                                                statusLabel = 'Pending'
+                                                statusIcon = 'ri-time-line'
+                                            } else {
+                                                // Export ticket = batteries in transit
+                                                statusBg = 'bg-blue-100 dark:bg-blue-900/50'
+                                                statusText = 'text-blue-700 dark:text-blue-300'
+                                                statusLabel = 'In Transit'
+                                                statusIcon = 'ri-truck-line'
+                                            }
+                                        }
 
                                         return (
                                             <tr key={ticket.ticket_id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -454,7 +491,8 @@ function StaffTransfer() {
                                                 <td className="px-6 py-4 text-right">{ticket.quantity || 'N/A'}</td>
                                                 <td className="px-6 py-4">{ticket.battery_model || 'N/A'}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center rounded-full ${statusBg} px-2.5 py-0.5 text-xs font-medium ${statusText}`}>
+                                                    <span className={`inline-flex items-center gap-1.5 rounded-full ${statusBg} px-2.5 py-0.5 text-xs font-medium ${statusText}`}>
+                                                        <i className={`ri ${statusIcon} !text-sm`}></i>
                                                         {statusLabel}
                                                     </span>
                                                 </td>
