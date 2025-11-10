@@ -15,7 +15,7 @@ export default function CancellationAnalysis({ data }) {
   const chartData = cancellations.by_package || [];
 
   return (
-    <Card className="mb-8 overflow-hidden">
+    <Card className="overflow-hidden">
       <div className="p-5 border-b border-gray-200 dark:border-gray-800">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-danger" />
@@ -27,63 +27,12 @@ export default function CancellationAnalysis({ data }) {
         {/* Total Cancellations */}
         <div className="bg-danger/5 rounded-lg p-4">
           <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">
-            Total Cancellations
+            Total Cancellations:
           </p>
           <p className="text-3xl font-bold text-danger">
             {cancellations.total_cancellations}
           </p>
         </div>
-
-        {/* Top Cancelled Package */}
-        {cancellations.top_cancelled_package && (
-          <div className="bg-warning/5 rounded-lg p-4">
-            <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">
-              Most Cancelled Package
-            </p>
-            <p className="font-semibold text-gray-900 dark:text-white mb-1">
-              {cancellations.top_cancelled_package.package_name}
-            </p>
-            <p className="text-lg font-bold text-warning">
-              {cancellations.top_cancelled_package.cancellation_count} cancellations
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Base: {formatCurrency(cancellations.top_cancelled_package.base_price)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Cancellation by Package Chart */}
-      <div className="p-5">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-          Cancellations by Package
-        </h4>
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="package_name" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
-                }}
-              />
-              <Bar
-                dataKey="cancellation_count"
-                fill="#ef4444"
-                name="Cancellations"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            No cancellation data available
-          </div>
-        )}
       </div>
 
       {/* Detailed Table */}

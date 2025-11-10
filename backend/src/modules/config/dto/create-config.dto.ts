@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsEnum, IsNotEmpty } from 'class-validator';
 
 export enum ConfigTypeEnum {
@@ -11,18 +12,22 @@ export enum ConfigTypeEnum {
 }
 
 export class CreateConfigDto {
+  @ApiProperty({ description: 'Type of the configuration', enum: ConfigTypeEnum })
   @IsEnum(ConfigTypeEnum)
   @IsNotEmpty()
   type: string;
 
+  @ApiProperty({ description: 'Name of the configuration' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ description: 'Value of the configuration' })
   @IsNumber()
   @IsNotEmpty()
   value: number;
 
+  @ApiProperty({ description: 'Description of the configuration', required: false })
   @IsString()
   @IsOptional()
   description?: string;

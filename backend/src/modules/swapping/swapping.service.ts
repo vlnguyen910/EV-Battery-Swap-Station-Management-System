@@ -39,6 +39,14 @@ export class SwappingService {
             // Check vehicle is exist
             const vehicle = await this.vehiclesService.findOne(vehicle_id);
 
+            // ✅ FIXED: Check vehicle status is active
+            if (vehicle.status !== 'active') {
+                throw new BadRequestException(
+                    `Vehicle is not active (current status: ${vehicle.status}). ` +
+                    `Please ensure the vehicle has an active subscription.`
+                );
+            }
+
             // Check user subscription is valid
             const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle_id);
             if (subscription.status === SubscriptionStatus.pending_penalty_payment) {
@@ -90,8 +98,11 @@ export class SwappingService {
             return await this.databaseService.$transaction(async (prisma) => {
 
                 await this.batteriesService.returnBatteryToStation(return_battery_id, station_id, prisma);
+                
+                // ✅ FIXED: assignBatteryToVehicle now updates both Battery AND Vehicle
+                // No need to call updateBatteryId separately
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
-                await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
+                
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
 
                 const returnBattery = await this.batteriesService.findOne(return_battery_id);
@@ -144,8 +155,9 @@ export class SwappingService {
         try {
             return await this.databaseService.$transaction(async (prisma) => {
 
+                // ✅ FIXED: assignBatteryToVehicle now updates both Battery AND Vehicle
+                // No need to call updateBatteryId separately
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
-                await this.vehiclesService.updateBatteryId(vehicle_id, taken_battery_id, prisma);
 
                 //Create swap transaction 
                 const swapRecord = await this.swapTransactionsService.create({

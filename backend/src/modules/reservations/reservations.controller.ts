@@ -5,7 +5,10 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { $Enums, ReservationStatus } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('reservations')
+@ApiBearerAuth('access-token')
 @Controller('reservations')
 @UseGuards(AuthGuard, RolesGuard)
 export class ReservationsController {
@@ -13,29 +16,39 @@ export class ReservationsController {
 
   @Roles($Enums.Role.driver)
   @Post()
+  @ApiOperation({ summary: 'Create a new reservation' })
+  @ApiResponse({ status: 201, description: 'The reservation has been successfully created.' })
   create(@Body() createReservationDto: CreateReservationDto) {
     return this.reservationsService.create(createReservationDto);
   }
 
   @Roles($Enums.Role.driver)
   @Get('/user/:id')
+  @ApiOperation({ summary: 'Get all reservations by user ID' })
+  @ApiResponse({ status: 200, description: 'List of reservations for the specified user.' })
   findAllByUserId(@Param('id', ParseIntPipe) userId: number) {
     return this.reservationsService.findManyByUserId(userId);
   }
 
   @Roles($Enums.Role.station_staff)
   @Get('/station/:id')
+  @ApiOperation({ summary: 'Get all reservations by station ID' })
+  @ApiResponse({ status: 200, description: 'List of reservations for the specified station.' })
   findAllByStationId(@Param('id', ParseIntPipe) stationId: number) {
     return this.reservationsService.findManyByStationId(stationId);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get reservation by ID' })
+  @ApiResponse({ status: 200, description: 'The reservation details.' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.reservationsService.findOne(+id);
   }
 
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update reservation status' })
+  @ApiResponse({ status: 200, description: 'The reservation status has been successfully updated.' })
   updateStatus(@Param('id', ParseIntPipe) id: number,
     @Body() input: {
       user_id: number,

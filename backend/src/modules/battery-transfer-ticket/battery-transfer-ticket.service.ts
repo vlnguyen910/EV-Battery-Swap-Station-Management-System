@@ -149,6 +149,7 @@ export class BatteryTransferTicketService {
             },
           });
 
+          //Update transfer request status to completed
           await prisma.batteryTransferRequest.update({
             where: { transfer_request_id: dto.transfer_request_id },
             data: { status: TransferStatus.completed },
@@ -226,32 +227,43 @@ export class BatteryTransferTicketService {
         quantity: transferRequest.quantity
       };
 
+      let availableBatteries: any[] = [];
       // ✅ Dựa vào ticket type để filter
       if (dto.ticket_type === TicketType.export) {
         // Export: pin phải ở station, không in_transit
         findDto = {
           ...findDto,
-          station_id: dto.station_id,
+          station_id: transferRequest.from_station_id,
           status: BatteryStatus.full || BatteryStatus.charging
         };
+
+        availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
+
+        if (availableBatteries.length < transferRequest.quantity) {
+          throw new BadRequestException(
+            `Not enough available batteries. Required: ${transferRequest.quantity}, Available: ${availableBatteries.length}`
+          );
+        }
       } else if (dto.ticket_type === TicketType.import) {
         // Import: pin phải đang in_transit
-        findDto = {
-          ...findDto,
-          status: BatteryStatus.in_transit,
-          station_id: null,
-        };
+        availableBatteries = await this.databaseService.batteryTransferTicket.findMany({
+          where: {
+            transfer_request_id: dto.transfer_request_id,
+          },
+          select: {
+            batteries: {
+              select: {
+                battery: true,
+              },
+            }
+          },
+        });
+
+        if (availableBatteries.length === 0) {
+          throw new BadRequestException('No batteries found for import transfer request');
+        }
       } else {
         throw new BadRequestException('Invalid ticket type');
-      }
-
-      //check có đủ pin để xuất không
-      const availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
-
-      if (availableBatteries.length < transferRequest.quantity) {
-        throw new BadRequestException(
-          `Not enough available batteries. Required: ${transferRequest.quantity}, Available: ${availableBatteries.length}`
-        );
       }
 
       return {

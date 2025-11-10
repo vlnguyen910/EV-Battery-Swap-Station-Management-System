@@ -3,5 +3,5 @@ import { CreateBatteryTransferTicketDto } from "./create-battery-transfer-ticket
 
 export class findBatteryAvailibleForTransfers extends PickType(
     CreateBatteryTransferTicketDto,
-    ['transfer_request_id', 'ticket_type', 'station_id']
+    ['transfer_request_id', 'ticket_type']
 ) { }
