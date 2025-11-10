@@ -132,37 +132,15 @@ export default function Navigation({ type = "main" }) {
               Swap Requests
             </Link>
 
-            {/* Dropdown Status */}
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
-              >
-                <i className="ri-battery-2-charge-line mr-2 text-blue-500"></i>
-                Battery Status
-                <i
-                  className={`ri-arrow-down-s-line ml-1 transition-transform ${isDropdownOpen ? "rotate-180" : ""
-                    }`}
-                ></i>
-              </button>
+            <Link
+              to="/staff/transfer-requests"
+              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center"
+            >
+              <i className="ri-arrow-left-right-line mr-2 text-green-500"></i>
+              Transfer Requests
+            </Link>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 shadow-lg rounded-md z-10">
-                  <button className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center w-full px-3 py-2">
-                    <i className="ri-time-line mr-2 text-blue-500"></i>
-                    Pending
-                  </button>
-                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
-                    <i className="ri-loader-2-line mr-2 animate-spin text-yellow-500"></i>
-                    In progress
-                  </button>
-                  <button className="text-gray-600 hover:text-blue-600 transition-colors flex items-center w-full px-3 py-2">
-                    <i className="ri-check-double-line mr-2 text-green-500"></i>
-                    Completed
-                  </button>
-                </div>
-              )}
-            </div>
+
 
             <div className="flex items-center space-x-3">
               <Link
