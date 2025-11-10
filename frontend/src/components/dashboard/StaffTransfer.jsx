@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import TransferTicketCard from './TransferTicketCard'
+import BatterySelectionModal from './BatterySelectionModal'
 import { useAuth } from '../../hooks/useContext'
 import batteryTransferService from '../../services/batteryTransferService'
 import { toast } from 'sonner'
@@ -21,6 +22,11 @@ function StaffTransfer() {
     const [exportIndex, setExportIndex] = useState(0)
     const [importIndex, setImportIndex] = useState(0)
 
+    // Modal state for battery selection
+    const [showBatteryModal, setShowBatteryModal] = useState(false)
+    const [selectedTransfer, setSelectedTransfer] = useState(null)
+    const [selectedTicketType, setSelectedTicketType] = useState(null)
+
     useEffect(() => {
         if (user?.station_id) {
             fetchData()
@@ -36,17 +42,30 @@ function StaffTransfer() {
     const fetchData = async () => {
         try {
             setLoading(true)
-            const response = await batteryTransferService.getAllRequests()
-            const requests = response.data || response
+
+            // Get all requests for pending section (imports/exports)
+            const allResponse = await batteryTransferService.getAllRequests()
+            let allRequests = Array.isArray(allResponse) ? allResponse : allResponse.data || [];
+
+            // Enrich requests with station info (names)
+            allRequests = await batteryTransferService.enrichRequestsWithStationInfo(allRequests)
 
             // Filter pending requests for current station
-            const pending = requests.filter(
+            const pending = allRequests.filter(
                 req => req.status === 'in_progress' &&
                     (req.from_station_id === user.station_id || req.to_station_id === user.station_id)
             )
 
             setPendingRequests(pending)
-            setAllRequests(requests)
+
+            // Get tickets for history section (by station_id)
+            const ticketsResponse = await batteryTransferService.getTicketByStationId(user.station_id)
+            let tickets = Array.isArray(ticketsResponse) ? ticketsResponse : ticketsResponse.data || [];
+
+            // Enrich tickets with transfer request and station info
+            tickets = await batteryTransferService.enrichTicketsWithTransferRequestInfo(tickets)
+
+            setAllRequests(tickets)
         } catch (error) {
             console.error('Error fetching transfer data:', error)
             toast.error('Failed to load transfer requests')
@@ -91,12 +110,28 @@ function StaffTransfer() {
         setFilteredRequests(filtered)
     }
 
-    const handleConfirm = async (request) => {
+    const handleConfirm = (request) => {
+        // Determine ticket type based on whether it's export or import
+        const ticketType = request.from_station_id === user?.station_id ? 'export' : 'import'
+        setSelectedTransfer(request)
+        setSelectedTicketType(ticketType)
+        setShowBatteryModal(true)
+    }
+
+    const handleBatterySelectionConfirm = async (selectedBatteryIds) => {
         try {
-            await batteryTransferService.updateRequest(request.transfer_request_id, {
-                status: 'completed'
+            // Create ticket with selected batteries
+            await batteryTransferService.createTicket({
+                transfer_request_id: selectedTransfer.transfer_request_id,
+                ticket_type: selectedTicketType,
+                station_id: user.station_id,
+                staff_id: user.user_id,
+                battery_ids: selectedBatteryIds
             })
-            toast.success('Transfer confirmed successfully')
+            toast.success('Transfer confirmed and ticket created successfully')
+            setShowBatteryModal(false)
+            setSelectedTransfer(null)
+            setSelectedTicketType(null)
             fetchData()
         } catch (error) {
             console.error('Error confirming transfer:', error)
@@ -193,11 +228,11 @@ function StaffTransfer() {
                                     buttonText="Confirm & Prepare for Dispatch"
                                     onConfirm={() => handleConfirm(currentExport)}
                                     borderColor="border-orange-500"
-                                    icon="north_east"
+                                    icon="ri-arrow-right-up-line"
                                     iconColor="text-orange-500"
                                 />
                             ) : (
-                                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-orange-300 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/10 min-h-[220px]">
+                                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-orange-300 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/10 min-h-[261px]">
                                     <p className="text-orange-600 dark:text-orange-400 font-medium text-lg">No pending exports</p>
                                 </div>
                             )}
@@ -249,11 +284,11 @@ function StaffTransfer() {
                                     buttonText="Receive & Confirm Inventory"
                                     onConfirm={() => handleConfirm(currentImport)}
                                     borderColor="border-green-500"
-                                    icon="south_west"
+                                    icon="ri-arrow-left-down-line"
                                     iconColor="text-green-500"
                                 />
                             ) : (
-                                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-green-300 dark:border-green-900/50 bg-green-50 dark:bg-green-900/10 min-h-[220px]">
+                                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-green-300 dark:border-green-900/50 bg-green-50 dark:bg-green-900/10 min-h-[261px]">
                                     <p className="text-green-600 dark:text-green-400 font-medium text-lg">No pending imports</p>
                                 </div>
                             )}
@@ -270,7 +305,7 @@ function StaffTransfer() {
                     {/* Search and Filter Bar */}
                     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-4 mb-4">
                         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                            <div className="relative w-full md:w-auto md:flex-1">
+                            <div className="relative w-full md:w-auto md:flex-2">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
                                     search
                                 </span>
@@ -282,7 +317,7 @@ function StaffTransfer() {
                                     type="text"
                                 />
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                            <div className="flex flex-col-3 sm:flex-row gap-2 w-full md:w-auto">
                                 <select
                                     value={filterType}
                                     onChange={(e) => setFilterType(e.target.value)}
@@ -365,9 +400,7 @@ function StaffTransfer() {
                                                 <td className="px-6 py-4">{formatDate(request.created_at)}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center gap-1.5 rounded-full ${typeBg} px-2 py-1 text-xs font-medium ${typeText}`}>
-                                                        <span className="material-symbols-outlined !text-sm">
-                                                            {isImport ? 'south_west' : 'north_east'}
-                                                        </span>
+                                                        <i className={`ri ${isImport ? 'ri-arrow-right-up-line' : 'ri-arrow-left-down-line'} !text-sm`}></i>
                                                         {isImport ? 'IMPORT' : 'EXPORT'}
                                                     </span>
                                                 </td>
@@ -389,6 +422,24 @@ function StaffTransfer() {
                     </div>
                 </section>
             </div>
+
+            {/* Battery Selection Modal */}
+            {selectedTransfer && (
+                <BatterySelectionModal
+                    isOpen={showBatteryModal}
+                    ticketId={selectedTransfer.transfer_request_id}
+                    requiredQuantity={selectedTransfer.quantity}
+                    transferRequestId={selectedTransfer.transfer_request_id}
+                    ticketType={selectedTicketType}
+                    stationId={user?.station_id}
+                    onClose={() => {
+                        setShowBatteryModal(false)
+                        setSelectedTransfer(null)
+                        setSelectedTicketType(null)
+                    }}
+                    onConfirm={handleBatterySelectionConfirm}
+                />
+            )}
         </div>
     )
 }

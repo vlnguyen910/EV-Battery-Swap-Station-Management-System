@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Battery Transfer Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#007BFF",
+              "background-light": "#F8F9FA",
+              "background-dark": "#102210",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+<main class="flex-1 p-8">
+<div class="max-w-7xl mx-auto">
+<div class="flex items-center justify-between gap-3 mb-8">
+<h1 class="text-[#212529] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Battery Transfer Management</h1>
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCn-z7TetZxxv77wC0Y5NPQaOjlawBcImYr0ZeebQ6e2YPG-KswNMbIoH_ZfG11SGteQ_VJ-ukYV2EjA9sfjsYKXzHMlaVwPKXkghfVp-a2LfVDA901gqGRc-o97l6g2jAxHfyJ0m-L6S71LmOzkqpNWIBb-hvenCs3_rIH2p7_4QWmjFiwADlQ-9BfifsCPYvNmaDPTnJfLMF-RP7dM_vyVOYYeQ2raABRtPjHzwVumYRMHg92FQGIQk_xoh0LGtjde9x-gpaxO7PO");'></div>
+<div class="flex flex-col">
+<h2 class="text-[#212529] dark:text-gray-100 text-base font-medium leading-normal">John Doe</h2>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">Station A Staff</p>
+</div>
+</div>
+</div>
+<section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="flex flex-col">
+<div class="flex items-center justify-between pb-3 pt-5">
+<h2 class="text-[#212529] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Pending Exports</h2>
+<div class="flex items-center gap-2">
+<span class="text-sm text-gray-600 dark:text-gray-400">Export 1 of 3</span>
+<div class="flex items-center">
+<button class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+<span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">chevron_left</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-stretch justify-start rounded-lg border-2 border-orange-500 bg-white dark:bg-gray-900 shadow-sm min-h-[220px]">
+<div class="flex w-full grow flex-col items-stretch justify-between gap-4 p-6">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-500">north_east</span>
+<p class="text-orange-500 text-sm font-bold leading-normal tracking-wider">EXPORT</p>
+</div>
+<p class="text-[#212529] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">From: Station A (Your Station)</p>
+<div class="flex flex-col gap-1">
+<p class="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">To: Station B</p>
+<p class="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">Quantity: 50 | Model: Tesla Model 3</p>
+</div>
+</div>
+<div class="flex justify-end">
+<button class="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<span class="truncate">Confirm &amp; Prepare for Dispatch</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center justify-between pb-3 pt-5">
+<h2 class="text-[#212529] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Pending Imports</h2>
+<div class="flex items-center gap-2">
+<span class="text-sm text-gray-600 dark:text-gray-400">Import 1 of 2</span>
+<div class="flex items-center">
+<button class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+<span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">chevron_left</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined text-xl text-gray-600 dark:text-gray-400">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-stretch justify-start rounded-lg border-2 border-green-500 bg-white dark:bg-gray-900 shadow-sm min-h-[220px]">
+<div class="flex w-full grow flex-col items-stretch justify-between gap-4 p-6">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500">south_west</span>
+<p class="text-green-500 text-sm font-bold leading-normal tracking-wider">IMPORT</p>
+</div>
+<p class="text-[#212529] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">To: Station A (Your Station)</p>
+<div class="flex flex-col gap-1">
+<p class="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">From: Station D</p>
+<p class="text-gray-600 dark:text-gray-300 text-base font-normal leading-normal">Quantity: 30 | Model: Tesla Model 3</p>
+</div>
+</div>
+<div class="flex justify-end">
+<button class="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<span class="truncate">Receive &amp; Confirm Inventory</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-10">
+<h2 class="text-[#212529] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] pb-3 pt-5">Transfer History</h2>
+<div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-4 mb-4">
+<div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+<div class="relative w-full md:w-auto md:flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">search</span>
+<input class="w-full md:max-w-xs h-10 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm" placeholder="Search by Ticket ID, Station..." type="text"/>
+</div>
+<div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+<select class="w-full sm:w-auto h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm">
+<option>Type: All</option>
+<option>Import</option>
+<option>Export</option>
+</select>
+<select class="w-full sm:w-auto h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm">
+<option>From Station</option>
+<option>Station A</option>
+<option>Station B</option>
+</select>
+<select class="w-full sm:w-auto h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-primary focus:border-primary text-sm">
+<option>To Station</option>
+<option>Station A</option>
+<option>Station B</option>
+</select>
+<button class="w-full sm:w-auto flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<span>Apply Filters</span>
+</button>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+<table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+<thead class="bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+<tr>
+<th class="px-6 py-3" scope="col">Ticket ID</th>
+<th class="px-6 py-3" scope="col">Date</th>
+<th class="px-6 py-3" scope="col">Type</th>
+<th class="px-6 py-3" scope="col">From</th>
+<th class="px-6 py-3" scope="col">To</th>
+<th class="px-6 py-3 text-right" scope="col">Quantity</th>
+<th class="px-6 py-3" scope="col">Model</th>
+<th class="px-6 py-3" scope="col">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b dark:border-gray-700">
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">#T-58219</td>
+<td class="px-6 py-4">2023-10-25</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 dark:bg-orange-900/50 px-2 py-1 text-xs font-medium text-orange-700 dark:text-orange-300">
+<span class="material-symbols-outlined !text-sm">north_east</span>
+                                            EXPORT
+                                        </span>
+</td>
+<td class="px-6 py-4">Station A</td>
+<td class="px-6 py-4">Station C</td>
+<td class="px-6 py-4 text-right">25</td>
+<td class="px-6 py-4">NIO ET5</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">Completed</span>
+</td>
+</tr>
+<tr class="border-b dark:border-gray-700">
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">#T-58218</td>
+<td class="px-6 py-4">2023-10-24</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-900/50 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300">
+<span class="material-symbols-outlined !text-sm">south_west</span>
+                                            IMPORT
+                                        </span>
+</td>
+<td class="px-6 py-4">Station D</td>
+<td class="px-6 py-4">Station A</td>
+<td class="px-6 py-4 text-right">30</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">Completed</span>
+</td>
+</tr>
+<tr class="border-b dark:border-gray-700">
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">#T-58217</td>
+<td class="px-6 py-4">2023-10-22</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 dark:bg-orange-900/50 px-2 py-1 text-xs font-medium text-orange-700 dark:text-orange-300">
+<span class="material-symbols-outlined !text-sm">north_east</span>
+                                            EXPORT
+                                        </span>
+</td>
+<td class="px-6 py-4">Station A</td>
+<td class="px-6 py-4">Station B</td>
+<td class="px-6 py-4 text-right">50</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/50 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-300">In Transit</span>
+</td>
+</tr>
+<tr class="border-b dark:border-gray-700">
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">#T-58215</td>
+<td class="px-6 py-4">2023-10-21</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-900/50 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300">
+<span class="material-symbols-outlined !text-sm">south_west</span>
+                                            IMPORT
+                                        </span>
+</td>
+<td class="px-6 py-4">Station F</td>
+<td class="px-6 py-4">Station A</td>
+<td class="px-6 py-4 text-right">15</td>
+<td class="px-6 py-4">Renault Zoe</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">Completed</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+<div class="relative flex flex-col w-full max-w-4xl max-h-[90vh] bg-background-light dark:bg-gray-900 rounded-xl shadow-2xl">
+<div class="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+<div class="flex flex-col gap-1">
+<h2 class="text-2xl font-bold text-[#212529] dark:text-white">Select Batteries for Dispatch (Ticket #12345)</h2>
+<p class="text-base text-gray-600 dark:text-gray-400">Please select 50 available batteries</p>
+</div>
+<button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+<thead class="bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+<tr>
+<th class="p-4 w-12" scope="col">
+<input class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</th>
+<th class="px-6 py-3" scope="col">Battery ID</th>
+<th class="px-6 py-3" scope="col">Model</th>
+<th class="px-6 py-3" scope="col">State of Charge (SoC)</th>
+<th class="px-6 py-3" scope="col">State of Health (SoH)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-001A</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">98%</td>
+<td class="px-6 py-4">99%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input checked="" class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-002B</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">95%</td>
+<td class="px-6 py-4">97%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input checked="" class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-003C</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">99%</td>
+<td class="px-6 py-4">100%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-004D</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">92%</td>
+<td class="px-6 py-4">96%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input checked="" class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-005E</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">97%</td>
+<td class="px-6 py-4">99%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-006F</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">96%</td>
+<td class="px-6 py-4">98%</td>
+</tr>
+<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+<td class="p-4">
+<input class="size-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-primary focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">BAT-007G</td>
+<td class="px-6 py-4">Tesla Model 3</td>
+<td class="px-6 py-4">94%</td>
+<td class="px-6 py-4">97%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700">
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-[#212529] dark:text-white">Selected:</span>
+<span class="text-sm font-bold text-primary">3 / 50</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-gray-200 dark:bg-gray-700 text-[#212529] dark:text-white text-sm font-medium leading-normal hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400">
+<span class="truncate">Cancel</span>
+</button>
+<button class="flex min-w-[84px] max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-gray-400 disabled:cursor-not-allowed dark:disabled:bg-gray-500" disabled="">
+<span class="truncate">Confirm Dispatch of 50 Batteries</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

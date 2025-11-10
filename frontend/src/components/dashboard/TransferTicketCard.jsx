@@ -18,7 +18,7 @@ export default function TransferTicketCard({
             <div className="flex w-full grow flex-col items-stretch justify-between gap-4 p-6">
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                        <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
+                        <i className={`${icon} ${iconColor}`}></i>
                         <p className={`${iconColor} text-sm font-bold leading-normal tracking-wider`}>{type.toUpperCase()}</p>
                     </div>
                     <p className="text-[#212529] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">{stationLabel}</p>

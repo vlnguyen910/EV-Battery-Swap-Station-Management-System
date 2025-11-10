@@ -29,7 +29,7 @@ export class BatteryTransferTicketController {
   }
 
 
-  @Post('availiable-batteries')
+  @Post('available-batteries')
   findAvailibaleBatteries(@Body() dto: findBatteryAvailibleForTransfers) {
     return this.batteryTransferTicketService.getAvailableBatteriesForTransfer(dto);
   }

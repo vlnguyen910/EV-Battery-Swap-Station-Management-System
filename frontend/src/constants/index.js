@@ -42,7 +42,6 @@ export const API_ENDPOINTS = {
     GET_ACTIVE_STATIONS: "/stations/active",
     GET_AVAILABLE_STATIONS: "/stations/available",
     GET_SEARCH_STATIONS: "/stations/search",
-    CREATE_STATION: "/stations",
     GET_STATION: (id) => `/stations/${id}`,
     UPDATE_STATION: (id) => `/stations/${id}`,
     DELETE_STATION: (id) => `/stations/${id}`,
@@ -164,6 +163,9 @@ export const API_ENDPOINTS = {
     GET_TICKET: (id) => `/battery-transfer-ticket/${id}`,
     UPDATE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
     DELETE_TICKET: (id) => `/battery-transfer-ticket/${id}`,
+    GET_BY_STATION: (stationId) =>
+      `/battery-transfer-ticket/station/${stationId}`,
+    GET_AVAILABLE_BATTERIES: "/battery-transfer-ticket/available-batteries", // typo từ backend
   },
 
   CONFIG: {
