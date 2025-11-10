@@ -18,6 +18,7 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -28,6 +29,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response
@@ -46,6 +49,8 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({ summary: 'User registration' })
+  @ApiResponse({ status: 201, description: 'User successfully registered.' })
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
@@ -53,6 +58,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Access token successfully refreshed.' })
   async refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
@@ -70,6 +77,8 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Google OAuth2 login' })
+  @ApiResponse({ status: 302, description: 'Redirect to Google for authentication.' })
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth(@Req() req: Request) {
@@ -78,6 +87,8 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth2 callback' })
+  @ApiResponse({ status: 302, description: 'Redirect to frontend with tokens.' })
   async googleAuthRedirect(
     @Req() req: Request,
     @Res({ passthrough: true }) response: Response
@@ -97,22 +108,30 @@ export class AuthController {
   }
 
   @Get('verify-email')
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiResponse({ status: 200, description: 'Email successfully verified.' })
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email successfully resent.' })
   async resendVerificationEmail(@Body('email') email: string) {
     return this.authService.resendVerificationEmail(email);
   }
 
   @Post('forget-password')
+  @ApiOperation({ summary: 'Send password reset email' })
+  @ApiResponse({ status: 200, description: 'Password reset email successfully sent.' })
   async sendEmailForgetPassword(@Body('email') email: string) {
     return this.authService.forgetPassword(email);
   }
 
   @Post('reset-password')
+  @ApiOperation({ summary: 'Reset user password' })
+  @ApiResponse({ status: 200, description: 'Password successfully reset.' })
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto
   ) {
