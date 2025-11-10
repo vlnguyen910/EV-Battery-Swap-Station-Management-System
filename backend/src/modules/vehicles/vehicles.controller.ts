@@ -36,7 +36,7 @@ export class VehiclesController {
   }
 
   @Patch('add-vehicle')
-  @Roles($Enums.Role.driver, $Enums.Role.admin)
+  @Roles($Enums.Role.driver) // ✅ FIXED: Only drivers can own vehicles (removed admin)
   addVehicleToCurrentUser(
     @Body() addVehicleDto: AddVehicleDto,
     @Req() req: Request,
