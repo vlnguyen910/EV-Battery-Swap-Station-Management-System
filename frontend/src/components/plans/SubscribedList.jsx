@@ -128,7 +128,7 @@ export default function SubscribedList({ subscriptions, onRefresh }) {
                         <p className="text-xs text-gray-500 mb-1">Linked Vehicle</p>
                         <p className="text-sm font-semibold text-gray-800">
                           {vehicle 
-                            ? `${vehicle.brand || ''} ${vehicle.model || ''} (${vehicle.license_plate || 'N/A'})`
+                            ? `${vehicle.vin || 'N/A'}`
                             : 'No vehicle assigned'
                           }
                         </p>

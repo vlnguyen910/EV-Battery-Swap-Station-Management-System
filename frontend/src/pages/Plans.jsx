@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { toast } from 'sonner'
 import PlansList from '../components/plans/PlansList'
 import SubscribedList from '../components/plans/SubscribedList'
 import CancelledSubscriptions from '../components/plans/CancelledSubscriptions'
@@ -161,7 +162,7 @@ export default function Plans() {
   // Called when user clicks Pay in modal
   const handlePay = async (vehicleId) => {
     if (!user?.user_id || !selectedPlan) {
-      alert('Missing user or package info')
+      toast.error('Missing user or package info')
       return
     }
 
@@ -179,11 +180,11 @@ export default function Plans() {
       if (redirectUrl) {
         window.location.href = redirectUrl
       } else {
-        alert('Payment URL not returned by server')
+        toast.error('Payment URL not returned by server')
       }
     } catch (err) {
       console.error('Payment creation failed', err)
-      alert('Payment creation failed: ' + (err.message || err))
+      toast.error('Payment creation failed: ' + (err.message || err))
     } finally {
       setPaying(false)
     }
@@ -192,7 +193,7 @@ export default function Plans() {
   // Thanh toan tien mat
   const handlePayDirectly = async (vehicleId) => {
     if (!user?.user_id || !selectedPlan) {
-      alert('Missing user or package info')
+      toast.error('Missing user or package info')
       return
     }
 
@@ -208,16 +209,16 @@ export default function Plans() {
       const res = await paymentService.createDirectPaymentWithFees(payload)
       
       if (res) {
-        alert('Payment created successfully! Waiting for staff approval.')
+        toast.success('Payment created successfully! Waiting for staff approval.')
         setModalOpen(false)
         // Refresh subscriptions after payment
         await fetchAllData()
       } else {
-        alert('Payment creation failed')
+        toast.error('Payment creation failed')
       }
     } catch (err) {
       console.error('Direct payment creation failed', err)
-      alert('Payment creation failed: ' + (err.message || err))
+      toast.error('Payment creation failed: ' + (err.message || err))
     } finally {
       setPaying(false)
     }

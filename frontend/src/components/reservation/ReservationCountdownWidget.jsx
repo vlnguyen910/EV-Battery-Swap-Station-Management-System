@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Battery, MapPin, Clock, X, Zap, UserCog } from 'lucide-react';
+import { toast } from 'sonner';
 import { useReservation, useAuth } from '../../hooks/useContext';
 import { useNavigate } from 'react-router-dom';
 import BookingSuccessHeader from '../booking/BookingSuccessHeader';
@@ -33,7 +34,7 @@ export default function ReservationCountdownWidget() {
             // Auto-cancel when time expires (scheduled → cancelled)
             await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
             clearActiveReservation();
-            alert('Your reservation has expired and been cancelled');
+            toast.info('Your reservation has expired and been cancelled');
         } catch (error) {
             console.error('Failed to cancel expired reservation:', error);
         }
@@ -89,7 +90,7 @@ export default function ReservationCountdownWidget() {
             console.error('Failed to cancel reservation (api):', error);
             // revert optimistic UI and inform the user
             setShowCancelledScreen(false);
-            alert('Failed to cancel reservation. Please try again.');
+            toast.error('Failed to cancel reservation. Please try again.');
         } finally {
             setIsCancelling(false);
         }
