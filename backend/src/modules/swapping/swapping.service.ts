@@ -26,10 +26,11 @@ export class SwappingService {
 
     async swapBatteries(swapDto: SwappingDto) {
         const { user_id, vehicle_id, station_id } = swapDto;
-        const KM_PER_PERCENT: number = 5; // Example: 5 km per 1% battery
+        const KM_PER_PERCENT: number = 5;
         const FULL_BATTERY_PERCENT: number = 100;
 
         try {
+            // ✅ Move ALL validation OUTSIDE transaction to reduce transaction time
             // Check user is exist
             const user = await this.usersService.findOneById(user_id);
 
@@ -39,7 +40,7 @@ export class SwappingService {
             // Check vehicle is exist
             const vehicle = await this.vehiclesService.findOne(vehicle_id);
 
-            // ✅ FIXED: Check vehicle status is active
+            // Check vehicle status is active
             if (vehicle.status !== 'active') {
                 throw new BadRequestException(
                     `Vehicle is not active (current status: ${vehicle.status}). ` +
@@ -57,31 +58,30 @@ export class SwappingService {
                 throw new BadRequestException('No active subscription found for this vehicle. Please subscribe to a plan to swap batteries.');
             }
 
-            //check is use have reservation at this station
+            // Check reservation
             const reservation = await this.reservationsService.findOneScheduledForVehicleByUserId(user_id, vehicle_id);
             let taken_battery_id: number;
+
             if (reservation) {
                 this.logger.log(`User has a reservation: ${JSON.stringify(reservation)}`);
-                taken_battery_id = reservation.battery_id;
 
                 if (reservation.station_id !== station_id) {
                     throw new BadRequestException(`Reservation station does not match the swapping station`);
                 }
 
-                if (reservation.vehicle_id === vehicle_id) {
-                    taken_battery_id = reservation.battery_id;
-                    // Update battery status to full for swapping
-                    await this.batteriesService.updateBatteryStatus(taken_battery_id, BatteryStatus.full);
+                if (reservation.vehicle_id !== vehicle_id) {
+                    throw new BadRequestException(`Reservation vehicle does not match the swapping vehicle`);
                 }
-            }
-            else {
+
+                taken_battery_id = reservation.battery_id;
+                // Update battery status to full for swapping
+                await this.batteriesService.update(taken_battery_id, { status: BatteryStatus.full });
+            } else {
                 taken_battery_id = (await this.batteriesService.findBestBatteryForVehicle(vehicle_id, station_id)).battery_id;
             }
 
-            //get return battery id from vehicle
             const return_battery_id = vehicle.battery_id;
-
-            // If no return battery, it means it's the first swap, so just assign the taken battery to the vehicle
+            // Handle first swap case
             if (!return_battery_id) {
                 const firstSwapDto: FirstSwapDto = {
                     user_id,
@@ -94,30 +94,24 @@ export class SwappingService {
                 return await this.initializeBattery(firstSwapDto);
             }
 
-            // Perform the swap within a transaction
+            // ✅ Fetch return battery details BEFORE transaction
+            const returnBattery = await this.batteriesService.findOne(return_battery_id);
+            const batteryUsedPercent = FULL_BATTERY_PERCENT - returnBattery.current_charge.toNumber();
+            const distanceTraveled = batteryUsedPercent * KM_PER_PERCENT;
+            this.logger.log(`Battery used percent: ${batteryUsedPercent}%, Distance traveled: ${distanceTraveled} km`);
+
+            // ✅ NOW start transaction with all data ready - should complete much faster
             return await this.databaseService.$transaction(async (prisma) => {
-
+                // All these operations happen quickly in sequence
                 await this.batteriesService.returnBatteryToStation(return_battery_id, station_id, prisma);
-
-                // ✅ FIXED: assignBatteryToVehicle now updates both Battery AND Vehicle
-                // No need to call updateBatteryId separately
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
-
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
-
-                const returnBattery = await this.batteriesService.findOne(return_battery_id);
-                const batteryUsedPercent = FULL_BATTERY_PERCENT - returnBattery.current_charge.toNumber();
-                const distanceTraveled = batteryUsedPercent * KM_PER_PERCENT;
-                this.logger.log(`Battery used percent: ${batteryUsedPercent}%, Distance traveled: ${distanceTraveled} km`);
-
-                // Update distance traveled in subscription
                 await this.subscriptionsService.updateDistanceTraveled(
                     subscription.subscription_id,
                     distanceTraveled,
                     prisma
                 );
 
-                //Create swap transaction 
                 const swapRecord = await this.swapTransactionsService.create({
                     user_id,
                     vehicle_id,
@@ -129,21 +123,28 @@ export class SwappingService {
                 }, prisma);
 
                 let reservationStatus = null;
-                //If user have reservation, update reservation status to completed
                 if (reservation) {
-                    reservationStatus = await this.reservationsService.updateReservationStatus(reservation.reservation_id, user_id, vehicle_id, ReservationStatus.completed, prisma);
+                    reservationStatus = await this.reservationsService.updateReservationStatus(
+                        reservation.reservation_id,
+                        user_id,
+                        vehicle_id,
+                        ReservationStatus.completed,
+                        prisma
+                    );
                 }
 
                 this.logger.log(`Battery swap completed successfully for user ID ${user_id}, vehicle ID ${vehicle_id}`);
                 return {
                     message: 'Battery swap successful',
-                    swap_used: subscription.swap_used,
+                    swap_used: subscription.swap_used + 1, // ✅ Return incremented value
                     batteryUsedPercent: batteryUsedPercent,
                     distance_used: distanceTraveled,
                     distance_traveled: subscription.distance_traveled + distanceTraveled,
                     swapTransaction: swapRecord,
                     reservation_status: reservation ? ReservationStatus.completed : null
                 }
+            }, {
+                timeout: 10000, // ✅ Increase timeout to 10 seconds as safety net
             });
         } catch (error) {
             throw error;

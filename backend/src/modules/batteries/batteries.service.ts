@@ -281,6 +281,26 @@ export class BatteriesService {
     return updatedBattery;
   }
 
+  async update(id: number, updateBatteryDto: UpdateBatteryDto, tx?: any) {
+    try {
+      const prisma = tx ?? this.databaseService;
+
+      const battery = await this.findOne(id);
+
+      const updatedBattery = await prisma.battery.update({
+        where: { battery_id: id },
+        data: {
+          ...updateBatteryDto,
+        },
+      });
+
+      this.logger.log(`Battery ID ${id} updated successfully`);
+      return updatedBattery;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   remove(id: number) {
     return `This action removes a #${id} battery`;
   }
