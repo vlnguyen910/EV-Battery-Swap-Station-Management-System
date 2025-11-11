@@ -52,9 +52,10 @@ export class ReservationsController {
   updateStatus(@Param('id', ParseIntPipe) id: number,
     @Body() input: {
       user_id: number,
+      vehicle_id: number,
       status: ReservationStatus
     }) {
-    return this.reservationsService.updateReservationStatus(id, input.user_id, input.status);
+    return this.reservationsService.updateReservationStatus(id, input.user_id, input.vehicle_id, input.status);
   }
 
   @Delete(':id')
