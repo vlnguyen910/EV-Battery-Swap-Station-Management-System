@@ -15,7 +15,7 @@ export default function PaginationControls({
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisThreshold = 7;
-    
+
     if (totalPages <= showEllipsisThreshold) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -39,7 +39,7 @@ export default function PaginationControls({
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -49,7 +49,7 @@ export default function PaginationControls({
         <div className="text-sm text-gray-600">
           Showing {startIndex} to {endIndex} of {totalResults} results
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <button
             onClick={onPrevious}
@@ -61,7 +61,7 @@ export default function PaginationControls({
               <span>Previous</span>
             </div>
           </button>
-          
+
           {getPageNumbers().map((pageNum, index) => (
             pageNum === '...' ? (
               <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
@@ -71,17 +71,16 @@ export default function PaginationControls({
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  pageNum === currentPage
-                    ? 'bg-green-600 text-white'
+                className={`px-3 py-1 rounded-md text-sm font-medium ${pageNum === currentPage
+                    ? 'bg-blue-600 text-white'
                     : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {pageNum}
               </button>
             )
           ))}
-          
+
           <button
             onClick={onNext}
             disabled={currentPage === totalPages}

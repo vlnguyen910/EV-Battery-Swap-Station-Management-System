@@ -27,9 +27,9 @@ export default function SwapHistoryCard({
   const SortIcon = ({ column }) => {
     if (sortBy !== column) return <ArrowUpDown size={16} className="text-gray-400" />;
     return sortOrder === 'asc' ? (
-      <ArrowUpDown size={16} className="text-green-600" />
+      <ArrowUpDown size={16} className="text-blue-600" />
     ) : (
-      <ArrowUpDown size={16} className="text-green-600" />
+      <ArrowUpDown size={16} className="text-blue-600" />
     );
   };
 
@@ -75,7 +75,7 @@ export default function SwapHistoryCard({
               <tr>
                 <td colSpan="3" className="px-6 py-12 text-center">
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span className="ml-3 text-gray-600">Loading...</span>
                   </div>
                 </td>
