@@ -429,51 +429,74 @@ export class BatteriesService {
    * Simulate charging battery (tăng charge)
    * Dùng khi battery đang charging tại station
    */
-  async simulateCharging(battery_id: number, increase_amount?: number) {
-    const battery = await this.findOne(battery_id);
-
-    if (battery.status !== BatteryStatus.charging) {
-      throw new BadRequestException(
-        `Cannot charge battery with status ${battery.status}. Only batteries with status 'charging' can be charged.`
-      );
+  async simulateCharging(station_id: number, increase_amount?: number) {
+    // Validate station exists
+    const station = await this.stationsService.findOne(station_id);
+    if (!station) {
+      throw new NotFoundException(`Station with ID ${station_id} not found`);
     }
 
-    const currentCharge = Number(battery.current_charge);
-    const increaseBy = increase_amount ?? Math.floor(Math.random() * 21) + 10; // 10-30% random
-    const targetCharge = Math.min(100, currentCharge + increaseBy);
-
-    const updatedBattery = await this.databaseService.battery.update({
-      where: { battery_id },
-      data: {
-        current_charge: targetCharge,
-        // Nếu đạt 100%, chuyển sang full
-        status: targetCharge >= 100 ? BatteryStatus.full : BatteryStatus.charging,
-      },
-      include: {
-        station: {
-          select: {
-            station_id: true,
-            name: true,
-          },
+    // Find all batteries at station with status 'charging'
+    const chargingBatteries = await this.databaseService.battery.findMany({
+      where: {
+        station_id,
+        status: BatteryStatus.charging,
+        current_charge: {
+          lt: 100, // Only batteries with charge < 100%
         },
       },
     });
 
-    this.logger.log(
-      `Battery ${battery_id} charged from ${currentCharge}% to ${targetCharge}%`
+    if (chargingBatteries.length === 0) {
+      return {
+        station_id,
+        station_name: station.name,
+        batteries_charged: 0,
+        message: 'No batteries available for charging at this station',
+      };
+    }
+
+    // Charge each battery
+    const results = await Promise.all(
+      chargingBatteries.map(async (battery) => {
+        const currentCharge = Number(battery.current_charge);
+        const increaseBy = increase_amount ?? Math.floor(Math.random() * 21) + 10; // 10-30% random
+        const targetCharge = Math.min(100, currentCharge + increaseBy);
+
+        const updatedBattery = await this.databaseService.battery.update({
+          where: { battery_id: battery.battery_id },
+          data: {
+            current_charge: targetCharge,
+            status: targetCharge >= 100 ? BatteryStatus.full : BatteryStatus.charging,
+          },
+        });
+
+        this.logger.log(
+          `Battery ${battery.battery_id} charged from ${currentCharge}% to ${targetCharge}%`
+        );
+
+        return {
+          battery_id: updatedBattery.battery_id,
+          previous_charge: currentCharge,
+          current_charge: Number(updatedBattery.current_charge),
+          increase_amount: targetCharge - currentCharge,
+          status: updatedBattery.status,
+          is_full: targetCharge >= 100,
+        };
+      })
     );
 
+    const fullyChargedCount = results.filter((r) => r.is_full).length;
+    const stillChargingCount = results.length - fullyChargedCount;
+
     return {
-      battery_id: updatedBattery.battery_id,
-      previous_charge: currentCharge,
-      current_charge: Number(updatedBattery.current_charge),
-      increase_amount: targetCharge - currentCharge,
-      status: updatedBattery.status,
-      is_full: targetCharge >= 100,
-      station: updatedBattery.station,
-      message: targetCharge >= 100
-        ? `Battery fully charged and status changed to 'full'`
-        : `Battery charging: ${currentCharge}% → ${targetCharge}%`,
+      station_id,
+      station_name: station.name,
+      batteries_charged: results.length,
+      fully_charged: fullyChargedCount,
+      still_charging: stillChargingCount,
+      batteries: results,
+      message: `Charged ${results.length} batteries at station. ${fullyChargedCount} reached full capacity.`,
     };
   }
 

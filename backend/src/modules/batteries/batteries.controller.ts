@@ -87,9 +87,9 @@ export class BatteriesController {
    * Tăng current_charge của battery (dành cho battery đang charging)
    */
   @Post('simulate-charging')
-  simulateCharging(@Body() body: { battery_id: number; increase_amount?: number }) {
+  simulateCharging(@Body() body: { station_id: number; increase_amount?: number }) {
     return this.batteriesService.simulateCharging(
-      body.battery_id,
+      body.station_id,
       body.increase_amount
     );
   }
