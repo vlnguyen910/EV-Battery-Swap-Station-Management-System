@@ -25,7 +25,6 @@ export class BatteriesController {
     return this.batteriesService.create(createBatteryDto);
   }
 
-  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
   @Get()
   @ApiOperation({ summary: 'Retrieve all batteries' })
   @ApiResponse({ status: 200, description: 'List of batteries.' })
@@ -41,7 +40,6 @@ export class BatteriesController {
     return this.batteriesService.findBestBatteryForVehicle(input.vehicle_id, input.station_id);
   }
 
-  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
   @Get('station/:station_id')
   @ApiOperation({ summary: 'Retrieve all batteries by station ID' })
   @ApiResponse({ status: 200, description: 'List of batteries for the specified station.' })
