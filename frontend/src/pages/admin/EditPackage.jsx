@@ -84,7 +84,10 @@ export default function EditPackage() {
   });
 
   const handleCancel = () => {
-    if (hasChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+    if (hasChanges) {
+      toast.warning('You have unsaved changes', {
+        description: 'Changes will be lost if you leave without saving',
+      });
       return;
     }
     navigate(`/admin/packages/${id}`);

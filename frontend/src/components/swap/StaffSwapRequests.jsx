@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth, useSubscription, useSwapRequest } from '../../hooks/useContext';
 import { vehicleService } from '../../services/vehicleService';
 import { batteryService } from '../../services/batteryService';
@@ -185,7 +186,7 @@ export default function StaffSwapRequests() {
             navigate(`/staff/manual-swap?${params.toString()}`, { state: { openSwapModal: true } });
         } catch (error) {
             console.error('Error processing request:', error);
-            alert('Failed to process request: ' + error.message);
+            toast.error('Failed to process request: ' + error.message);
         }
     };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import Booking from '../../pages/Booking';
 import { useAuth, useStation, useReservation, useSubscription, useVehicle } from '../../hooks/useContext';
 
@@ -146,13 +147,13 @@ export default function BookingContainer() {
 
     // Check if user has selected a vehicle
     if (!selectedVehicleId) {
-      alert('Please select a vehicle first');
+      toast.error('Please select a vehicle first');
       return;
     }
 
     // Check if user has active subscription (for selected vehicle)
     if (!subscriptionToUse) {
-      alert('You need an active subscription for the selected vehicle to book a battery swap. Please subscribe to a plan first.');
+      toast.error('You need an active subscription for the selected vehicle to book a battery swap. Please subscribe to a plan first.');
       navigate('/driver/plans');
       return;
     }
@@ -160,7 +161,7 @@ export default function BookingContainer() {
     // Check if batteries are available
     const availableBatteries = (stationInfo.batteries || []).filter(b => String(b.status || '').toLowerCase() === 'full');
     if (availableBatteries.length === 0) {
-      alert('No available batteries at this station');
+      toast.error('No available batteries at this station');
       return;
     }
 
@@ -196,24 +197,25 @@ export default function BookingContainer() {
       const serverMsg = err.response?.data?.message || '';
 
       if (typeof serverMsg === 'string' && serverMsg.includes('already have a reservation')) {
-        alert('You already have an active reservation. Please complete or cancel it first.');
+        toast.error('You already have an active reservation. Please complete or cancel it first.');
         return;
       }
 
       if (typeof serverMsg === 'string' && serverMsg.includes('does not have an active subscription')) {
         // Guide user to subscription plans
-        if (window.confirm('Your vehicle does not have an active subscription. Would you like to view plans?')) {
-          navigate('/driver/plans');
-        }
+        toast.warning('Your vehicle does not have an active subscription', {
+          description: 'Would you like to view plans?',
+        });
+        navigate('/driver/plans');
         return;
       }
 
       if (typeof serverMsg === 'string' && serverMsg.includes('Not found driver vehicle')) {
-        alert('No active vehicle found for your account. Please register or activate a vehicle before booking.');
+        toast.error('No active vehicle found for your account. Please register or activate a vehicle before booking.');
         return;
       }
 
-      alert('Failed to create reservation: ' + (serverMsg || err.message || 'Unknown error'));
+      toast.error('Failed to create reservation: ' + (serverMsg || err.message || 'Unknown error'));
     }
   };
 
