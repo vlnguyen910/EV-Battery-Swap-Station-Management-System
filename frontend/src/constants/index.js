@@ -54,6 +54,9 @@ export const API_ENDPOINTS = {
     GET_BATTERY: (id) => `/batteries/${id}`,
     GET_BY_STATION: (stationId) => `/batteries/station/${stationId}`,
     DELETE_BATTERY: (id) => `/batteries/${id}`,
+    UPDATE_BATTERY: (id) => `/batteries/${id}`,
+    UPDATE_BATTERY_CHARGE: `/batteries/set-charge`,
+    SIMULATE_CHARGING: `/batteries/simulate-charging`
   },
 
   BATTERY_SERVICE_PACKAGE: {

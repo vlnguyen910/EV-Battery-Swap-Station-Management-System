@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "../../hooks/useContext";
 import { batteryService } from "../../services/batteryService";
+import { toast } from "sonner";
 import Filter from "../common/Filter"
 import BatteryCard from "../batteries/BatteryCard"
 
@@ -13,6 +14,7 @@ export default function StaffInventory() {
     const [batteries, setBatteries] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
+    const [simulatingCharge, setSimulatingCharge] = React.useState(false);
 
     const [filters, setFilters] = React.useState({
         model: "all",
@@ -98,6 +100,22 @@ export default function StaffInventory() {
         setCurrentPage(1);
     }, [filters]);
 
+    const handleSimulateCharging = async () => {
+        setSimulatingCharge(true);
+        try {
+            const response = await batteryService.simulateCharging(user.station_id);
+            toast.success('Charging simulation completed successfully!');
+            // Refresh batteries after simulation
+            const data = await batteryService.getBatteriesByStationId(user.station_id);
+            setBatteries(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error simulating charging:', err);
+            toast.error(err.message || 'Failed to simulate charging');
+        } finally {
+            setSimulatingCharge(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -122,6 +140,13 @@ export default function StaffInventory() {
                     <p className="text-3xl font-black text-gray-900 leading-tight tracking-tight">Battery Inventory</p>
                     <p className="text-base font-normal text-gray-500">Monitor and manage battery slot status at your station.</p>
                 </div>
+                <button
+                    onClick={handleSimulateCharging}
+                    disabled={simulatingCharge}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {simulatingCharge ? 'Simulating...' : 'Simulate Charging'}
+                </button>
             </div>
 
             {/* Filter Section */}

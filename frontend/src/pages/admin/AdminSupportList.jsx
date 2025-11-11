@@ -274,10 +274,9 @@ export default function AdminSupportList() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Link
-                        to={`/admin/support-tickets/${ticket.support_id}`}
+                        to={`/admin/support/${ticket.support_id}`}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                       >
-                        <Eye className="h-4 w-4" />
                         View
                       </Link>
                     </td>
