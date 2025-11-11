@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AdminDashboardService } from './admin-statistics.service';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('admin/statistics')
 export class AdminDashboardController {
