@@ -23,7 +23,7 @@ export default function StaffInventory() {
 
     // Fetch batteries by station_id
     React.useEffect(() => {
-        const fetchBatteries = async () => {
+        const fetchBatteries = async (isInitialLoad = false) => {
             if (!user?.station_id) {
                 setError("No station assigned to this staff");
                 setLoading(false);
@@ -31,7 +31,10 @@ export default function StaffInventory() {
             }
 
             try {
-                setLoading(true);
+                // Only show loading on initial load
+                if (isInitialLoad) {
+                    setLoading(true);
+                }
                 const data = await batteryService.getBatteriesByStationId(user.station_id);
                 setBatteries(Array.isArray(data) ? data : []);
                 setError(null);
@@ -40,11 +43,23 @@ export default function StaffInventory() {
                 setError(err.message || "Failed to fetch batteries");
                 setBatteries([]);
             } finally {
-                setLoading(false);
+                if (isInitialLoad) {
+                    setLoading(false);
+                }
             }
         };
 
-        fetchBatteries();
+        if (user?.station_id) {
+            // Initial load with loading state
+            fetchBatteries(true);
+
+            // Auto-fetch batteries every 5 seconds for real-time updates (without showing loading)
+            const interval = setInterval(() => {
+                fetchBatteries(false);
+            }, 5000)
+
+            return () => clearInterval(interval)
+        }
     }, [user?.station_id]);
 
     // Filter logic

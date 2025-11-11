@@ -23,6 +23,10 @@ function StaffTransfer() {
     const [exportIndex, setExportIndex] = useState(0)
     const [importIndex, setImportIndex] = useState(0)
 
+    // Pagination for transfer history
+    const [historyPage, setHistoryPage] = useState(1)
+    const itemsPerPage = 10
+
     // Modal state for battery selection
     const [showBatteryModal, setShowBatteryModal] = useState(false)
     const [selectedTransfer, setSelectedTransfer] = useState(null)
@@ -33,19 +37,31 @@ function StaffTransfer() {
 
     useEffect(() => {
         if (user?.station_id) {
-            fetchData()
+            // Initial load with loading state
+            fetchData(true)
+
+            // Auto-fetch data every 5 seconds for real-time updates (without loading state)
+            const interval = setInterval(() => {
+                fetchData(false)
+            }, 5000)
+
+            return () => clearInterval(interval)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.station_id])
 
     useEffect(() => {
         applyFilters()
+        setHistoryPage(1) // Reset to first page when filters change
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [allRequests, searchQuery, filterType, filterFromStation, filterToStation])
 
-    const fetchData = async () => {
+    const fetchData = async (isInitialLoad = false) => {
         try {
-            setLoading(true)
+            // Only show loading on initial load
+            if (isInitialLoad) {
+                setLoading(true)
+            }
 
             // Get all requests for pending section (imports/exports)
             const allResponse = await batteryTransferService.getAllRequests()
@@ -83,7 +99,9 @@ function StaffTransfer() {
             console.error('Error fetching transfer data:', error)
             toast.error('Failed to load transfer requests')
         } finally {
-            setLoading(false)
+            if (isInitialLoad) {
+                setLoading(false)
+            }
         }
     }
 
@@ -190,10 +208,14 @@ function StaffTransfer() {
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A'
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleString('en-US', {
             year: 'numeric',
             month: '2-digit',
-            day: '2-digit'
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
         })
     }
 
@@ -418,89 +440,150 @@ function StaffTransfer() {
                                 No transfer records found
                             </div>
                         ) : (
-                            <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
-                                <thead className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                    <tr>
-                                        <th className="px-6 py-3">Ticket ID</th>
-                                        <th className="px-6 py-3">Date</th>
-                                        <th className="px-6 py-3">Type</th>
-                                        <th className="px-6 py-3">From</th>
-                                        <th className="px-6 py-3">To</th>
-                                        <th className="px-6 py-3 text-right">Quantity</th>
-                                        <th className="px-6 py-3">Model</th>
-                                        <th className="px-6 py-3">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredRequests.map((ticket) => {
-                                        const isImport = ticket.ticket_type === 'import'
-                                        const typeBg = isImport
-                                            ? 'bg-green-100 dark:bg-green-900/50'
-                                            : 'bg-orange-100 dark:bg-orange-900/50'
-                                        const typeText = isImport
-                                            ? 'text-green-700 dark:text-green-300'
-                                            : 'text-orange-700 dark:text-orange-300'
+                            <>
+                                <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                                    <thead className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-6 py-3">Ticket ID</th>
+                                            <th className="px-6 py-3">Date &amp; Time</th>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">From</th>
+                                            <th className="px-6 py-3">To</th>
+                                            <th className="px-6 py-3 text-right">Quantity</th>
+                                            <th className="px-6 py-3">Model</th>
+                                            <th className="px-6 py-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(() => {
+                                            // Sort by newest first and paginate
+                                            const sortedRequests = [...filteredRequests].sort((a, b) =>
+                                                new Date(b.created_at || 0) - new Date(a.created_at || 0)
+                                            )
+                                            const totalPages = Math.ceil(sortedRequests.length / itemsPerPage)
+                                            const startIndex = (historyPage - 1) * itemsPerPage
+                                            const paginatedRequests = sortedRequests.slice(startIndex, startIndex + itemsPerPage)
 
-                                        // Status logic: Based on transfer_request_id status
-                                        // - If transfer_request_status === 'in_progress': Show "In Transit" (export) or "Pending" (import)
-                                        // - If transfer_request_status === 'completed': Show "Completed"
-                                        let statusBg = 'bg-gray-100 dark:bg-gray-900/50'
-                                        let statusText = 'text-gray-700 dark:text-gray-300'
-                                        let statusLabel = 'Pending'
-                                        let statusIcon = 'ri-time-line'
+                                            return paginatedRequests.map((ticket) => {
+                                                const isImport = ticket.ticket_type === 'import'
+                                                const typeBg = isImport
+                                                    ? 'bg-green-100 dark:bg-green-900/50'
+                                                    : 'bg-orange-100 dark:bg-orange-900/50'
+                                                const typeText = isImport
+                                                    ? 'text-green-700 dark:text-green-300'
+                                                    : 'text-orange-700 dark:text-orange-300'
 
-                                        const transferRequestStatus = ticket.transfer_request_status || 'unknown'
+                                                // Status logic: Based on transfer_request_id status
+                                                // - If transfer_request_status === 'in_progress': Show "In Transit" (export) or "Pending" (import)
+                                                // - If transfer_request_status === 'completed': Show "Completed"
+                                                let statusBg = 'bg-gray-100 dark:bg-gray-900/50'
+                                                let statusText = 'text-gray-700 dark:text-gray-300'
+                                                let statusLabel = 'Pending'
+                                                let statusIcon = 'ri-time-line'
 
-                                        if (transferRequestStatus === 'completed') {
-                                            // Transfer request completed = both export and import are done
-                                            statusBg = 'bg-green-100 dark:bg-green-900/50'
-                                            statusText = 'text-green-700 dark:text-green-300'
-                                            statusLabel = 'Completed'
-                                            statusIcon = 'ri-check-double-line'
-                                        } else if (transferRequestStatus === 'in_progress') {
-                                            // Transfer request still in progress
-                                            if (isImport) {
-                                                // Import ticket created but transfer_request not completed yet
-                                                statusBg = 'bg-yellow-100 dark:bg-yellow-900/50'
-                                                statusText = 'text-yellow-700 dark:text-yellow-300'
-                                                statusLabel = 'Pending'
-                                                statusIcon = 'ri-time-line'
-                                            } else {
-                                                // Export ticket = batteries in transit
-                                                statusBg = 'bg-blue-100 dark:bg-blue-900/50'
-                                                statusText = 'text-blue-700 dark:text-blue-300'
-                                                statusLabel = 'In Transit'
-                                                statusIcon = 'ri-truck-line'
-                                            }
-                                        }
+                                                const transferRequestStatus = ticket.transfer_request_status || 'unknown'
 
-                                        return (
-                                            <tr key={ticket.ticket_id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                                    #{ticket.ticket_id || 'N/A'}
-                                                </td>
-                                                <td className="px-6 py-4">{formatDate(ticket.created_at)}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center gap-1.5 rounded-full ${typeBg} px-2 py-1 text-xs font-medium ${typeText}`}>
-                                                        <i className={`ri ${isImport ? 'ri-arrow-left-down-line' : 'ri-arrow-right-up-line'} !text-sm`}></i>
-                                                        {isImport ? 'IMPORT' : 'EXPORT'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">{ticket.fromStation?.station_name || 'Unknown'}</td>
-                                                <td className="px-6 py-4">{ticket.toStation?.station_name || 'Unknown'}</td>
-                                                <td className="px-6 py-4 text-right">{ticket.quantity || 'N/A'}</td>
-                                                <td className="px-6 py-4">{ticket.battery_model || 'N/A'}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center gap-1.5 rounded-full ${statusBg} px-2.5 py-0.5 text-xs font-medium ${statusText}`}>
-                                                        <i className={`ri ${statusIcon} !text-sm`}></i>
-                                                        {statusLabel}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
+                                                if (transferRequestStatus === 'completed') {
+                                                    // Transfer request completed = both export and import are done
+                                                    statusBg = 'bg-green-100 dark:bg-green-900/50'
+                                                    statusText = 'text-green-700 dark:text-green-300'
+                                                    statusLabel = 'Completed'
+                                                    statusIcon = 'ri-check-double-line'
+                                                } else if (transferRequestStatus === 'in_progress') {
+                                                    // Transfer request still in progress
+                                                    if (isImport) {
+                                                        // Import ticket created but transfer_request not completed yet
+                                                        statusBg = 'bg-yellow-100 dark:bg-yellow-900/50'
+                                                        statusText = 'text-yellow-700 dark:text-yellow-300'
+                                                        statusLabel = 'Pending'
+                                                        statusIcon = 'ri-time-line'
+                                                    } else {
+                                                        // Export ticket = batteries in transit
+                                                        statusBg = 'bg-blue-100 dark:bg-blue-900/50'
+                                                        statusText = 'text-blue-700 dark:text-blue-300'
+                                                        statusLabel = 'In Transit'
+                                                        statusIcon = 'ri-truck-line'
+                                                    }
+                                                }
+
+                                                return (
+                                                    <tr key={ticket.ticket_id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                                            #{ticket.ticket_id || 'N/A'}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-xs">{formatDate(ticket.created_at)}</td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex items-center gap-1.5 rounded-full ${typeBg} px-2 py-1 text-xs font-medium ${typeText}`}>
+                                                                <i className={`ri ${isImport ? 'ri-arrow-left-down-line' : 'ri-arrow-right-up-line'} !text-sm`}></i>
+                                                                {isImport ? 'IMPORT' : 'EXPORT'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">{ticket.fromStation?.station_name || 'Unknown'}</td>
+                                                        <td className="px-6 py-4">{ticket.toStation?.station_name || 'Unknown'}</td>
+                                                        <td className="px-6 py-4 text-right">{ticket.quantity || 'N/A'}</td>
+                                                        <td className="px-6 py-4">{ticket.battery_model || 'N/A'}</td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex items-center gap-1.5 rounded-full ${statusBg} px-2.5 py-0.5 text-xs font-medium ${statusText}`}>
+                                                                <i className={`ri ${statusIcon} !text-sm`}></i>
+                                                                {statusLabel}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
+                                        })()}
+                                    </tbody>
+                                </table>
+
+                                {/* Pagination */}
+                                {(() => {
+                                    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage)
+                                    if (totalPages <= 1) return null
+
+                                    return (
+                                        <div className="flex items-center justify-between px-6 py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Showing <span className="font-medium">{((historyPage - 1) * itemsPerPage) + 1}</span> to <span className="font-medium">{Math.min(historyPage * itemsPerPage, filteredRequests.length)}</span> of <span className="font-medium">{filteredRequests.length}</span> records
+                                            </p>
+                                            <nav className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={historyPage === 1}
+                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                                    </svg>
+                                                </button>
+                                                {[...Array(totalPages)].map((_, idx) => {
+                                                    const pageNum = idx + 1
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setHistoryPage(pageNum)}
+                                                            className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${historyPage === pageNum
+                                                                    ? 'bg-primary text-white'
+                                                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                                }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    )
+                                                })}
+                                                <button
+                                                    onClick={() => setHistoryPage(prev => Math.min(totalPages, prev + 1))}
+                                                    disabled={historyPage === totalPages}
+                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            </nav>
+                                        </div>
+                                    )
+                                })()}
+                            </>
                         )}
                     </div>
                 </section>

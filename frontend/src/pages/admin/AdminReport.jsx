@@ -136,14 +136,14 @@ export default function AdminReport() {
             {loading && (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Đang phân tích dữ liệu trạm...</p>
+                <p className="text-gray-600 dark:text-gray-400">Analyzing station data...</p>
               </div>
             )}
 
             {/* Error State */}
             {error && !loading && (
               <div className="flex flex-col items-center justify-center py-20 bg-red-50 dark:bg-red-900/20 rounded-xl p-8">
-                <p className="text-red-600 dark:text-red-400 text-lg font-semibold mb-4">Lỗi phân tích</p>
+                <p className="text-red-600 dark:text-red-400 text-lg font-semibold mb-4">Analysis Error</p>
                 <p className="text-red-500 dark:text-red-300 mb-6">{error}</p>
                 <button
                   onClick={handleAnalyze}
@@ -158,19 +158,19 @@ export default function AdminReport() {
             {!analysisData && !loading && !error && (
               <div className="flex flex-col flex-1 items-center justify-center text-center">
                 <div className="flex flex-col gap-3 max-w-lg items-center">
-                  <p className="text-4xl font-black leading-tight tracking-[-0.033em] dark:text-white">AI Gợi ý nâng cấp trạm</p>
-                  <p className="text-[#617589] text-base font-normal leading-normal dark:text-gray-400">Phân tích hiệu suất trạm và nhận các khuyến nghị hữu ích từ AI.</p>
+                  <p className="text-4xl font-black leading-tight tracking-[-0.033em] dark:text-white">AI Suggested Station Upgrades</p>
+                  <p className="text-[#617589] text-base font-normal leading-normal dark:text-gray-400">Analyze station performance and receive useful recommendations from AI.</p>
                 </div>
                 <div className="mt-8">
                   <button
                     onClick={handleAnalyze}
                     className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
                   >
-                    <span className="truncate">Phân tích hiệu suất trạm</span>
+                    <span className="truncate">Analyze Station Performance</span>
                   </button>
                 </div>
                 <div className="mt-16 text-center">
-                  <p className="text-[#617589] text-sm dark:text-gray-500">Nhấn 'Phân tích hiệu suất trạm' để bắt đầu.</p>
+                  <p className="text-[#617589] text-sm dark:text-gray-500">Press 'Analyze Station Performance' to start.</p>
                 </div>
               </div>
             )}
@@ -182,10 +182,10 @@ export default function AdminReport() {
                 <div className="flex flex-wrap justify-between items-start gap-4 p-4">
                   <div className="flex flex-col gap-3">
                     <p className="text-3xl font-black leading-tight tracking-[-0.033em] dark:text-white">
-                      AI Gợi ý nâng cấp trạm <span className="font-normal text-2xl text-[#617589] dark:text-gray-400">(phân tích ngày {formatDate(analysisData.analysis_date)})</span>
+                      AI Suggested Station Upgrades <span className="font-normal text-2xl text-[#617589] dark:text-gray-400">(analyzed on {formatDate(analysisData.analysis_date)})</span>
                     </p>
                     <p className="text-[#617589] text-base font-normal leading-normal dark:text-gray-400">
-                      Tổng số trạm được phân tích: {analysisData.total_stations_analyzed}
+                      Total stations analyzed: {analysisData.total_stations_analyzed}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -193,13 +193,13 @@ export default function AdminReport() {
                       onClick={handleRetry}
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 text-primary dark:bg-primary/30 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/30 dark:hover:bg-primary/40 transition-colors"
                     >
-                      <span className="truncate">Phân tích lại</span>
+                      <span className="truncate">Retry Analysis</span>
                     </button>
                     <button
                       onClick={handleExportPDF}
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
                     >
-                      <span className="truncate">Xuất PDF</span>
+                      <span className="truncate">Export PDF</span>
                     </button>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export default function AdminReport() {
                     ))
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-gray-500 dark:text-gray-400">Không có khuyến nghị nào</p>
+                      <p className="text-gray-500 dark:text-gray-400">No recommendations available</p>
                     </div>
                   )}
                 </div>

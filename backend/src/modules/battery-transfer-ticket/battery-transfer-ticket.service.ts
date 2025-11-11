@@ -119,19 +119,6 @@ export class BatteryTransferTicketService {
         }
       }
 
-      const existsingTicket = await this.databaseService.batteryTransferTicket.findFirst({
-        where: {
-          transfer_request_id: dto.transfer_request_id,
-          ticket_type: dto.ticket_type,
-          station_id: dto.station_id,
-        },
-      });
-
-      this.logger.log(`Existing ticket check result:`, existsingTicket ? `Found ticket ID ${existsingTicket.ticket_id}` : 'No existing ticket found');
-      if (existsingTicket) {
-        throw new BadRequestException(`No existing ticket found for transfer request ID ${dto.transfer_request_id} at station ID ${dto.station_id} for ticket type ${dto.ticket_type}`);
-      }
-
       const result = await this.databaseService.$transaction(async (prisma) => {
         // Create the ticket
         this.logger.log(`Creating Battery Transfer Ticket for transfer request ID: ${dto.transfer_request_id}`);
