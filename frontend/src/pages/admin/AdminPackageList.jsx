@@ -163,7 +163,7 @@ export default function AdminPackageList() {
                         {pkg.description || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
-                        ${pkg.price?.toFixed(2) || '0.00'}
+                        ₫{Number(pkg.base_price || 0).toLocaleString('vi-VN')}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <Link

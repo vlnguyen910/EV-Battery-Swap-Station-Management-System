@@ -64,9 +64,27 @@ const updateBatteryById = async (id, batteryData) => {
   }
 };
 
+// Function to update battery charge
+const updateBatteryCharge = async (batteryId, chargePercentage) => {
+  try {
+    const response = await api.patch(
+      API_ENDPOINTS.BATTERY.UPDATE_BATTERY_CHARGE,
+      {
+        battery_id: batteryId,
+        charge_percentage: chargePercentage
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating battery charge:", error);
+    throw error;
+  }
+};
+
 export const batteryService = {
   getAllBatteries,
   getBatteryById,
   getBatteriesByStationId,
   updateBatteryById,
+  updateBatteryCharge,
 };
