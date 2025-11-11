@@ -15,9 +15,7 @@ const getAllBatteries = async () => {
 // Function to get battery by id
 const getBatteryById = async (id) => {
   try {
-    const response = await api.get(
-      `${API_ENDPOINTS.BATTERY.GET_BATTERY_BY_ID}/${id}`
-    );
+    const response = await api.get(API_ENDPOINTS.BATTERY.GET_BATTERY(id));
     return response.data;
   } catch (error) {
     console.error("Error fetching battery by id:", error);

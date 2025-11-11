@@ -77,6 +77,9 @@ export default function ManualSwapTransaction() {
     const [currentPage, setCurrentPage] = useState(1);
     const resultsPerPage = 10;
 
+    // Submit button loading state to prevent duplicate submissions
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     // Map backend error responses to friendly UI messages
     const mapServerErrorToMessage = (resp) => {
         // Try to normalize message(s) into an array
@@ -517,6 +520,10 @@ export default function ManualSwapTransaction() {
         e.preventDefault();
 
         try {
+            // Prevent duplicate submissions
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+
             // Clear previous API errors
             setApiErrors([]);
 
@@ -526,6 +533,7 @@ export default function ManualSwapTransaction() {
 
             if (isNaN(userIdPayload) || isNaN(vehicleIdPayload) || isNaN(stationIdPayload)) {
                 setApiErrors(['User ID, Vehicle ID, and Station ID are required']);
+                setIsSubmitting(false);
                 return;
             }
 
@@ -556,12 +564,14 @@ export default function ManualSwapTransaction() {
                 console.warn('Failed to refresh batteries after swap:', refreshErr);
             }
 
-            toast.success('Swap transaction completed successfully!');
+            alert('Swap transaction completed successfully!');
+            setIsSubmitting(false);
             navigate('/staff/swap-requests');
         } catch (error) {
             console.error('❌ Error creating swap transaction:', error);
             const resp = error?.response?.data;
             setApiErrors(mapServerErrorToMessage(resp));
+            setIsSubmitting(false);
         }
     };
 
@@ -971,13 +981,22 @@ export default function ManualSwapTransaction() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!formData.user_id || !formData.vehicle_id || !formData.station_id}
-                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.user_id && formData.vehicle_id && formData.station_id
+                                    disabled={!formData.user_id || !formData.vehicle_id || !formData.station_id || isSubmitting}
+                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${(formData.user_id && formData.vehicle_id && formData.station_id && !isSubmitting)
                                         ? 'bg-green-600 text-white hover:bg-green-700'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         }`}>
-                                    <span className="material-icons">add_circle_outline</span>
-                                    Create Transaction
+                                    {isSubmitting ? (
+                                        <>
+                                            <span className="material-icons animate-spin">refresh</span>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-icons">add_circle_outline</span>
+                                            Create Transaction
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
