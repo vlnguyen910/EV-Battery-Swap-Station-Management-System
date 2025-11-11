@@ -179,7 +179,7 @@ export class BatteriesService {
 
       // ✅ CONSOLIDATED: Assign battery to vehicle (updates BOTH sides in one method)
       this.logger.log(`Assigning battery ${battery_id} to vehicle ${vehicle_id}`);
-      
+
       // Update battery side
       const updatedBattery = await db.battery.update({
         where: { battery_id },
@@ -228,8 +228,8 @@ export class BatteriesService {
 
       // ✅ FIXED: Smart status selection based on charge level
       const currentCharge = Number(battery.current_charge);
-      const targetStatus = currentCharge >= 100 
-        ? BatteryStatus.full 
+      const targetStatus = currentCharge >= 100
+        ? BatteryStatus.full
         : BatteryStatus.charging;
 
       // Return battery to station
@@ -238,10 +238,10 @@ export class BatteriesService {
       );
       return await db.battery.update({
         where: { battery_id },
-        data: { 
-          station_id, 
-          vehicle_id: null, 
-          status: targetStatus 
+        data: {
+          station_id,
+          vehicle_id: null,
+          status: targetStatus
         },
       });
     } catch (error) {
@@ -251,8 +251,8 @@ export class BatteriesService {
   }
 
   async updateBatteryStatus(
-    id: number, 
-    status: BatteryStatus, 
+    id: number,
+    status: BatteryStatus,
     tx?: any,
     skipValidation: boolean = false // Admin override
   ) {
@@ -272,13 +272,33 @@ export class BatteriesService {
       where: { battery_id: id },
       data: { status },
     });
-    
+
     this.logger.log(
       `Updated battery ID ${id} from ${battery.status} to status ${status}` +
       (skipValidation ? ' (validation skipped)' : '')
     );
 
     return updatedBattery;
+  }
+
+  async update(id: number, updateBatteryDto: UpdateBatteryDto, tx?: any) {
+    try {
+      const prisma = tx ?? this.databaseService;
+
+      const battery = await this.findOne(id);
+
+      const updatedBattery = await prisma.battery.update({
+        where: { battery_id: id },
+        data: {
+          ...updateBatteryDto,
+        },
+      });
+
+      this.logger.log(`Battery ID ${id} updated successfully`);
+      return updatedBattery;
+    } catch (error) {
+      throw error;
+    }
   }
 
   remove(id: number) {
@@ -364,10 +384,10 @@ export class BatteriesService {
         this.logger.log(`Auto-updating status: full → charging (charge dropped below 100%)`);
       }
     }
-    
+
     const updatedBattery = await this.databaseService.battery.update({
       where: { battery_id },
-      data: { 
+      data: {
         current_charge: charge_percentage,
         status: newStatus // ✅ Update status if changed
       },
@@ -451,8 +471,8 @@ export class BatteriesService {
       status: updatedBattery.status,
       is_full: targetCharge >= 100,
       station: updatedBattery.station,
-      message: targetCharge >= 100 
-        ? `Battery fully charged and status changed to 'full'` 
+      message: targetCharge >= 100
+        ? `Battery fully charged and status changed to 'full'`
         : `Battery charging: ${currentCharge}% → ${targetCharge}%`,
     };
   }

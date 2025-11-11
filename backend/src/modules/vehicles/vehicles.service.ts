@@ -215,8 +215,35 @@ export class VehiclesService {
 
       return await this.databaseService.vehicle.update({
         where: { vin: assignVehicleDto.vin },
-        data: { user_id: assignVehicleDto.user_id },
+        data: { user_id: assignVehicleDto.user_id, status: VehicleStatus.active },
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async removeVehicleFromUser(
+    assignVehicleDto: { vin: string; user_id: number },
+  ) {
+    try {
+      // ✅ Check if user exists
+      const user = await this.userService.findOneById(assignVehicleDto.user_id);
+      // ✅ Check if vehicle exists
+      const vehicle = await this.findByVin(assignVehicleDto.vin);
+
+      // ✅ Check if vehicle is assigned to the user
+      if (vehicle.user_id !== assignVehicleDto.user_id) {
+        throw new BadRequestException(
+          `Vehicle with VIN ${assignVehicleDto.vin} is not assigned to User with ID ${assignVehicleDto.user_id}`
+        );
+      }
+
+      const updatedVehicle = await this.databaseService.vehicle.update({
+        where: { vin: assignVehicleDto.vin },
+        data: { user_id: null, status: VehicleStatus.inactive },
+      });
+
+      return updatedVehicle;
     } catch (error) {
       throw error;
     }

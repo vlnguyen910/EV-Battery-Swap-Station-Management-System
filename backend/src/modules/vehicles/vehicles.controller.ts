@@ -70,6 +70,27 @@ export class VehiclesController {
     });
   }
 
+  @Patch('remove-vehicle')
+  @ApiOperation({ summary: 'Remove vehicle assignment from the current user' })
+  @ApiResponse({ status: 200, description: 'Vehicle removed from the current user.' })
+  removeVehicleFromCurrentUser(
+    @Body() removeDto: AddVehicleDto,
+    @Req() req: Request,
+  ) {
+    // Get user_id from JWT token (attached by AuthGuard)
+    const user = req['user'] as any;
+
+    // Validate that user info exists
+    if (!user || !user.sub) {
+      throw new UnauthorizedException('User information not found in token');
+    }
+
+    return this.vehiclesService.removeVehicleFromUser({
+      vin: removeDto.vin,
+      user_id: user.sub, // user.sub contains the user_id from JWT payload
+    });
+  }
+
   @Roles($Enums.Role.driver)
   @Patch('assign-vehicle')
   @ApiOperation({ summary: 'Assign a vehicle to a user (Admin only)' })
