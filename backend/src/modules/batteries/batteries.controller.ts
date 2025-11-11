@@ -9,6 +9,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { $Enums } from '.prisma/client';
 import { SimulateBatteryDischargeDto, SetBatteryChargeDto } from './dto/simulate-discharge.dto';
+import { SimulateChargeForStationDto } from './dto/simulate-charge-for-station.dto';
 
 @UseGuards(AuthGuard, RolesGuard, EmailVerifiedGuard)
 @ApiBearerAuth('access-token')
@@ -87,7 +88,7 @@ export class BatteriesController {
    * Tăng current_charge của battery (dành cho battery đang charging)
    */
   @Post('simulate-charging')
-  simulateCharging(@Body() body: { station_id: number; increase_amount?: number }) {
+  simulateCharging(@Body() body: SimulateChargeForStationDto) {
     return this.batteriesService.simulateCharging(
       body.station_id,
       body.increase_amount
