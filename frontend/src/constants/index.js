@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     GET_VEHICLE: (id) => `/vehicles/${id}`,
     UPDATE_VEHICLE: (id) => `/vehicles/${id}`,
     ASSIGN_VEHICLE: "/vehicles/add-vehicle",
+    REMOVE_VEHICLE: "/vehicles/remove-vehicle",
     DELETE_VEHICLE: (id) => `/vehicles/${id}`,
   },
 
@@ -56,7 +57,7 @@ export const API_ENDPOINTS = {
     DELETE_BATTERY: (id) => `/batteries/${id}`,
     UPDATE_BATTERY: (id) => `/batteries/${id}`,
     UPDATE_BATTERY_CHARGE: `/batteries/set-charge`,
-    SIMULATE_CHARGING: `/batteries/simulate-charging`
+    SIMULATE_CHARGING: `/batteries/simulate-charging`,
   },
 
   BATTERY_SERVICE_PACKAGE: {
@@ -190,7 +191,8 @@ export const API_ENDPOINTS = {
     GET_REVENUE_CURRENT_MONTH: "/admin/statistics/revenue/current-month",
     GET_TOP_STATIONS: "/admin/statistics/top-stations", // Supports ?limit=10 query param
     GET_TOP_PACKAGES: "/admin/statistics/top-packages", // Supports ?limit=10 query param
-    GET_CANCELLATIONS_CURRENT_MONTH: "/admin/statistics/cancellations/current-month",
+    GET_CANCELLATIONS_CURRENT_MONTH:
+      "/admin/statistics/cancellations/current-month",
     GET_SUPPORT_STATS: "/admin/statistics/support-stats",
     GET_BATTERY_TRANSFERS: "/admin/statistics/battery-transfers",
     GET_STATION_STATS: "/admin/statistics/stations",
@@ -202,7 +204,8 @@ export const API_ENDPOINTS = {
     GET_REVENUE_CURRENT_MONTH: "/admin/statistics/revenue/current-month",
     GET_TOP_STATIONS: "/admin/statistics/top-stations", // Supports ?limit=10 query param
     GET_TOP_PACKAGES: "/admin/statistics/top-packages", // Supports ?limit=10 query param
-    GET_CANCELLATIONS_CURRENT_MONTH: "/admin/statistics/cancellations/current-month",
+    GET_CANCELLATIONS_CURRENT_MONTH:
+      "/admin/statistics/cancellations/current-month",
     GET_SUPPORT_STATS: "/admin/statistics/support-stats",
     GET_BATTERY_TRANSFERS: "/admin/statistics/battery-transfers",
     GET_STATION_STATS: "/admin/statistics/stations",
