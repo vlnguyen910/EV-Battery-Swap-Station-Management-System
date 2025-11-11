@@ -38,6 +38,20 @@ export class BatteryTransferTicketService {
       const staff = await this.usersService.findOneById(dto.staff_id);
       this.logger.log(`Station: ${station.station_id}, Staff: ${staff.user_id}, Ticket type: ${dto.ticket_type}`);
 
+
+      const existsingTicket = await this.databaseService.batteryTransferTicket.findFirst({
+        where: {
+          transfer_request_id: dto.transfer_request_id,
+          ticket_type: dto.ticket_type,
+          station_id: dto.station_id,
+        },
+      });
+
+      this.logger.warn(`Duplicate ticket check result: ${existsingTicket ? 'Found' : 'Not Found'}`);
+      if (existsingTicket) {
+        throw new BadRequestException(`Existing ticket found for transfer request ID ${dto.transfer_request_id} at station ID ${dto.station_id} for ticket type ${dto.ticket_type}`);
+      }
+
       if (staff.station_id && staff.station_id !== station.station_id) {
         this.logger.error(`Staff with ID ${staff.user_id} is not belonging to station ID ${station.station_id}`);
         throw new BadRequestException(`This staff is not belonging to this station.`);
@@ -103,19 +117,6 @@ export class BatteryTransferTicketService {
             );
           }
         }
-      }
-
-      const existsingTicket = await this.databaseService.batteryTransferTicket.findFirst({
-        where: {
-          transfer_request_id: dto.transfer_request_id,
-          ticket_type: dto.ticket_type,
-          station_id: dto.station_id,
-        },
-      });
-
-      this.logger.log(`Existing ticket check result:`, existsingTicket ? `Found ticket ID ${existsingTicket.ticket_id}` : 'No existing ticket found');
-      if (!existsingTicket) {
-        throw new BadRequestException(`No existing ticket found for transfer request ID ${dto.transfer_request_id} at station ID ${dto.station_id} for ticket type ${dto.ticket_type}`);
       }
 
       const result = await this.databaseService.$transaction(async (prisma) => {
