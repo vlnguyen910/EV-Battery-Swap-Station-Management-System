@@ -13,6 +13,7 @@ function ConfirmReceiveBatteriesModal({
     const [batteries, setBatteries] = useState([])
     const [loading, setLoading] = useState(false)
     const [confirmChecked, setConfirmChecked] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Fetch batteries from export ticket when modal opens
     useEffect(() => {
@@ -42,29 +43,37 @@ function ConfirmReceiveBatteriesModal({
         }
     }
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!confirmChecked) {
             toast.error('Please confirm that all batteries are in good condition')
             return
         }
 
-        // Call parent with battery IDs to confirm import
-        // IMPORTANT: Convert to integers as backend expects number[]
-        const batteryIds = batteries.map(b => {
-            const id = b.battery_id || b.id
-            const numId = Number(id)
-            if (isNaN(numId)) {
-                console.error(`Invalid battery ID: ${id}`, b)
-                throw new Error(`Invalid battery ID: ${id}`)
-            }
-            return numId
-        })
+        // Prevent duplicate submission
+        if (isSubmitting) return
 
-        console.log('Sending battery IDs to backend:', batteryIds, 'Type:', typeof batteryIds[0])
-        onConfirm(batteryIds)
+        try {
+            setIsSubmitting(true)
+            // Call parent with battery IDs to confirm import
+            // IMPORTANT: Convert to integers as backend expects number[]
+            const batteryIds = batteries.map(b => {
+                const id = b.battery_id || b.id
+                const numId = Number(id)
+                if (isNaN(numId)) {
+                    console.error(`Invalid battery ID: ${id}`, b)
+                    throw new Error(`Invalid battery ID: ${id}`)
+                }
+                return numId
+            })
 
-        // Reset state
-        setConfirmChecked(false)
+            console.log('Sending battery IDs to backend:', batteryIds, 'Type:', typeof batteryIds[0])
+            await onConfirm(batteryIds)
+
+            // Reset state
+            setConfirmChecked(false)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleClose = () => {
@@ -175,10 +184,10 @@ function ConfirmReceiveBatteriesModal({
                     </button>
                     <button
                         onClick={handleConfirm}
-                        disabled={!confirmChecked || loading}
+                        disabled={!confirmChecked || loading || isSubmitting}
                         className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                     >
-                        Confirm & Add to Inventory
+                        {isSubmitting ? 'Confirming...' : 'Confirm & Add to Inventory'}
                     </button>
                 </div>
             </div>

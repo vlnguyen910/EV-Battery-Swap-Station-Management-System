@@ -114,7 +114,7 @@ export class BatteryTransferTicketService {
       });
 
       this.logger.log(`Existing ticket check result:`, existsingTicket ? `Found ticket ID ${existsingTicket.ticket_id}` : 'No existing ticket found');
-      if (!existsingTicket) {
+      if (existsingTicket) {
         throw new BadRequestException(`No existing ticket found for transfer request ID ${dto.transfer_request_id} at station ID ${dto.station_id} for ticket type ${dto.ticket_type}`);
       }
 

@@ -7,6 +7,7 @@ function BatterySelectionModal({ isOpen, ticketId, requiredQuantity, transferReq
     const [selectedBatteries, setSelectedBatteries] = useState(new Set())
     const [loading, setLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Fetch available batteries when modal opens
     useEffect(() => {
@@ -66,13 +67,21 @@ function BatterySelectionModal({ isOpen, ticketId, requiredQuantity, transferReq
         }
     }
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (selectedBatteries.size !== requiredQuantity) {
             toast.error(`Please select exactly ${requiredQuantity} batteries`)
             return
         }
-        // Call parent to create ticket with selected battery IDs
-        onConfirm(Array.from(selectedBatteries))
+        // Prevent duplicate submission
+        if (isSubmitting) return
+
+        try {
+            setIsSubmitting(true)
+            // Call parent to create ticket with selected battery IDs
+            await onConfirm(Array.from(selectedBatteries))
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleClose = () => {
@@ -217,10 +226,10 @@ function BatterySelectionModal({ isOpen, ticketId, requiredQuantity, transferReq
                         </button>
                         <button
                             onClick={handleConfirm}
-                            disabled={selectedBatteries.size !== requiredQuantity}
+                            disabled={selectedBatteries.size !== requiredQuantity || isSubmitting}
                             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                         >
-                            Confirm Dispatch of {requiredQuantity} Batteries
+                            {isSubmitting ? 'Processing...' : `Confirm Dispatch of ${requiredQuantity} Batteries`}
                         </button>
                     </div>
                 </div>
