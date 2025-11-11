@@ -25,7 +25,6 @@ export class StationsController {
     return this.stationsService.create(createStationDto);
   }
 
-  @Roles($Enums.Role.admin)
   @Get()
   @ApiOperation({ summary: 'Get all stations' })
   @ApiResponse({ status: 200, description: 'List of all stations.' })
