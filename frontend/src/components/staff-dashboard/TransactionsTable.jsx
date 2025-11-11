@@ -8,7 +8,7 @@ export default function TransactionsTable() {
     const [transactions, setTransactions] = useState([]);
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
@@ -28,17 +28,25 @@ export default function TransactionsTable() {
     const fetchRecentTransactions = async () => {
         try {
             setLoading(true);
-            
+
             let response;
             if (user?.station_id) {
                 response = await swapService.getAllSwapTransactionsByStationId(user.station_id);
             } else {
                 response = await swapService.getAllSwapTransactions();
             }
-            
+
             const allTransactions = response.data || response;
-            setTransactions(allTransactions);
-            setFilteredTransactions(allTransactions);
+
+            // Sort by timestamp descending (newest first) and take only 5
+            const sortedTransactions = [...allTransactions].sort((a, b) => {
+                const dateA = new Date(a.swap_time || a.createAt);
+                const dateB = new Date(b.swap_time || b.createAt);
+                return dateB - dateA;
+            }).slice(0, 5);
+
+            setTransactions(sortedTransactions);
+            setFilteredTransactions(sortedTransactions);
         } catch (error) {
             console.error('Error fetching transactions:', error);
         } finally {
@@ -54,14 +62,14 @@ export default function TransactionsTable() {
             filtered = filtered.filter(t => {
                 const userName = (t.user?.full_name || t.user?.username || '').toLowerCase();
                 const transactionId = String(t.transaction_id || '').toLowerCase();
-                return userName.includes(searchQuery.toLowerCase()) || 
-                       transactionId.includes(searchQuery.toLowerCase());
+                return userName.includes(searchQuery.toLowerCase()) ||
+                    transactionId.includes(searchQuery.toLowerCase());
             });
         }
 
         // Filter by status
         if (selectedStatus && selectedStatus !== 'all') {
-            filtered = filtered.filter(t => 
+            filtered = filtered.filter(t =>
                 t.status?.toLowerCase() === selectedStatus.toLowerCase()
             );
         }
@@ -145,11 +153,10 @@ export default function TransactionsTable() {
                     </h2>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
-                            showFilters 
-                                ? 'border-primary bg-primary/10 text-primary' 
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${showFilters
+                                ? 'border-primary bg-primary/10 text-primary'
                                 : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
+                            }`}
                     >
                         <Filter className="w-4 h-4" />
                         <span>Filters</span>
