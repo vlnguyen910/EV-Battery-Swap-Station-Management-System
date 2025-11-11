@@ -52,7 +52,7 @@ export default function StationCard({ station, onClick }) {
               </div>
               <div className="flex items-center gap-1 text-gray-600">
                 <Battery size={16} />
-                <span>{station.availableBatteries ?? 0} Slots</span>
+                <span>{station.availableBatteries ?? 0} available batteries</span>
               </div>
             </div>
           </div>
