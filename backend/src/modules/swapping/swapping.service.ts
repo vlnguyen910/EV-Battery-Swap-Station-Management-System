@@ -98,11 +98,11 @@ export class SwappingService {
             return await this.databaseService.$transaction(async (prisma) => {
 
                 await this.batteriesService.returnBatteryToStation(return_battery_id, station_id, prisma);
-                
+
                 // ✅ FIXED: assignBatteryToVehicle now updates both Battery AND Vehicle
                 // No need to call updateBatteryId separately
                 await this.batteriesService.assignBatteryToVehicle(taken_battery_id, vehicle_id, prisma);
-                
+
                 await this.subscriptionsService.incrementSwapUsed(subscription.subscription_id, prisma);
 
                 const returnBattery = await this.batteriesService.findOne(return_battery_id);
@@ -131,7 +131,7 @@ export class SwappingService {
                 let reservationStatus = null;
                 //If user have reservation, update reservation status to completed
                 if (reservation) {
-                    reservationStatus = await this.reservationsService.updateReservationStatus(reservation.reservation_id, user_id, ReservationStatus.completed, prisma);
+                    reservationStatus = await this.reservationsService.updateReservationStatus(reservation.reservation_id, user_id, vehicle_id, ReservationStatus.completed, prisma);
                 }
 
                 this.logger.log(`Battery swap completed successfully for user ID ${user_id}, vehicle ID ${vehicle_id}`);
@@ -170,7 +170,7 @@ export class SwappingService {
                 }, prisma);
 
                 if (reservation_id) {
-                    await this.reservationsService.updateReservationStatus(reservation_id, user_id, ReservationStatus.completed, prisma);
+                    await this.reservationsService.updateReservationStatus(reservation_id, user_id, vehicle_id, ReservationStatus.completed, prisma);
                 }
 
                 return {
