@@ -38,12 +38,7 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  {/* determine active state: either vehicle.status === 'active' or matched active subscription */}
-                  {(function () {
-                    // Use authoritative DB status only (active / inactive)
-                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active')
-                    return <Bike className={`w-6 h-6 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                  })()}
+                  <Bike className="w-6 h-6 text-blue-600" />
                   <h3 className="font-semibold text-lg text-gray-900">{v.name || v.vin || 'Vehicle'}</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 mt-3 text-sm">
@@ -55,21 +50,6 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
                     <span className="text-gray-500">Battery Module:</span>
                     <span className="text-gray-800 ml-1">{v.battery_model}</span>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-4 mt-1">
-                <div className="flex flex-col items-end">
-                  {(function () {
-                    // Respect DB `status` field as authoritative
-                    const isActive = ((v?.status || '').toString().toLowerCase() === 'active')
-                    if (isActive) return (<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Active</span>)
-                    return (
-                      <>
-                        <span className="bg-red-50 border border-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">Inactive</span>
-                        <span className="text-sm text-gray-500 mt-2 max-w-xs text-right">Bạn cần đăng ký gói thuê pin để kích hoạt xe này.</span>
-                      </>
-                    )
-                  })()}
                 </div>
               </div>
             </div>
