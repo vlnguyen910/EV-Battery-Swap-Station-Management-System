@@ -134,13 +134,16 @@ export const BookingProvider = ({ children }) => {
     }, []);
 
     // ============ SWAP REQUEST METHODS ============
-    const fetchSwapRequestsForStation = useCallback(async (stationId) => {
+    const fetchSwapRequestsForStation = useCallback(async (stationId, isInitialLoad = true) => {
         if (!stationId) {
             console.warn('No station_id provided to fetch swap requests');
             return;
         }
 
-        setSwapRequestLoading(true);
+        // Only show loading on initial load
+        if (isInitialLoad) {
+            setSwapRequestLoading(true);
+        }
         setSwapRequestError(null);
 
         try {
@@ -152,7 +155,9 @@ export const BookingProvider = ({ children }) => {
             setSwapRequestError(err.message || 'Failed to fetch swap requests');
             setSwapRequests([]);
         } finally {
-            setSwapRequestLoading(false);
+            if (isInitialLoad) {
+                setSwapRequestLoading(false);
+            }
         }
     }, []);
 

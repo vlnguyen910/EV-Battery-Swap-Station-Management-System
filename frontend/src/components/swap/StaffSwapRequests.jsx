@@ -34,16 +34,28 @@ export default function StaffSwapRequests() {
     // Fetch scheduled reservations when component mounts or user changes
     useEffect(() => {
         if (user?.station_id) {
-            fetchSwapRequestsForStation(user.station_id);
+            // Initial load with loading state
+            fetchSwapRequestsForStation(user.station_id, true);
+
+            // Auto-fetch swap requests every 5 seconds for real-time updates (without loading state)
+            const interval = setInterval(() => {
+                // Fetch without setting loading state (background update)
+                fetchSwapRequestsForStation(user.station_id, false);
+            }, 5000)
+
+            return () => clearInterval(interval)
         }
     }, [user?.station_id, fetchSwapRequestsForStation]);
 
     // Fetch all reservations for history (not just scheduled)
     useEffect(() => {
-        const fetchAllReservations = async () => {
+        const fetchAllReservations = async (isInitialLoad = false) => {
             if (!user?.station_id) return;
 
-            setHistoryLoading(true);
+            // Only show loading on initial load
+            if (isInitialLoad) {
+                setHistoryLoading(true);
+            }
             try {
                 // Get reservations for this station (currently returns scheduled only from backend)
                 // But we pass them to ReservationHistory which will show them with all status options
@@ -78,11 +90,23 @@ export default function StaffSwapRequests() {
             } catch (err) {
                 console.error('Error fetching all reservations:', err);
             } finally {
-                setHistoryLoading(false);
+                if (isInitialLoad) {
+                    setHistoryLoading(false);
+                }
             }
         };
 
-        fetchAllReservations();
+        if (user?.station_id) {
+            // Initial load with loading state
+            fetchAllReservations(true);
+
+            // Auto-fetch reservation history every 5 seconds for real-time updates (without loading state)
+            const interval = setInterval(() => {
+                fetchAllReservations(false);
+            }, 5000)
+
+            return () => clearInterval(interval)
+        }
     }, [user?.station_id]);
 
     // Enrich swap requests with user, vehicle, and battery info
