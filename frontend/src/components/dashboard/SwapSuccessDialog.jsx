@@ -13,7 +13,7 @@ export default function SwapSuccessDialog({ open, onOpenChange, summary }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
         <div className="bg-white dark:bg-background rounded-xl">
           <div className="flex flex-col items-center px-6 pt-6">
             <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40">
