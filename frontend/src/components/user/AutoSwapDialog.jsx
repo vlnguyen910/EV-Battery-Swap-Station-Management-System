@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { useStation } from '../../hooks/useContext';
@@ -209,7 +210,7 @@ export default function AutoSwapDialog({ open, onOpenChange, userId, onSuccess }
             onOpenChange(false);
 
             // Show success alert
-            alert('Battery swap completed successfully!');
+            toast.success('Battery swap completed successfully!');
 
             if (onSuccess) {
                 onSuccess(response);

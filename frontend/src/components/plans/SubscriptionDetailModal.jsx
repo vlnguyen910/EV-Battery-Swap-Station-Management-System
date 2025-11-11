@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Info, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ const ProgressBar = ({ label, current, total, percentage }) => (
     <div className="flex items-baseline justify-between gap-4">
       <p className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal">{label}</p>
       <p className="text-slate-600 dark:text-slate-300 text-xs font-normal leading-normal">
-        {current}/{total}
+        {current}/{total} km
       </p>
     </div>
     <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
@@ -127,7 +128,7 @@ export default function SubscriptionDetailModal({ subscription, open, onClose, o
       setShowCancelConfirm(false);
       
       // Show success message
-      alert('Subscription cancelled successfully');
+      toast.success('Subscription cancelled successfully');
       
       // Notify parent to refresh data
       if (onSubscriptionCancelled) {
@@ -138,7 +139,7 @@ export default function SubscriptionDetailModal({ subscription, open, onClose, o
       onClose();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-      alert(error.response?.data?.message || 'Failed to cancel subscription. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to cancel subscription. Please try again.');
     } finally {
       setCancelling(false);
     }
@@ -205,12 +206,13 @@ export default function SubscriptionDetailModal({ subscription, open, onClose, o
               label="Base Price" 
               value={formatPrice(pkg?.base_price)} 
             />
-            <DetailRow 
+            {/* To-Do: Lay tu config ra */}
+            {/* <DetailRow 
               label="Penalty Fee" 
-              value={`${formatPrice(pkg?.penalty_fee)}/swap`}
+              value={`${formatPrice(pkg?.penalty_fee)}`}
               tooltip="Fee for exceeding usage limits."
               highlight
-            />
+            /> */}
             <DetailRow 
               label="Base Distance" 
               value={`${pkg?.base_distance || 0} km`} 
@@ -223,25 +225,18 @@ export default function SubscriptionDetailModal({ subscription, open, onClose, o
 
           {/* Progress Bars */}
           <div className="flex flex-col gap-4 pt-2">
-            <ProgressBar 
+            {/* <ProgressBar 
               label="Swaps Used"
               current={subscription.swap_used || 0}
               total={pkg?.swap_count || 0}
               percentage={swapPercentage}
-            />
+            /> */}
             <ProgressBar 
               label="Distance Traveled"
-              current={subscription.distance_traveled || 0}
+              current={subscription.distance_traveled || 0} 
               total={pkg?.base_distance || 0}
               percentage={distancePercentage}
             />
-          </div>
-
-          {/* Subscription ID */}
-          <div className="text-center pt-1">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              ID: {subscription.subscription_id}
-            </p>
           </div>
         </div>
 

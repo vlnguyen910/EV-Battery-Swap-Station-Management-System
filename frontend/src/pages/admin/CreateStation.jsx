@@ -75,8 +75,10 @@ export default function CreateStation() {
 
   const handleCancel = () => {
     if (formik.dirty) {
-      const confirmLeave = window.confirm('You have unsaved changes. Are you sure you want to leave?');
-      if (!confirmLeave) return;
+      toast.warning('You have unsaved changes', {
+        description: 'Changes will be lost if you leave without saving',
+      });
+      return;
     }
     navigate('/admin/stations-list');
   };
