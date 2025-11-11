@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { Plus, Edit3, ToggleLeft, ToggleRight, Bike } from 'lucide-react';
+import { Bike, X } from 'lucide-react';
 import AddVehicleDialog from './AssignVehicle'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog'
-import { useNavigate } from 'react-router-dom'
+import { vehicleService } from '../../services/vehicleService'
+import { toast } from 'sonner'
 
 export default function VehiclesList({ vehicles = [], onAddVehicle }) {
   const [showSuggestion, setShowSuggestion] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const navigate = useNavigate()
+  const [removeVehicle, setRemoveVehicle] = useState(null)
+  const [isRemoving, setIsRemoving] = useState(false)
 
   const handleAdded = (info) => {
     // parent can refresh by passing onAddVehicle
@@ -17,6 +19,30 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
     if (info?.suggestedSubscription) setShowSuggestion(true)
     // hide after a while
     setTimeout(() => setShowSuggestion(false), 8000)
+  }
+
+  const handleRemoveClick = (vehicle) => {
+    setRemoveVehicle(vehicle)
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmRemove = async () => {
+    if (!removeVehicle) return
+
+    setIsRemoving(true)
+    try {
+      await vehicleService.removeVehicleFromCurrentUser(removeVehicle.vin)
+      toast.success('Vehicle unlinked successfully!')
+      setConfirmOpen(false)
+      setRemoveVehicle(null)
+      // Refresh vehicle list
+      if (onAddVehicle) onAddVehicle()
+    } catch (error) {
+      console.error('Error removing vehicle:', error)
+      toast.error(error.response?.data?.message || 'Cannot unlink vehicle')
+    } finally {
+      setIsRemoving(false)
+    }
   }
 
   return (
@@ -28,7 +54,7 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
 
       {showSuggestion && (
         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded text-sm">
-          Vehicle added. Bạn có thể <a className="text-blue-600 underline" href="/driver/plans">đăng ký gói thuê pin</a> cho xe này sau.
+          Vehicle added. You can <a className="text-blue-600 underline" href="/driver/plans">subscribe to a battery rental plan</a> for this vehicle later.
         </div>
       )}
 
@@ -36,7 +62,7 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
         {vehicles.map((v, idx) => (
           <div key={idx} className="border border-gray-200 p-4 rounded-lg">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <Bike className="w-6 h-6 text-blue-600" />
                   <h3 className="font-semibold text-lg text-gray-900">{v.name || v.vin || 'Vehicle'}</h3>
@@ -52,26 +78,40 @@ export default function VehiclesList({ vehicles = [], onAddVehicle }) {
                   </div>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleRemoveClick(v)}
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                <span className="text-sm">Unlink</span>
+              </Button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Confirm dialog when activating an inactive vehicle */}
+      {/* Confirm dialog for removing vehicle */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Đăng ký gói thuê pin</DialogTitle>
+            <DialogTitle>Confirm Unlink Vehicle</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Bạn cần đăng ký gói thuê pin để kích hoạt xe này. Bạn muốn chuyển tới trang đăng ký gói ngay bây giờ?</p>
+            <p>Are you sure you want to unlink the vehicle <strong>{removeVehicle?.vin}</strong> from your account?</p>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Không</Button>
-            <Button onClick={() => {
-              setConfirmOpen(false)
-              navigate('/driver/plans')
-            }}>Có</Button>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={isRemoving}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmRemove}
+              disabled={isRemoving}
+            >
+              {isRemoving ? 'Processing...' : 'Confirm'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

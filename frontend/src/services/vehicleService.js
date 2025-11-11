@@ -81,6 +81,22 @@ const addVehicleToCurrentUser = async (vin) => {
   }
 };
 
+// Function to remove vehicle from current user (driver self-unassignment)
+const removeVehicleFromCurrentUser = async (vin) => {
+  try {
+    console.log("Removing vehicle with VIN:", vin);
+    const response = await api.patch(API_ENDPOINTS.VEHICLE.REMOVE_VEHICLE, {
+      vin: String(vin).trim(),
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error removing vehicle:", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
+    throw error;
+  }
+};
+
 // Function to assign user to vehicle (by VIN) - for admin use
 const assignUserToVehicle = async (payload) => {
   try {
@@ -122,6 +138,7 @@ export const vehicleService = {
   createVehicle,
   assignUserToVehicle,
   addVehicleToCurrentUser,
+  removeVehicleFromCurrentUser,
 };
 
 // parseBatteryNumber moved to ../utils/battery for reuse
