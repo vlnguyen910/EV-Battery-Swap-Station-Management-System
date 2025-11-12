@@ -243,29 +243,42 @@ export default function SubscriptionDetailModal({ subscription, open, onClose, o
         {/* Footer */}
         <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 -mx-6 -mb-6 px-4 py-3 rounded-b-lg sticky bottom-0">
           <div className="flex items-center justify-between w-full gap-3">
-            {/* Cancel Subscription Button - Left side */}
-            {subscription.status === 'active' && (
-              <Button 
-                variant="destructive"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => setShowCancelConfirm(true)}
-              >
-                <AlertTriangle className="w-4 h-4" />
-                Cancel Subscription
-              </Button>
-            )}  
+            {/* Cancel/Renew Buttons - Left side */}
+            <div className="flex gap-2">
+              {subscription.status === 'active' && (
+                <Button 
+                  variant="destructive"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => setShowCancelConfirm(true)}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Cancel Subscription
+                </Button>
+              )}
+              {subscription.status === 'expired' && (
+                <Button 
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    // TODO: Implement renewal functionality
+                    console.log('Renew subscription:', subscription.subscription_id);
+                  }}
+                >
+                  Renew Subscription
+                </Button>
+              )}
+            </div>
             
             {/* Done Button - Right side */}
-            <div className={subscription.status === 'active' ? '' : 'ml-auto'}>
-              <Button 
-                onClick={onClose}
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                Done
-              </Button>
-            </div>
+            <Button 
+              onClick={onClose}
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              Done
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
