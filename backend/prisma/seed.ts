@@ -7,7 +7,7 @@
 //     console.log('🗑️  Clearing existing data...\n');
 
 //     // Delete in correct order to respect foreign key constraints
-//     await prisma.batteries.deleteMany();
+//     await prisma.batteriesTransfer.deleteMany();
 //     await prisma.batteryTransferTicket.deleteMany();
 //     await prisma.batteryTransferRequest.deleteMany();
 //     await prisma.support.deleteMany();
@@ -20,8 +20,107 @@
 //     await prisma.batteryServicePackage.deleteMany();
 //     await prisma.station.deleteMany();
 //     await prisma.user.deleteMany();
+//     await prisma.config.deleteMany();
 
 //     console.log('✓ All data cleared\n');
+// }
+
+// async function seedConfigs() {
+//     console.log('⚙️  Seeding configs...');
+//     const configs = await Promise.all([
+//         prisma.config.create({
+//             data: {
+//                 type: 'deposit',
+//                 name: 'Battery_Deposit_Default',
+//                 value: 400000,
+//                 description: 'Default battery deposit fee: 400,000 VNĐ',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'late_fee',
+//                 name: 'Hourly_Late_Fee',
+//                 value: 5000,
+//                 description: 'Late return fee per hour',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'service_fee',
+//                 name: 'Swap_Service_Fee',
+//                 value: 2000,
+//                 description: 'Fee for each battery swap transaction',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'penalty',
+//                 name: 'Battery_Damage_Penalty',
+//                 value: 50000,
+//                 description: 'Penalty for battery damage',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'penalty',
+//                 name: 'Equipment_Loss_Penalty',
+//                 value: 100000,
+//                 description: 'Penalty for losing equipment',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'swap_fee',
+//                 name: 'Express_Swap_Fee',
+//                 value: 5000,
+//                 description: 'Additional fee for express swap service',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'damage_fee',
+//                 name: 'Minor_Damage_Fee',
+//                 value: 10000,
+//                 description: 'Fee for minor damage to vehicles',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'penalty',
+//                 name: 'Overcharge_Fee_Tier1',
+//                 value: 216,
+//                 description: 'Tier 1 (2000km over limit): 216 VNĐ',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'penalty',
+//                 name: 'Overcharge_Fee_Tier2',
+//                 value: 195,
+//                 description: 'Tier 2 (2001 - 4000km over limit): 195 VNĐ',
+//                 is_active: true,
+//             },
+//         }),
+//         prisma.config.create({
+//             data: {
+//                 type: 'penalty',
+//                 name: 'Overcharge_Fee_Tier3',
+//                 value: 173,
+//                 description: 'Tier 3 (4000km upper over limit): 173 VNĐ',
+//                 is_active: true,
+//             },
+//         }),
+//     ]);
+
+//     console.log(`   ✓ Created ${configs.length} configs`);
 // }
 
 // async function main() {
@@ -30,9 +129,12 @@
 
 //     console.log('🌱 Starting database seeding...\n');
 
+//     // Seed configs first
+//     await seedConfigs();
+
 //     // 1. Seed Users
 //     console.log('👥 Seeding users...');
-//     const hashedPassword = await bcrypt.hash('12345', 10);
+//     const hashedPassword = await bcrypt.hash('123456', 10);
 
 //     const admin = await prisma.user.create({
 //         data: {
@@ -533,7 +635,7 @@
 //     console.log('🔗 Seeding batteries transfer records...');
 
 //     // For completed transfer (request 1)
-//     await prisma.batteries.createMany({
+//     await prisma.batteriesTransfer.createMany({
 //         data: [
 //             {
 //                 ticket_id: exportTicket1.ticket_id,
@@ -563,7 +665,7 @@
 //     });
 
 //     // For in-progress transfer (request 2)
-//     await prisma.batteries.createMany({
+//     await prisma.batteriesTransfer.createMany({
 //         data: [
 //             {
 //                 ticket_id: exportTicket2.ticket_id,
@@ -582,6 +684,7 @@
 
 //     // Summary
 //     console.log('📊 Seeding Summary:');
+//     console.log('   Configs:', await prisma.config.count());
 //     console.log('   Users:', await prisma.user.count());
 //     console.log('   Stations:', await prisma.station.count());
 //     console.log('   Batteries:', await prisma.battery.count());
@@ -594,7 +697,7 @@
 //     console.log('   Support Tickets:', await prisma.support.count());
 //     console.log('   Battery Transfer Requests:', await prisma.batteryTransferRequest.count());
 //     console.log('   Battery Transfer Tickets:', await prisma.batteryTransferTicket.count());
-//     console.log('   Batteries Transfer Records:', await prisma.batteries.count());
+//     console.log('   Batteries Transfer Records:', await prisma.batteriesTransfer.count());
 // }
 
 // main()
