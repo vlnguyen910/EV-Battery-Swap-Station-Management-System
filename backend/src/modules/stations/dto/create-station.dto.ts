@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { StationStatus } from "@prisma/client";
-import { IsDecimal, IsEnum, IsNotEmpty, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsDecimal, IsEnum, IsNotEmpty, IsString, Max, MaxLength, Min, IsNumber } from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreateStationDto {
     @ApiProperty({ description: 'Name of the station', maxLength: 100, example: 'Downtown EV Station' })
@@ -15,20 +16,16 @@ export class CreateStationDto {
     @MaxLength(255)
     address: string;
 
-    @ApiProperty({ description: 'Latitude of the station', example: '37.7749' })
     @IsNotEmpty()
-    @IsDecimal({ decimal_digits: '1,8' })
-    @Min(-90)
-    @Max(90)
-    latitude: string;
+    @IsNumber() // 3. Finally, validates that the result is a number
+    @Type(() => Number) // 2. Transforms the incoming string ("10.8793731") to a number
+    latitude: number; // 1. The final type we want
 
-    @ApiProperty({ description: 'Longitude of the station', example: '-122.4194' })
     @IsNotEmpty()
-    @IsDecimal({ decimal_digits: '1,9' })
-    @Min(-180)
-    @Max(180)
-    longitude: string;
-
+    @IsNumber()
+    @Type(() => Number) // Same for longitude
+    longitude: number;
+    
     @ApiProperty({ description: 'Status of the station', example: 'active', enum: StationStatus })
     @IsNotEmpty({ message: 'Status is required' })
     @IsEnum(StationStatus, { message: 'Status must be active, inactive, or maintenance  ' })
