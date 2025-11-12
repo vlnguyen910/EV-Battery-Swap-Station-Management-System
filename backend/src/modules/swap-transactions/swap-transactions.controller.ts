@@ -4,7 +4,7 @@ import { CreateSwapTransactionDto } from './dto/create-swap-transaction.dto';
 import { UpdateSwapTransactionDto } from './dto/update-swap-transaction.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { $Enums } from '@prisma/client';
 
 @Controller('swap-transactions')
@@ -12,10 +12,9 @@ import { $Enums } from '@prisma/client';
 export class SwapTransactionsController {
   constructor(private readonly swapTransactionsService: SwapTransactionsService) { }
 
-  @Roles($Enums.Role.driver)
   @Post()
-  create(@Body() dto: CreateSwapTransactionDto) {
-    return this.swapTransactionsService.create(dto);
+  create(@Body() createDto: CreateSwapTransactionDto) {
+    return this.swapTransactionsService.create(createDto);
   }
 
   @Roles($Enums.Role.admin)
@@ -30,8 +29,14 @@ export class SwapTransactionsController {
     return this.swapTransactionsService.findAllByUserId(user_id);
   }
 
+  @Roles($Enums.Role.admin, $Enums.Role.station_staff)
+  @Get('station/:station_id')
+  findByStation(@Param('station_id', ParseIntPipe) station_id: number) {
+    return this.swapTransactionsService.findByStation(station_id);
+  }
+
   @Roles($Enums.Role.admin)
-  @Get(':id')
+  @Get('transaction/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.swapTransactionsService.findOne(id);
   }

@@ -1,57 +1,36 @@
-import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { Outlet } from "react-router-dom";
+import Navigation from "../components/layout/Navigation";
 
 export default function StaffPage() {
-    const { user, logout } = useContext(AuthContext);
-    const navigate = useNavigate();
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/', { replace: true });
-    };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            backgroundColor: '#f8f9fa',
-            padding: '2rem'
-        }}>
-            <div style={{
-                maxWidth: '1200px',
-                margin: '0 auto',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                padding: '2rem'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '2rem',
-                    borderBottom: '1px solid #dee2e6',
-                    paddingBottom: '1rem'
-                }}>
-                    <div>
-                        <h1 style={{ color: '#333', margin: 0 }}>🏪 Staff Dashboard</h1>
-                        <p style={{ color: '#666', margin: '0.5rem 0 0 0' }}>Welcome back, {user?.name}!</p>
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        🚪 Logout
-                    </button>
-                </div>
+        <div className="min-h-screen bg-gray-50 relative">
+            {/* Aurora Dream Diagonal Flow Background */}
+            <div
+                className="fixed inset-0 z-0"
+                style={{
+                    background: `
+                        radial-gradient(ellipse 80% 60% at 5% 40%, #ecf1fbdc, transparent 67%),
+                        radial-gradient(ellipse 70% 60% at 45% 45%, #eaf1ff69, transparent 67%),
+                        radial-gradient(ellipse 62% 52% at 83% 76%, #f7fbffff, transparent 63%),
+                        radial-gradient(ellipse 60% 48% at 75% 20%, #dde5ffbc, transparent 66%),
+                        linear-gradient(45deg, #eaeeffc5 0%, #ffffffff 100%)
+                    `,
+                }}
+            />
+
+            {/* Navigation */}
+            <div className="relative z-10">
+                <Navigation type="staff" />
             </div>
+
+            {/* Main Content */}
+            <main className="relative z-10 p-6">
+                {/* Trang con sẽ render ở đây */}
+                <Outlet />
+            </main>
         </div>
     );
 }
+

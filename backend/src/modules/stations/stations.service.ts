@@ -1,23 +1,30 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { StationStatus } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { StationStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { CreateStationDto } from './dto/create-station.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { DatabaseService } from '../database/database.service';
+import { findAvailibaleStationsDto } from './dto/find-availiable-station.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class StationsService {
+  private logger = new Logger(StationsService.name);
+
   constructor(
     private vehiclesService: VehiclesService,
-    private databaseService: DatabaseService
+    private databaseService: DatabaseService,
+    private configService: ConfigService
   ) { }
 
   async create(createStationDto: CreateStationDto) {
     try {
-      return await this.databaseService.station.create({
+      const newStation = await this.databaseService.station.create({
         data: createStationDto,
       });
+
+      return newStation;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('Station name already exists');
@@ -28,7 +35,7 @@ export class StationsService {
 
   async findAll(status?: StationStatus) {
     const whereClause = status ? { status } : {};
-    
+
     return await this.databaseService.station.findMany({
       where: whereClause,
       include: {
@@ -47,74 +54,87 @@ export class StationsService {
   }
 
   async findAllAvailable(
-    user_id: number,
-    latitude: Decimal,
-    longitude: Decimal,
-    radiusKm: number = 20
+    dto: findAvailibaleStationsDto,
   ) {
-    const vehicles = await this.vehiclesService.findByUser(user_id);
+    try {
+      const radiusKm = this.configService.get<number>('SEARCH_RADIUS_KM', 20);
 
-    if (vehicles.length === 0) {
-      throw new NotFoundException('No vehicles found for this user');
-    }
+      // If vehicle_id is not provided, get all active stations
+      if (!dto.vehicle_id || !dto.latitude || !dto.longitude) {
+        this.logger.log('Longitude and latitude not provide, return all station')
+        const availableStations = await this.findAll(StationStatus.active);
+        return availableStations;
+      }
 
-    const activeVehicles = vehicles.filter(vehicles => vehicles.status === 'active');
+      // Type assertion - TypeScript biết chắc chắn không phải undefined
+      const userLatitude: Decimal = new Decimal(dto.latitude);
+      const userLongitude: Decimal = new Decimal(dto.longitude);
 
-    if (activeVehicles.length === 0) {
-      throw new NotFoundException('No active vehicles found for this user');
-    }
+      const vehicle = await this.vehiclesService.findOne(dto.vehicle_id);
 
-    const { battery_model, battery_type } = activeVehicles[0];
+      if (vehicle.user_id !== dto.user_id) {
+        throw new BadRequestException('Vehicle does not belong to the user');
+      }
 
-    const allAvailableStations = await this.databaseService.station.findMany({
-      where: {
-        status: 'active',
-        batteries: {
-          some: {
-            model: battery_model,
-            type: battery_type,
-            status: 'full'
+      const allAvailableStations = await this.databaseService.station.findMany({
+        where: {
+          status: 'active',
+          batteries: {
+            some: {
+              model: vehicle.battery_model,
+              type: vehicle.battery_type,
+              status: 'full'
+            }
           }
-        }
-      },
-      select: {
-        station_id: true,
-        name: true,
-        address: true,
-        latitude: true,
-        longitude: true,
-        status: true,
-        _count: {
-          select: {
-            batteries: {
-              where: {
-                model: battery_model,
-                type: battery_type,
-                status: 'full'
+        },
+        select: {
+          station_id: true,
+          name: true,
+          address: true,
+          latitude: true,
+          longitude: true,
+          status: true,
+          _count: {
+            select: {
+              batteries: {
+                where: {
+                  model: vehicle.battery_model,
+                  type: vehicle.battery_type,
+                  status: 'full'
+                }
               }
             }
           }
         }
+      });
+
+      const result = allAvailableStations
+        .map(station => ({
+          station_id: station.station_id,
+          name: station.name,
+          address: station.address,
+          latitude: station.latitude,
+          longitude: station.longitude,
+          status: station.status,
+          available_batteries: station._count.batteries,
+          distance: this.calculateDistance(
+            userLatitude,
+            userLongitude,
+            station.latitude,
+            station.longitude
+          )
+        }))
+        .filter(station => station.distance <= radiusKm) // Add this line
+        .sort((a, b) => a.distance - b.distance);
+
+      if (result.length === 0) {
+        throw new NotFoundException(`No available stations found within ${radiusKm} km radius`);
       }
-    });
 
-    if (allAvailableStations.length === 0) {
-      throw new NotFoundException('No available stations found');
+      return result.sort((a, b) => a.distance - b.distance);
+    } catch (error) {
+      throw error;
     }
-
-    const result = allAvailableStations.map(station => ({
-      station_id: station.station_id,
-      name: station.name,
-      address: station.address,
-      latitude: station.latitude,
-      longitude: station.longitude,
-      status: station.status,
-      available_batteries: station._count.batteries,
-      distance: this.calculateDistance(latitude, longitude, station.latitude, station.longitude)
-    }))
-      .sort((a, b) => a.distance - b.distance);
-
-    return result;
   }
 
   async findOne(id: number) {

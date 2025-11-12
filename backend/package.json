@@ -19,13 +19,16 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "tsx prisma/seed.ts",
-    "clear-db": "ts-node prisma/clear-db.ts"
+    "clear-db": "ts-node prisma/clear-db.ts",
+    "export-data": "tsx prisma/export-data.ts",
+    "import-data": "tsx prisma/import-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts",
     "schema": "./prisma"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -34,20 +37,24 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.0.1",
+    "@nestjs/swagger": "^11.2.0",
     "@prisma/client": "^6.16.2",
     "@types/bcrypt": "^6.0.0",
+    "@types/passport-google-oauth20": "^2.0.17",
     "bcrypt": "^6.0.0",
-    "bcrypt-ts": "^7.1.0",
     "class-transformer": "^0.5.1",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
-    "moment": "^2.30.1",
     "dotenv": "^17.2.2",
+    "moment": "^2.30.1",
+    "nodemailer": "^7.0.10",
     "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "qs": "^6.14.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -56,9 +63,10 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/cookie-parser": "^1.4.9",
-    "@types/express": "^5.0.0",
+    "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^7.0.3",
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "^6.0.2",
     "@types/validator": "^13.15.3",
