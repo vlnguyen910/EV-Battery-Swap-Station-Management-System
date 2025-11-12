@@ -40,11 +40,11 @@ export class CreateBatteryServicePackageDto {
   swap_count: number;
 
   @ApiProperty({ description: 'Penalty fee for the battery service package', minimum: 0 })
-  @IsNotEmpty({ message: 'Penalty fee is required' })
+  @IsOptional()
   @IsInt({ message: 'Penalty fee must be an integer' })
   @Min(0, { message: 'Penalty fee must be non-negative' })
   @Type(() => Number)
-  penalty_fee: number;
+  penalty_fee: number = 200;
 
   @ApiProperty({ description: 'Duration days for the battery service package', minimum: 1 })
   @IsNotEmpty({ message: 'Duration days is required' })
