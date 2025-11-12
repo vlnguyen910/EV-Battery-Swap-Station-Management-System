@@ -9,6 +9,8 @@ import {
   Req,
   Res,
   UseGuards,
+  UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
@@ -444,12 +446,41 @@ export class PaymentsController {
  * - Testing payment flows
  * - When VNPAY is unavailable
  */
-  @Post('direct-with-fees')
-  @UseGuards(AuthGuard)
-  async createDirectPaymentWithFees(
-    @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
+  // @Post('direct-with-fees')
+  // @UseGuards(AuthGuard)
+  // async createDirectPaymentWithFees(
+  //   @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
+  // ) {
+  //   return this.paymentsService.createDirectPaymentWithFees(createPaymentWithFeesDto);
+  // }
+
+  /**
+   * Create subscription renewal payment with penalty fee
+   * POST /payments/subscription-renewal
+   */
+  @Post('subscription-renewal')
+  @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create payment for subscription renewal' })
+  @ApiResponse({ status: 201, description: 'Renewal payment URL created' })
+  async createSubscriptionRenewalPayment(
+    @Body() body: { subscription_id: number },
+    @Req() req: Request,
   ) {
-    return this.paymentsService.createDirectPaymentWithFees(createPaymentWithFeesDto);
+    if (!body.subscription_id) {
+      throw new BadRequestException('subscription_id is required');
+    }
+
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '0.0.0.0';
+
+    return this.paymentsService.createSubscriptionRenewalPayment(
+      body.subscription_id,
+      ipAddr,
+    );
   }
 }
+
 
