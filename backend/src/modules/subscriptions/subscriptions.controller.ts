@@ -115,4 +115,37 @@ export class SubscriptionsController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.subscriptionsService.remove(id);
   }
+
+  /**
+   * Renew an expired subscription
+   * PATCH /subscriptions/:id/renew
+   */
+  @Patch(':id/renew')
+  @Roles($Enums.Role.driver, $Enums.Role.admin)
+  @ApiOperation({ summary: 'Renew an expired subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription renewed successfully',
+  })
+  renewSubscription(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() renewalDto: { vehicle_id: number },
+  ) {
+    return this.subscriptionsService.renewSubscription(id, renewalDto.vehicle_id);
+  }
+
+  /**
+   * Get renewal cost (penalty fee calculation)
+   * GET /subscriptions/:id/renewal-cost
+   */
+  // @Get(':id/renewal-cost')
+  // @Roles($Enums.Role.driver, $Enums.Role.admin)
+  // @ApiOperation({ summary: 'Get renewal cost including penalty fee' })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Renewal cost details',
+  // })
+  // getRenewalCost(@Param('id', ParseIntPipe) id: number) {
+  //   return this.subscriptionsService.renewSubscriptionWithPayment(id, 0);
+  // }
 }

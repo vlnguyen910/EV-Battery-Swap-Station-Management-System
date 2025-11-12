@@ -33,9 +33,9 @@ export class CalculateOverchargeFeeDto {
   subscriptionId: number;
 
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   @Min(0)
-  actualDistanceTraveled: number;
+  actualDistanceTraveled?: number;
 }
 
 /**
