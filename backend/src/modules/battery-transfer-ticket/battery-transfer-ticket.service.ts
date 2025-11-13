@@ -23,7 +23,10 @@ export class BatteryTransferTicketService {
 
   async create(dto: CreateBatteryTransferTicketDto) {
     try {
+      this.logger.log(`Creating ticket with DTO:`, JSON.stringify(dto, null, 2));
+
       const transferRequest = await this.batteryTransferRequestService.findOne(dto.transfer_request_id);
+      this.logger.log(`Transfer request found: ${transferRequest.transfer_request_id}, status: ${transferRequest.status}`);
 
       // Kiểm tra status của transfer request
       //Nếu đã nhập pin thành công thì ko cần tạo thêm ticket với request đó nữa
@@ -33,6 +36,21 @@ export class BatteryTransferTicketService {
 
       const station = await this.stationsService.findOne(dto.station_id);
       const staff = await this.usersService.findOneById(dto.staff_id);
+      this.logger.log(`Station: ${station.station_id}, Staff: ${staff.user_id}, Ticket type: ${dto.ticket_type}`);
+
+
+      const existsingTicket = await this.databaseService.batteryTransferTicket.findFirst({
+        where: {
+          transfer_request_id: dto.transfer_request_id,
+          ticket_type: dto.ticket_type,
+          station_id: dto.station_id,
+        },
+      });
+
+      this.logger.warn(`Duplicate ticket check result: ${existsingTicket ? 'Found' : 'Not Found'}`);
+      if (existsingTicket) {
+        throw new BadRequestException(`Existing ticket found for transfer request ID ${dto.transfer_request_id} at station ID ${dto.station_id} for ticket type ${dto.ticket_type}`);
+      }
 
       if (staff.station_id && staff.station_id !== station.station_id) {
         this.logger.error(`Staff with ID ${staff.user_id} is not belonging to station ID ${station.station_id}`);
@@ -53,9 +71,12 @@ export class BatteryTransferTicketService {
       const batteries = await Promise.all(
         dto.battery_ids.map(async (batteryId) => {
           const battery = await this.batteriesService.findOne(batteryId);
+          this.logger.log(`Found battery ${batteryId}:`, { battery_id: battery.battery_id, status: battery.status, station_id: battery.station_id });
           return battery;
         })
       );
+
+      this.logger.log(`Total batteries found: ${batteries.length}, Required: ${transferRequest.quantity}`);
 
       if (batteries.length !== transferRequest.quantity) {
         throw new BadRequestException(
@@ -137,18 +158,32 @@ export class BatteryTransferTicketService {
         // For import ticket: update battery station_id to destination station
         if (dto.ticket_type === TicketType.import) {
           this.logger.log(`Updating batteries to station ID ${dto.station_id} for Ticket ID: ${ticket.ticket_id}`);
-          await prisma.battery.updateMany({
+          
+          // ✅ FIXED: Fetch batteries to get their current_charge values
+          const batteriesToUpdate = await prisma.battery.findMany({
             where: {
               battery_id: {
                 in: dto.battery_ids,
               },
             },
-            data: {
-              station_id: dto.station_id,
-              status: BatteryStatus.charging,
-            },
           });
 
+          // Update each battery individually to set correct status based on charge
+          await Promise.all(
+            batteriesToUpdate.map((battery) =>
+              prisma.battery.update({
+                where: { battery_id: battery.battery_id },
+                data: {
+                  station_id: dto.station_id,
+                  status: Number(battery.current_charge) === 100 
+                    ? BatteryStatus.full 
+                    : BatteryStatus.charging,
+                },
+              })
+            )
+          );
+
+          // Update transfer request status to completed
           await prisma.batteryTransferRequest.update({
             where: { transfer_request_id: dto.transfer_request_id },
             data: { status: TransferStatus.completed },
@@ -226,31 +261,57 @@ export class BatteryTransferTicketService {
         quantity: transferRequest.quantity
       };
 
+      let availableBatteries: any[] = [];
       // ✅ Dựa vào ticket type để filter
       if (dto.ticket_type === TicketType.export) {
         // Export: pin phải ở station, không in_transit
         findDto = {
           ...findDto,
-          station_id: dto.station_id,
+          station_id: transferRequest.from_station_id,
           status: BatteryStatus.full || BatteryStatus.charging
         };
+
+        availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
+
+        if (availableBatteries.length < transferRequest.quantity) {
+          throw new BadRequestException(
+            `Not enough available batteries. Required: ${transferRequest.quantity}, Available: ${availableBatteries.length}`
+          );
+        }
       } else if (dto.ticket_type === TicketType.import) {
-        // Import: pin phải đang in_transit
-        findDto = {
-          ...findDto,
-          status: BatteryStatus.in_transit,
-          station_id: null,
-        };
+        // Import: pin phải đang in_transit (từ export ticket)
+        const exportTickets = await this.databaseService.batteryTransferTicket.findMany({
+          where: {
+            transfer_request_id: dto.transfer_request_id,
+            ticket_type: TicketType.export,
+          },
+          select: {
+            batteries: {
+              select: {
+                battery: true,
+              },
+            }
+          },
+        });
+
+        if (exportTickets.length === 0) {
+          throw new BadRequestException('No export ticket found for this transfer request');
+        }
+
+        // Flatten batteries from export tickets
+        const allBatteriesFromExport = exportTickets.flatMap(ticket =>
+          ticket.batteries.map(bt => bt.battery)
+        );
+
+        if (allBatteriesFromExport.length === 0) {
+          throw new BadRequestException('No batteries found in export ticket');
+        }
+
+        // ✅ IMPORTANT: Only take the required quantity to match transfer request
+        // This ensures import always gets the exact batteries from export ticket
+        availableBatteries = allBatteriesFromExport.slice(0, transferRequest.quantity);
       } else {
         throw new BadRequestException('Invalid ticket type');
-      }
-
-      const availableBatteries = await this.batteriesService.findBatteryAvailibleForTicket(findDto);
-
-      if (availableBatteries.length < transferRequest.quantity) {
-        throw new BadRequestException(
-          `Not enough available batteries. Required: ${transferRequest.quantity}, Available: ${availableBatteries.length}`
-        );
       }
 
       return {

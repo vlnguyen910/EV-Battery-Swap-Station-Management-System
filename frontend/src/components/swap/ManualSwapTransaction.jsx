@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useBattery, useAuth, useSubscription, usePackage } from '../../hooks/useContext';
 import { swappingService } from '../../services/swappingService';
 import { vehicleService } from '../../services/vehicleService';
 import { reservationService } from '../../services/reservationService';
-import { swapService } from '../../services/swapService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { stationService } from '../../services/stationService';
 import userService from '../../services/userService';
-import TransactionTimeFilter from '../transactions/TransactionTimeFilter';
-import TransactionSearchBar from '../transactions/TransactionSearchBar';
-import TransactionStatusFilter from '../transactions/TransactionStatusFilter';
-import TransactionTable from '../transactions/TransactionTable';
-import TransactionPagination from '../transactions/TransactionPagination';
+import TransactionsTable from '../staff-dashboard/TransactionsTable';
 
 export default function ManualSwapTransaction() {
     const navigate = useNavigate();
@@ -66,15 +62,8 @@ export default function ManualSwapTransaction() {
     });
     const [apiErrors, setApiErrors] = useState([]);
 
-    // Transaction history states
-    const [transactions, setTransactions] = useState([]);
-    const [filteredTransactions, setFilteredTransactions] = useState([]);
-    const [transactionsLoading, setTransactionsLoading] = useState(true);
-    const [timeFilter, setTimeFilter] = useState('week');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const resultsPerPage = 10;
+    // Submit button loading state to prevent duplicate submissions
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Map backend error responses to friendly UI messages
     const mapServerErrorToMessage = (resp) => {
@@ -411,101 +400,6 @@ export default function ManualSwapTransaction() {
         fetchReservation();
     }, [reservationId, searchParams]);
 
-    // Fetch all transactions for staff's station
-    useEffect(() => {
-        const fetchTransactions = async () => {
-            if (!staffStationId) return;
-
-            setTransactionsLoading(true);
-            try {
-                const data = await swapService.getAllSwapTransactionsByStationId(staffStationId);
-                setTransactions(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Error fetching transactions:', error);
-                setTransactions([]);
-            } finally {
-                setTransactionsLoading(false);
-            }
-        };
-
-        fetchTransactions();
-    }, [staffStationId]);
-
-    // Filter transactions based on time, status, and search
-    useEffect(() => {
-
-        let filtered = [...transactions];
-        const now = new Date();
-        filtered = filtered.filter(transaction => {
-            const transactionDate = new Date(transaction.createAt || transaction.created_at);
-            switch (timeFilter) {
-                case 'day': {
-                    // Today only
-                    return transactionDate.getFullYear() === now.getFullYear() &&
-                        transactionDate.getMonth() === now.getMonth() &&
-                        transactionDate.getDate() === now.getDate();
-                }
-                case 'week': {
-                    // This ISO week
-                    const getWeek = (d) => {
-                        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-                        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-                        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-                        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-                        return [d.getUTCFullYear(), weekNo];
-                    };
-                    const [year1, week1] = getWeek(now);
-                    const [year2, week2] = getWeek(transactionDate);
-                    return year1 === year2 && week1 === week2;
-                }
-                case 'month': {
-                    // This month
-                    return transactionDate.getFullYear() === now.getFullYear() &&
-                        transactionDate.getMonth() === now.getMonth();
-                }
-                case 'year': {
-                    // This year
-                    return transactionDate.getFullYear() === now.getFullYear();
-                }
-                default:
-                    return true;
-            }
-        });
-
-        // Status filter
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(transaction => transaction.status === statusFilter);
-        }
-
-        // Search filter
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(transaction => {
-                const transactionId = String(transaction.transaction_id).toLowerCase();
-                const userId = String(transaction.user_id).toLowerCase();
-                const userName = (transaction.user?.full_name || transaction.user?.username || '').toLowerCase();
-                const batteryOut = String(transaction.battery_returned_id || '').toLowerCase();
-                const batteryIn = String(transaction.battery_taken_id || '').toLowerCase();
-
-                return transactionId.includes(query) ||
-                    userId.includes(query) ||
-                    userName.includes(query) ||
-                    batteryOut.includes(query) ||
-                    batteryIn.includes(query);
-            });
-        }
-
-        setFilteredTransactions(filtered);
-        setCurrentPage(1); // Reset to first page when filters change
-    }, [transactions, timeFilter, statusFilter, searchQuery]);
-
-    // Get paginated transactions
-    const paginatedTransactions = filteredTransactions.slice(
-        (currentPage - 1) * resultsPerPage,
-        currentPage * resultsPerPage
-    );
-    const totalPages = Math.ceil(filteredTransactions.length / resultsPerPage);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (['vehicle_id', 'user_id', 'battery_taken_id'].includes(name)) setApiErrors([]);
@@ -516,6 +410,10 @@ export default function ManualSwapTransaction() {
         e.preventDefault();
 
         try {
+            // Prevent duplicate submissions
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+
             // Clear previous API errors
             setApiErrors([]);
 
@@ -525,6 +423,7 @@ export default function ManualSwapTransaction() {
 
             if (isNaN(userIdPayload) || isNaN(vehicleIdPayload) || isNaN(stationIdPayload)) {
                 setApiErrors(['User ID, Vehicle ID, and Station ID are required']);
+                setIsSubmitting(false);
                 return;
             }
 
@@ -556,11 +455,13 @@ export default function ManualSwapTransaction() {
             }
 
             alert('Swap transaction completed successfully!');
+            setIsSubmitting(false);
             navigate('/staff/swap-requests');
         } catch (error) {
             console.error('❌ Error creating swap transaction:', error);
             const resp = error?.response?.data;
             setApiErrors(mapServerErrorToMessage(resp));
+            setIsSubmitting(false);
         }
     };
 
@@ -652,43 +553,9 @@ export default function ManualSwapTransaction() {
                         </button>
                     </div>
 
-                    {/* Filters Bar */}
-                    <div className="mt-6 flex flex-row md:flex-row justify-between items-center gap-4 p-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
-                        {/* Time Filter */}
-                        <TransactionTimeFilter value={timeFilter} onChange={setTimeFilter} />
-
-                        {/* Toolbar - Search and Status Filter */}
-                        <div className="flex gap-2 items-center w-full md:w-auto">
-                            <TransactionSearchBar
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                placeholder="Search transactions..."
-                            />
-                            <TransactionStatusFilter value={statusFilter} onChange={setStatusFilter} />
-                        </div>
-                    </div>
-
                     {/* Transaction Table */}
                     <div className="mt-6">
-                        <TransactionTable
-                            transactions={paginatedTransactions}
-                            loading={transactionsLoading}
-                            onViewDetails={(transaction) => {
-                                console.log('View details for transaction:', transaction);
-                                // TODO: Implement view details modal or navigation
-                            }}
-                        />
-
-                        {/* Pagination */}
-                        {!transactionsLoading && filteredTransactions.length > 0 && (
-                            <TransactionPagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                totalResults={filteredTransactions.length}
-                                resultsPerPage={resultsPerPage}
-                                onPageChange={setCurrentPage}
-                            />
-                        )}
+                        <TransactionsTable />
                     </div>
                 </div>
             </main>
@@ -970,13 +837,22 @@ export default function ManualSwapTransaction() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!formData.user_id || !formData.vehicle_id || !formData.station_id}
-                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${formData.user_id && formData.vehicle_id && formData.station_id
+                                    disabled={!formData.user_id || !formData.vehicle_id || !formData.station_id || isSubmitting}
+                                    className={`px-6 py-2 rounded-md font-semibold transition-colors flex items-center gap-2 ${(formData.user_id && formData.vehicle_id && formData.station_id && !isSubmitting)
                                         ? 'bg-green-600 text-white hover:bg-green-700'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         }`}>
-                                    <span className="material-icons">add_circle_outline</span>
-                                    Create Transaction
+                                    {isSubmitting ? (
+                                        <>
+                                            <span className="material-icons animate-spin">refresh</span>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-icons">add_circle_outline</span>
+                                            Create Transaction
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

@@ -11,6 +11,8 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { DatabaseService } from '../database/database.service';
 import { SubscriptionStatus, VehicleStatus } from '@prisma/client';
 import { BatteryServicePackagesService } from '../battery-service-packages/battery-service-packages.service';
+import { ConfigService } from '../config/config.service';
+import { FeeCalculationService } from '../payments/services/fee-calculation.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -19,6 +21,8 @@ export class SubscriptionsService {
   constructor(
     private prisma: DatabaseService,
     private packageService: BatteryServicePackagesService,
+    private configService: ConfigService,
+    private feeCalculationService: FeeCalculationService,
   ) { }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
@@ -481,5 +485,135 @@ export class SubscriptionsService {
     const penaltyFee = subscription.distance_traveled * subscription.package.penalty_fee;
 
     return penaltyFee;
+  }
+
+  /**
+   * Renew an expired subscription
+   * - Create new subscription with extended period
+   * - Calculate penalty fee if distance exceeded base_distance
+   * - Mark old subscription as renewed
+   */
+  async renewSubscription(
+    subscriptionId: number,
+    vehicle_id: number,
+  ): Promise<{
+    success: boolean;
+    oldSubscription: any;
+    newSubscription: any;
+    penaltyFee: number;
+    message: string;
+  }> {
+    // 1. Get old subscription
+    const oldSubscription = await this.findOne(subscriptionId);
+
+    if (oldSubscription.status !== SubscriptionStatus.expired) {
+      throw new BadRequestException('Only expired subscriptions can be renewed');
+    }
+
+    // 2. Check if distance exceeded base_distance (calculate penalty)
+    let penaltyFee = await this.feeCalculationService.calculateOverchargeFee(
+      oldSubscription.distance_traveled,
+    );
+
+    // 3. Create new subscription with reset counters
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + oldSubscription.package.duration_days);
+
+    const newSubscription = await this.prisma.$transaction(async (tx) => {
+      // Create new subscription
+      const subscription = await tx.subscription.create({
+        data: {
+          user_id: oldSubscription.user_id,
+          package_id: oldSubscription.package_id,
+          vehicle_id: vehicle_id,
+          start_date: startDate,
+          end_date: endDate,
+          status: SubscriptionStatus.active,
+          swap_used: 0, // Reset swap counter
+          distance_traveled: 0, // Reset distance counter
+          deposit_paid: oldSubscription.deposit_paid, // Keep deposit status
+        },
+        include: {
+          package: true,
+          user: {
+            select: {
+              user_id: true,
+              username: true,
+              email: true,
+              phone: true,
+            },
+          },
+          vehicle: true,
+        },
+      });
+
+      // Mark old subscription as renewed
+      await tx.subscription.update({
+        where: { subscription_id: subscriptionId },
+        data: {
+          status: SubscriptionStatus.cancelled, // Or create new status "renewed"
+        },
+      });
+
+      this.logger.log(
+        `Subscription ${subscriptionId} renewed. New subscription ID: ${subscription.subscription_id}. Penalty: ${penaltyFee}`,
+      );
+
+      return subscription;
+    });
+
+    return {
+      success: true,
+      oldSubscription,
+      newSubscription,
+      penaltyFee: penaltyFee.overcharge_fee,
+      message: `Subscription renewed successfully${penaltyFee.overcharge_fee > 0 ? ` with penalty fee: ${penaltyFee.overcharge_fee.toLocaleString('vi-VN')} VND` : ''}`,
+    };
+  }
+
+  /**
+   * Renew subscription with payment (integrated with payment system)
+   * - Calculate total amount: package price + penalty fee (if any)
+   * - Create new subscription after successful renewal payment
+   */
+  async renewSubscriptionWithPayment(
+    subscriptionId: number,
+  ): Promise<{
+    oldSubscription: any;
+    renewalCost: {
+      basePrice: number;
+      penaltyFee: number;
+      totalAmount: number;
+    };
+  }> {
+    // 1. Get old subscription
+    const oldSubscription = await this.findOne(subscriptionId);
+
+    if (oldSubscription.status !== SubscriptionStatus.expired) {
+      throw new BadRequestException('Only expired subscriptions can be renewed');
+    }
+
+    // 2. Calculate penalty fee
+    const overchargeCost = await this.feeCalculationService.calculateOverchargeFee(
+      oldSubscription.subscription_id,
+    );
+
+    const penaltyFee = overchargeCost.overcharge_fee;
+
+    const distanceTraveled = oldSubscription.distance_traveled;
+
+    // 3. Calculate total renewal cost
+    const basePrice = oldSubscription.package?.base_price.toNumber() || 0;
+    const totalAmount = basePrice + penaltyFee;
+
+    return {
+      oldSubscription,
+      renewalCost: {
+        basePrice,
+        penaltyFee,
+        totalAmount,
+      },
+    };
   }
 }

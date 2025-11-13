@@ -18,7 +18,7 @@ export interface FeeCalculation {
 
 @Injectable()
 export class FeeCalculationService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService) { }
 
   /**
    * Tính phí đăng ký gói + cọc pin (nếu chưa đặt cọc)
@@ -41,12 +41,12 @@ export class FeeCalculationService {
 
     // 2. Kiểm tra xem đã đặt cọc chưa
     let depositRequired = true; // Mặc định là cần đặt cọc
-    
+
     if (subscriptionId) {
       const subscription = await this.prisma.subscription.findUnique({
         where: { subscription_id: subscriptionId },
       });
-      
+
       if (subscription && subscription.deposit_paid) {
         depositRequired = false; // Đã đặt cọc rồi, không tính nữa
       }
@@ -79,7 +79,7 @@ export class FeeCalculationService {
    */
   async calculateOverchargeFee(
     subscriptionId: number,
-    actualDistanceTraveled: number,
+    actualDistanceTraveled?: number,
   ): Promise<FeeCalculation> {
     // 1. Lấy thông tin subscription
     const subscription = await this.prisma.subscription.findUnique({
@@ -100,7 +100,7 @@ export class FeeCalculationService {
 
     // 3. Tính km vượt quá
     const baseDistance = subscription.package?.base_distance || 0;
-    const overchargeKm = Math.max(0, actualDistanceTraveled - baseDistance);
+    const overchargeKm = Math.max(0, subscription.distance_traveled - baseDistance);
 
     // 4. Tính phí vượt km theo bậc (như tiền điện)
     let overchargeCost = 0;
@@ -131,9 +131,9 @@ export class FeeCalculationService {
       } else if (overchargeKm <= 4000) {
         overchargeCost = 2000 * tier1Price + (overchargeKm - 2000) * tier2Price;
       } else {
-        overchargeCost = 
-          2000 * tier1Price + 
-          2000 * tier2Price + 
+        overchargeCost =
+          2000 * tier1Price +
+          2000 * tier2Price +
           (overchargeKm - 4000) * tier3Price;
       }
     }

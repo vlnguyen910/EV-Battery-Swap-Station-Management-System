@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { paymentService } from '../services/paymentService';
 import { swapService } from '../services/swapService';
 import { stationService } from '../services/stationService';
+import { vehicleService } from '../services/vehicleService';
 import SwapHistoryCard from '../components/history/SwapHistoryCard';
 import PaymentHistoryCard from '../components/history/PaymentHistoryCard';
 
@@ -72,16 +73,18 @@ export default function SwapHistory() {
 
       setLoading(true);
       try {
-        // Fetch stations, swap transactions and payments in parallel
-        const [allStations, swapTransactions, payments] = await Promise.all([
+        // Fetch stations, swap transactions, payments and vehicles in parallel
+        const [allStations, swapTransactions, payments, vehicles] = await Promise.all([
           stationService.getAllStations(),
           swapService.getAllSwapTransactionsByUserId(user.user_id),
-          paymentService.getPaymentByUserId(user.user_id)
+          paymentService.getPaymentByUserId(user.user_id),
+          vehicleService.getVehicleByUserId(user.user_id)
         ]);
 
         console.log('Swap transactions from API:', swapTransactions);
         console.log('Payments from API:', payments);
         console.log('Stations from API:', allStations);
+        console.log('Vehicles from API:', vehicles);
 
         // Create a map of station_id to station object for quick lookup
         const stationMap = {};
@@ -92,9 +95,18 @@ export default function SwapHistory() {
         }
         setStations(stationMap);
 
+        // Create a map of vehicle_id to vehicle object for quick lookup
+        const vehicleMap = {};
+        if (vehicles && Array.isArray(vehicles)) {
+          vehicles.forEach(vehicle => {
+            vehicleMap[vehicle.vehicle_id] = vehicle;
+          });
+        }
+
         // Transform swap transactions to UI format
         const transformedSwaps = (swapTransactions || []).map(transaction => {
           const station = stationMap[transaction.station_id];
+          const vehicle = vehicleMap[transaction.vehicle_id];
           return {
             id: `swap-${transaction.transaction_id}`,
             type: 'swap',
@@ -112,6 +124,7 @@ export default function SwapHistory() {
               })
               : 'N/A',
             location: station?.name || station?.address || `Station ${transaction.station_id || 'Unknown'}`,
+            vin: vehicle?.vin || 'N/A',
             amount: 1, // Each transaction is 1 battery swap
             timestamp: transaction.createAt ? new Date(transaction.createAt).getTime() : 0,
             status: transaction.status,

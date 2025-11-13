@@ -22,6 +22,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { SystemConfigModule } from './modules/config/config.module';
 import { AiModule } from './modules/ai/ai.module';
 import { CabinetsModule } from './modules/cabinets/cabinets.module';
+import { AdminDashboardModule } from './modules/admin-statistics/admin-statistics.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { CabinetsModule } from './modules/cabinets/cabinets.module';
     SystemConfigModule,
     AiModule,
     CabinetsModule,
+    AdminDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

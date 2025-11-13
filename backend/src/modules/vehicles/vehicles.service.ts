@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Logger, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
@@ -11,7 +11,7 @@ export class VehiclesService {
 
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
   ) { }
 
   async create(createVehicleDto: CreateVehicleDto) {
@@ -122,7 +122,14 @@ export class VehiclesService {
 
   async updateBatteryId(vehicle_id: number, battery_id: number, tx?: any) {
     const prisma = tx || this.databaseService;
-    await this.findOne(vehicle_id); // Check if vehicle exists
+
+    // ✅ Validate vehicle exists
+    const vehicle = await this.findOne(vehicle_id);
+
+    this.logger.log(
+      `Updating vehicle ${vehicle_id} with battery ${battery_id}`
+    );
+
     return await prisma.vehicle.update({
       where: { vehicle_id },
       data: { battery_id },
@@ -134,10 +141,23 @@ export class VehiclesService {
     tx: any // Pass the transaction object
   ) {
     try {
-      const vehicle = await this.findOne(vehicle_id); // Check if vehicle exists
+      // ✅ Check if vehicle exists
+      const vehicle = await this.findOne(vehicle_id);
       if (!vehicle) {
         throw new NotFoundException(`Vehicle with ID ${vehicle_id} not found`);
       }
+
+      // ✅ Check if vehicle has a battery
+      if (!vehicle.battery_id) {
+        throw new BadRequestException(
+          `Vehicle ${vehicle_id} has no battery to remove`
+        );
+      }
+
+
+      this.logger.log(
+        `Removing battery ${vehicle.battery_id} from vehicle ${vehicle_id}`
+      );
 
       return await tx.vehicle.update({
         where: { vehicle_id },
@@ -152,21 +172,91 @@ export class VehiclesService {
     assignVehicleDto: { vin: string; user_id: number },
   ) {
     try {
-      await this.userService.findOneById(assignVehicleDto.user_id); // Check if user exists
-      await this.findByVin(assignVehicleDto.vin); // Check if vehicle exists
+      // ✅ Check if user exists
+      await this.userService.findOneById(assignVehicleDto.user_id);
 
-      this.logger.log(`Assigned Vehicle with VIN ${assignVehicleDto.vin} to User with ID ${assignVehicleDto.user_id}`);
+      // ✅ Check if vehicle exists
+      const vehicle = await this.findByVin(assignVehicleDto.vin);
+
+      // ✅ Check if vehicle is being reassigned (already has owner)
+      if (vehicle.user_id && vehicle.user_id !== assignVehicleDto.user_id) {
+        // Check for active subscriptions on this vehicle
+        const activeSubscriptions = await this.databaseService.subscription.findMany({
+          where: {
+            vehicle_id: vehicle.vehicle_id,
+            status: 'active', // SubscriptionStatus.active
+          },
+          include: {
+            package: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        if (activeSubscriptions.length > 0) {
+          const packageNames = activeSubscriptions.map(sub => sub.package.name).join(', ');
+          throw new BadRequestException(
+            `Cannot reassign vehicle ${vehicle.vin}. ` +
+            `Vehicle has ${activeSubscriptions.length} active subscription(s): ${packageNames}. ` +
+            `Please cancel all subscriptions before reassigning the vehicle.`
+          );
+        }
+
+        this.logger.warn(
+          `Reassigning vehicle ${vehicle.vin} from user ${vehicle.user_id} to user ${assignVehicleDto.user_id}`
+        );
+      }
+
+      this.logger.log(
+        `Assigned Vehicle with VIN ${assignVehicleDto.vin} to User with ID ${assignVehicleDto.user_id}`
+      );
+
       return await this.databaseService.vehicle.update({
         where: { vin: assignVehicleDto.vin },
-        data: { user_id: assignVehicleDto.user_id },
+        data: { user_id: assignVehicleDto.user_id, status: VehicleStatus.active },
       });
     } catch (error) {
       throw error;
     }
   }
 
+<<<<<<< HEAD
   async update(id: number, updateVehicleDto: UpdateVehicleDto, tx?: any) {
     const prisma = tx ?? this.databaseService;
+=======
+  async removeVehicleFromUser(
+    assignVehicleDto: { vin: string; user_id: number },
+  ) {
+    try {
+      // ✅ Check if user exists
+      const user = await this.userService.findOneById(assignVehicleDto.user_id);
+      // ✅ Check if vehicle exists
+      const vehicle = await this.findByVin(assignVehicleDto.vin);
+
+      // ✅ Check if vehicle is assigned to the user
+      if (vehicle.user_id !== assignVehicleDto.user_id) {
+        throw new BadRequestException(
+          `Vehicle with VIN ${assignVehicleDto.vin} is not assigned to User with ID ${assignVehicleDto.user_id}`
+        );
+      }
+
+      const updatedVehicle = await this.databaseService.vehicle.update({
+        where: { vin: assignVehicleDto.vin },
+        data: { user_id: null, status: VehicleStatus.inactive },
+      });
+
+      return updatedVehicle;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async update(id: number, updateVehicleDto: UpdateVehicleDto) {
+    await this.findOne(id); // Check if vehicle exists
+
+>>>>>>> origin/develop
     try {
       await this.findOne(id); // Check if vehicle exists
       const updatedVehicle = await prisma.vehicle.update({

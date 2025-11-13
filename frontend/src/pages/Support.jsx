@@ -35,9 +35,9 @@ export default function Support() {
       <div className="max-w-3xl mx-auto">
         <SupportHeader />
         {loading ? (
-          <div className="text-center py-8">Đang tải danh sách trạm...</div>
+          <div className="text-center py-8">Loading station lists...</div>
         ) : error ? (
-          <div className="text-center py-8 text-red-500">Lỗi: {error}</div>
+          <div className="text-center py-8 text-red-500">Error: {error}</div>
         ) : (
           <SupportTicketCard stations={activeStations} />
         )}

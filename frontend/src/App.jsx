@@ -43,6 +43,8 @@ import CreateUser from './pages/admin/CreateUser'
 import EditPackage from './pages/admin/EditPackage'
 import CreatePackage from './pages/admin/CreatePackage'
 import PackageDetail from './pages/admin/PackageDetail'
+import StaffTransfer from './components/dashboard/StaffTransfer'
+import SupportDetail from './pages/admin/SupportDetail'
 
 // import ProtectedRoute from './components/auth/ProtectedRoute'
 
@@ -90,6 +92,7 @@ function App() {
           <Route path="swap-requests" element={<StaffSwapRequests />} />
           <Route path="manual-swap" element={<ManualSwapTransaction />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="transfer-requests" element={<StaffTransfer />} />
         </Route>
 
         {/* Admin Routes */}
@@ -115,8 +118,10 @@ function App() {
           <Route path="battery-transfer-requests/create" element={<AdminBatteryTransferReq />} />
           <Route path="battery-transfer-requests/:id" element={<BatteryTransferDetail />} />
           <Route path="battery-transfer-requests/edit/:id" element={<EditBatteryTransfer />} />
-          
+
           <Route path="support-list" element={<AdminSupportList />} />
+          <Route path="support/:id" element={<SupportDetail />} />
+
           <Route path="report" element={<AdminReport />} />
           <Route path="profile" element={<Profile />} />
         </Route>

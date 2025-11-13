@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { swapService } from '../../services/swapService';
 import { useAuth } from '../../hooks/useContext';
 
@@ -8,12 +8,16 @@ export default function TransactionsTable() {
     const [transactions, setTransactions] = useState([]);
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedDate, setSelectedDate] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         if (user) {
@@ -23,22 +27,31 @@ export default function TransactionsTable() {
 
     useEffect(() => {
         applyFilters();
+        setCurrentPage(1); // Reset to first page when filters change
     }, [transactions, searchQuery, selectedStatus, selectedDate]);
 
     const fetchRecentTransactions = async () => {
         try {
             setLoading(true);
-            
+
             let response;
             if (user?.station_id) {
                 response = await swapService.getAllSwapTransactionsByStationId(user.station_id);
             } else {
                 response = await swapService.getAllSwapTransactions();
             }
-            
+
             const allTransactions = response.data || response;
-            setTransactions(allTransactions);
-            setFilteredTransactions(allTransactions);
+
+            // Sort by timestamp descending (newest first) - get ALL transactions
+            const sortedTransactions = [...allTransactions].sort((a, b) => {
+                const dateA = new Date(a.swap_time || a.createAt);
+                const dateB = new Date(b.swap_time || b.createAt);
+                return dateB - dateA;
+            });
+
+            setTransactions(sortedTransactions);
+            setFilteredTransactions(sortedTransactions);
         } catch (error) {
             console.error('Error fetching transactions:', error);
         } finally {
@@ -54,14 +67,14 @@ export default function TransactionsTable() {
             filtered = filtered.filter(t => {
                 const userName = (t.user?.full_name || t.user?.username || '').toLowerCase();
                 const transactionId = String(t.transaction_id || '').toLowerCase();
-                return userName.includes(searchQuery.toLowerCase()) || 
-                       transactionId.includes(searchQuery.toLowerCase());
+                return userName.includes(searchQuery.toLowerCase()) ||
+                    transactionId.includes(searchQuery.toLowerCase());
             });
         }
 
         // Filter by status
         if (selectedStatus && selectedStatus !== 'all') {
-            filtered = filtered.filter(t => 
+            filtered = filtered.filter(t =>
                 t.status?.toLowerCase() === selectedStatus.toLowerCase()
             );
         }
@@ -77,14 +90,26 @@ export default function TransactionsTable() {
 
         setFilteredTransactions(filtered);
     };
-
     const clearFilters = () => {
         setSearchQuery('');
         setSelectedStatus('all');
         setSelectedDate('');
+        setCurrentPage(1);
     };
 
     const hasActiveFilters = searchQuery || selectedStatus !== 'all' || selectedDate;
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+    const goToPage = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -130,7 +155,7 @@ export default function TransactionsTable() {
                 minute: '2-digit',
                 hour12: true
             });
-        } catch (error) {
+        } catch {
             return 'Invalid date';
         }
     };
@@ -145,11 +170,10 @@ export default function TransactionsTable() {
                     </h2>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
-                            showFilters 
-                                ? 'border-primary bg-primary/10 text-primary' 
-                                : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${showFilters
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
                     >
                         <Filter className="w-4 h-4" />
                         <span>Filters</span>
@@ -216,7 +240,8 @@ export default function TransactionsTable() {
 
                 {/* Results count */}
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Showing {filteredTransactions.length} of {transactions.length} transactions
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+                    {filteredTransactions.length !== transactions.length && ` (filtered from ${transactions.length} total)`}
                 </div>
             </div>
 
@@ -255,7 +280,7 @@ export default function TransactionsTable() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredTransactions.map((transaction) => (
+                                {currentTransactions.map((transaction) => (
                                     <tr key={transaction.transaction_id} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                         <td className="h-[60px] px-4 py-2 text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">
                                             #{transaction.transaction_id || 'N/A'}
@@ -282,6 +307,76 @@ export default function TransactionsTable() {
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {!loading && filteredTransactions.length > 0 && totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === 1
+                                    ? 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            Previous
+                        </button>
+
+                        {/* Page numbers */}
+                        <div className="flex items-center gap-1">
+                            {[...Array(totalPages)].map((_, index) => {
+                                const page = index + 1;
+                                // Show first, last, current, and adjacent pages
+                                if (
+                                    page === 1 ||
+                                    page === totalPages ||
+                                    (page >= currentPage - 1 && page <= currentPage + 1)
+                                ) {
+                                    return (
+                                        <button
+                                            key={page}
+                                            onClick={() => goToPage(page)}
+                                            className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                                                    ? 'bg-primary text-white'
+                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                } else if (
+                                    page === currentPage - 2 ||
+                                    page === currentPage + 2
+                                ) {
+                                    return (
+                                        <span key={page} className="text-gray-400 dark:text-gray-500">
+                                            ...
+                                        </span>
+                                    );
+                                }
+                                return null;
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === totalPages
+                                    ? 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                        >
+                            Next
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -9,6 +9,8 @@ import {
   Req,
   Res,
   UseGuards,
+  UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
@@ -26,7 +28,10 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateDirectPaymentDto } from './dto/create-direct-payment.dto';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('payments')
+@ApiBearerAuth('access-token')
 @Controller('payments')
 export class PaymentsController {
   constructor(
@@ -42,6 +47,8 @@ export class PaymentsController {
   @Post('create-vnpay-url')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create VNPAY payment URL (subscription only - payment_type will be set to "subscription")' })
+  @ApiResponse({ status: 201, description: 'The VNPAY payment URL has been successfully created.' })
   async createVnpayUrl(
     @Body() createPaymentDto: CreatePaymentDto,
     @Req() req: Request,
@@ -74,6 +81,8 @@ export class PaymentsController {
   @Post('create-vnpay-url-advanced')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create VNPAY payment URL with flexible payment types' })
+  @ApiResponse({ status: 201, description: 'The VNPAY payment URL has been successfully created.' })
   async createVnpayUrlAdvanced(
     @Body() createPaymentDto: CreatePaymentDto,
     @Req() req: Request,
@@ -92,6 +101,8 @@ export class PaymentsController {
    * GET /payments/vnpay-return?vnp_Amount=...&vnp_BankCode=...
    */
   @Get('vnpay-return')
+  @ApiOperation({ summary: 'VNPAY return URL (redirect from VNPAY)' })
+  @ApiResponse({ status: 302, description: 'Redirect to frontend with payment result.' })
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
     try {
       const result = await this.paymentsService.handleVnpayReturn(query);
@@ -119,6 +130,8 @@ export class PaymentsController {
    * GET /payments/vnpay-ipn?vnp_Amount=...&vnp_BankCode=...
    */
   @Get('vnpay-ipn')
+  @ApiOperation({ summary: 'VNPAY IPN (Instant Payment Notification)' })
+  @ApiResponse({ status: 200, description: 'IPN processed successfully.' })
   async vnpayIPN(@Query() query: any) {
     return this.paymentsService.handleVnpayIPN(query);
   }
@@ -128,6 +141,8 @@ export class PaymentsController {
    * GET /payments/:id
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Get payment by ID' })
+  @ApiResponse({ status: 200, description: 'The payment with the specified ID.' })
   @UseGuards(AuthGuard, RolesGuard)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.paymentsService.findOne(id);
@@ -138,6 +153,8 @@ export class PaymentsController {
    * GET /payments/txn/:vnpTxnRef
    */
   @Get('txn/:vnpTxnRef')
+  @ApiOperation({ summary: 'Get payment by transaction reference' })
+  @ApiResponse({ status: 200, description: 'The payment with the specified transaction reference.' })
   @UseGuards(AuthGuard, RolesGuard)
   findByTxnRef(@Param('vnpTxnRef') vnpTxnRef: string) {
     return this.paymentsService.findByTxnRef(vnpTxnRef);
@@ -148,6 +165,8 @@ export class PaymentsController {
    * GET /payments/user/:userId
    */
   @Get('user/:userId')
+  @ApiOperation({ summary: "Get user's payment history" })
+  @ApiResponse({ status: 200, description: "List of payments for the specified user." })
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
   findByUser(@Param('userId', ParseIntPipe) userId: number) {
@@ -159,6 +178,8 @@ export class PaymentsController {
    * GET /payments
    */
   @Get()
+  @ApiOperation({ summary: 'Get all payments (admin)' })
+  @ApiResponse({ status: 200, description: 'List of all payments.' })
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
   findAll() {
@@ -172,6 +193,8 @@ export class PaymentsController {
   @Post('mock-payment')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Mock payment for testing (simulate VNPAY without redirect)' })
+  @ApiResponse({ status: 201, description: 'The payment has been successfully mocked.' })
   async mockPayment(@Body() mockPaymentDto: MockPaymentDto) {
     return this.paymentsService.mockPayment(mockPaymentDto);
   }
@@ -185,6 +208,8 @@ export class PaymentsController {
   @Post('cancel-expired')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Cancel expired pending payments' })
+  @ApiResponse({ status: 200, description: 'Number of expired payments cancelled.' })
   async cancelExpiredPayments() {
     const count = await this.paymentsService.cancelExpiredPayments();
     return {
@@ -203,6 +228,8 @@ export class PaymentsController {
   @Post('battery-deposit')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create payment for battery deposit only' })
+  @ApiResponse({ status: 201, description: 'The battery deposit payment has been successfully created.' })
   async createBatteryDepositPayment(
     @Body() body: { user_id: number; amount: number; vehicle_id?: number },
     @Req() req: Request,
@@ -232,6 +259,8 @@ export class PaymentsController {
   @Post('damage-fee')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create payment for damage fee' })
+  @ApiResponse({ status: 201, description: 'The damage fee payment has been successfully created.' })
   async createDamageFeePayment(
     @Body() body: { user_id: number; amount: number; vehicle_id?: number; description?: string },
     @Req() req: Request,
@@ -260,6 +289,8 @@ export class PaymentsController {
   @Post('battery-replacement')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create payment for battery replacement' })
+  @ApiResponse({ status: 201, description: 'The battery replacement payment has been successfully created.' })
   async createBatteryReplacementPayment(
     @Body() body: { user_id: number; amount: number; vehicle_id?: number; description?: string },
     @Req() req: Request,
@@ -293,6 +324,8 @@ export class PaymentsController {
    */
   @Post('calculate/subscription-fee')
   @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Calculate subscription and deposit fee' })
+  @ApiResponse({ status: 200, description: 'The subscription and deposit fee has been successfully calculated.' })
   @Roles('driver', 'admin')
   async calculateSubscriptionFee(@Body() dto: CalculateSubscriptionFeeDto) {
     const fee = await this.feeCalculationService.calculateSubscriptionWithDeposit(
@@ -311,6 +344,8 @@ export class PaymentsController {
    */
   @Post('calculate/overcharge-fee')
   @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Calculate overcharge fee' })
+  @ApiResponse({ status: 200, description: 'The overcharge fee has been successfully calculated.' })
   @Roles('driver', 'admin')
   async calculateOverchargeFee(@Body() dto: CalculateOverchargeFeeDto) {
     const fee = await this.feeCalculationService.calculateOverchargeFee(
@@ -330,6 +365,8 @@ export class PaymentsController {
   @Post('calculate/damage-fee')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Calculate damage fee' })
+  @ApiResponse({ status: 200, description: 'The damage fee has been successfully calculated.' })
   async calculateDamageFee(@Body() dto: CalculateDamageFeeDto) {
     const fee = await this.feeCalculationService.calculateDamageFee(dto.damageSeverity);
     return {
@@ -345,6 +382,8 @@ export class PaymentsController {
   @Post('calculate/complex-fee')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Calculate complex fee (multiple fee types at once)' })
+  @ApiResponse({ status: 200, description: 'The complex fee has been successfully calculated.' })
   async calculateComplexFee(@Body() dto: CalculateComplexFeeDto) {
     const fee = await this.feeCalculationService.calculateComplexFee(dto);
     return {
@@ -374,6 +413,8 @@ export class PaymentsController {
   @Post('calculate-and-create-vnpay-url')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Calculate fees and create VNPAY payment URL' })
+  @ApiResponse({ status: 201, description: 'The VNPAY payment URL with calculated fees has been successfully created.' })
   async createPaymentUrlWithFees(
     @Body() createPaymentWithFeesDto: CreatePaymentWithFeesDto,
     @Req() req: Request,
@@ -405,12 +446,41 @@ export class PaymentsController {
  * - Testing payment flows
  * - When VNPAY is unavailable
  */
-  @Post('direct-with-fees')
-  @UseGuards(AuthGuard)
-  async createDirectPaymentWithFees(
-    @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
+  // @Post('direct-with-fees')
+  // @UseGuards(AuthGuard)
+  // async createDirectPaymentWithFees(
+  //   @Body() createPaymentWithFeesDto: CreateDirectPaymentDto,
+  // ) {
+  //   return this.paymentsService.createDirectPaymentWithFees(createPaymentWithFeesDto);
+  // }
+
+  /**
+   * Create subscription renewal payment with penalty fee
+   * POST /payments/subscription-renewal
+   */
+  @Post('subscription-renewal')
+  @Roles('driver', 'admin')
+  @ApiOperation({ summary: 'Create payment for subscription renewal' })
+  @ApiResponse({ status: 201, description: 'Renewal payment URL created' })
+  async createSubscriptionRenewalPayment(
+    @Body() body: { subscription_id: number },
+    @Req() req: Request,
   ) {
-    return this.paymentsService.createDirectPaymentWithFees(createPaymentWithFeesDto);
+    if (!body.subscription_id) {
+      throw new BadRequestException('subscription_id is required');
+    }
+
+    const ipAddr =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      '0.0.0.0';
+
+    return this.paymentsService.createSubscriptionRenewalPayment(
+      body.subscription_id,
+      ipAddr,
+    );
   }
 }
+
 

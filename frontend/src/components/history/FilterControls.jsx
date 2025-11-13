@@ -1,9 +1,9 @@
 import React from 'react';
 
-export default function FilterControls({ 
-  resultsPerPage, 
-  onResultsPerPageChange, 
-  timePeriod, 
+export default function FilterControls({
+  resultsPerPage,
+  onResultsPerPageChange,
+  timePeriod,
   onTimePeriodChange,
   title
 }) {
@@ -11,7 +11,7 @@ export default function FilterControls({
     <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-        
+
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">Show result:</span>
           <select
@@ -33,31 +33,28 @@ export default function FilterControls({
         <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
           <button
             onClick={() => onTimePeriodChange('week')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              timePeriod === 'week'
-                ? 'bg-green-600 text-white'
+            className={`px-4 py-2 text-sm font-medium transition-colors ${timePeriod === 'week'
+                ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Week
           </button>
           <button
             onClick={() => onTimePeriodChange('month')}
-            className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
-              timePeriod === 'month'
-                ? 'bg-green-600 text-white'
+            className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${timePeriod === 'month'
+                ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Month
           </button>
           <button
             onClick={() => onTimePeriodChange('year')}
-            className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
-              timePeriod === 'year'
-                ? 'bg-green-600 text-white'
+            className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${timePeriod === 'year'
+                ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Year
           </button>

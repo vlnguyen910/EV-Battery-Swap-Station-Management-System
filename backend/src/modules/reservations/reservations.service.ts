@@ -174,13 +174,14 @@ export class ReservationsService {
   async updateReservationStatus(
     id: number,
     user_id: number,
+    vehicle_id: number,
     status: ReservationStatus,
     tx?: any
   ) {
     const prisma = tx || this.databaseService;
 
     const reservationUpdate = await prisma.reservation.findUnique({
-      where: { reservation_id: id }
+      where: { reservation_id: id, vehicle_id: vehicle_id }
     })
 
     if (!reservationUpdate || reservationUpdate.user_id != user_id) {
