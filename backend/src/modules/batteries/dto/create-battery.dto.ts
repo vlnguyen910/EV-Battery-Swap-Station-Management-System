@@ -6,10 +6,13 @@ import {
     MinLength,
     MaxLength,
     IsEnum,
+    Max,
+    IsOptional,
+    IsInt,
 } from "class-validator";
 import { Type } from 'class-transformer';
-<<<<<<< HEAD
 import { BatteryStatus } from "@prisma/client";
+import { ApiProperty } from "@nestjs/swagger/dist/decorators/api-property.decorator";
 
 export class CreateBatteryDto {
     @IsNotEmpty({ message: 'Serial number is required' })
@@ -17,12 +20,22 @@ export class CreateBatteryDto {
     @MinLength(12, { message: 'Serial number must be at least 2 characters long' })
     serial_number: string;
 
-=======
-import { ApiProperty } from "@nestjs/swagger";
+    @IsOptional()
+    @IsInt()
+    vehicle_id?: number | null; // Optional, can be null if not assigned to a vehicle
 
-export class CreateBatteryDto {
-    @ApiProperty({ description: 'Battery model name', example: 'Model X' })
->>>>>>> origin/develop
+    @IsOptional()
+    @IsInt()
+    station_id?: number | null; // Optional, can be null if not assigned to a station
+
+    @IsOptional()
+    @IsInt()
+    cabinet_id?: number | null; // Optional, can be null if not assigned to a cabinet
+
+    @IsOptional()
+    @IsInt()
+    slot_id?: number | null; // Optional, can be null if not assigned to a slot
+
     @IsNotEmpty({ message: 'Model is required' })
     @IsString({ message: 'Model must be a string' })
     @MinLength(2, { message: 'Model must be at least 2 characters long' })
@@ -40,27 +53,15 @@ export class CreateBatteryDto {
     @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Capacity must be a number with max 2 decimal places' })
     @Type(() => Number)
     @Min(1, { message: 'Capacity must be at least 1 kWh' })
-    capacity_kwh: number;
+    capacity_kwh: number = 30.0;
 
-<<<<<<< HEAD
-    @IsNotEmpty({ message: 'Status is required' })
-    @IsEnum(BatteryStatus, { message: 'Status must be a valid BatteryStatus enum value' })
-    status: BatteryStatus;
-
-    current_charge?: number; // Optional, defaults to 0
-    soh?: number; // Optional, defaults to 100
-    vehicle_id?: number | null; // Optional, can be null if not assigned to a vehicle
-    station_id?: number | null; // Optional, can be null if not assigned to a station
-    cabinet_id?: number | null; // Optional, can be null if not assigned to a cabinet
-    slot_id?: number | null; // Optional, can be null if not assigned to a slot
-=======
     @ApiProperty({ description: 'Current charge percentage', example: 85.5 })
     @IsNotEmpty({ message: 'Current charge is required' })
     @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Current charge must be a number with max 2 decimal places' })
     @Type(() => Number)
     @Min(0, { message: 'Current charge cannot be negative' })
     @Max(100, { message: 'Current charge cannot exceed 100%' })
-    current_charge: number;
+    current_charge: number = 100;
 
     @ApiProperty({ description: 'State of health percentage', example: 90.0 })
     @IsNotEmpty({ message: 'State of health is required' })
@@ -68,6 +69,9 @@ export class CreateBatteryDto {
     @Type(() => Number)
     @Min(0, { message: 'SOH cannot be negative' })
     @Max(100, { message: 'SOH cannot exceed 100%' })
-    soh: number;
->>>>>>> origin/develop
+    soh: number = 100;
+
+    @IsNotEmpty({ message: 'Status is required' })
+    @IsEnum(BatteryStatus, { message: 'Status must be a valid BatteryStatus enum value' })
+    status: BatteryStatus;
 }

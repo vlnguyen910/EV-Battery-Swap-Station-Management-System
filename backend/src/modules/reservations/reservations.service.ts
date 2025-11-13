@@ -10,6 +10,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ConfigService } from '@nestjs/config';
 import { StationsService } from '../stations/stations.service';
 import { CabinetsService } from '../cabinets/cabinets.service';
+import { UpdateReservationDto } from './dto/update-reservation-status.dto';
 
 @Injectable()
 export class ReservationsService {
@@ -57,10 +58,10 @@ export class ReservationsService {
       // 3. tìm pin phù hợp với xe tại trạm 
       const reservationBattery = await this.batteriesService.findBestBatteryForVehicle(vehicle.vehicle_id, station_id);
 
-      const batteryStatusUpdate = {
+      //4. chuyển status của battery được d
+      const updatedBattery = await this.batteriesService.update(reservationBattery.battery_id, {
         status: BatteryStatus.booked
-      }
-      const updatedBattery = await this.batteriesService.update(reservationBattery.battery_id, batteryStatusUpdate);
+      });
 
       const cabinet = await this.cabinetsService.findOneCabinet(updatedBattery.cabinet_id);
 
@@ -144,7 +145,15 @@ export class ReservationsService {
   }
 
   async findOne(id: number) {
-    return `This action returns a #${id} reservation`;
+    const reservation = await this.databaseService.reservation.findUnique({
+      where: { reservation_id: id }
+    })
+
+    if (!reservation) {
+      throw new NotFoundException(`Not found reservation with ID: ${id}`);
+    }
+
+    return reservation;
   }
 
   async findOneScheduledForVehicleByUserId(user_id: number, vehicle_id: number) {
@@ -169,6 +178,17 @@ export class ReservationsService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async update(id: number, dto: UpdateReservationDto) {
+    const reservation = this.findOne(id);
+
+    const updatedReservation = this.databaseService.reservation.update({
+      where: { reservation_id: id },
+      data: {
+        ...dto
+      }
+    })
   }
 
   async updateReservationStatus(

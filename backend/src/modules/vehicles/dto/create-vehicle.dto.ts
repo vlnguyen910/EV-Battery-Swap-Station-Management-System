@@ -9,11 +9,7 @@ import { VehicleStatus } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVehicleDto {
-<<<<<<< HEAD
-
-=======
   @ApiProperty({ description: 'Vehicle Identification Number', maxLength: 18 })
->>>>>>> origin/develop
   @IsNotEmpty({ message: 'VIN is required' })
   @IsString({ message: 'VIN must be a string' })
   @Length(11, 18, { message: 'VIN must be between 11 and 18 characters' })

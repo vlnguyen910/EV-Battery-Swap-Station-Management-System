@@ -316,7 +316,6 @@ export class BatteriesService {
   }
 
   async update(id: number, updateBatteryDto: UpdateBatteryDto, tx?: any) {
-<<<<<<< HEAD
     const prisma = tx ?? this.databaseService;
 
     const battery = await this.findOne(id);
@@ -331,25 +330,6 @@ export class BatteriesService {
     this.logger.log(`Updated battery ID ${id} with data ${JSON.stringify(updateBatteryDto)}`);
 
     return updatedBattery;
-=======
-    try {
-      const prisma = tx ?? this.databaseService;
-
-      const battery = await this.findOne(id);
-
-      const updatedBattery = await prisma.battery.update({
-        where: { battery_id: id },
-        data: {
-          ...updateBatteryDto,
-        },
-      });
-
-      this.logger.log(`Battery ID ${id} updated successfully`);
-      return updatedBattery;
-    } catch (error) {
-      throw error;
-    }
->>>>>>> origin/develop
   }
 
   remove(id: number) {

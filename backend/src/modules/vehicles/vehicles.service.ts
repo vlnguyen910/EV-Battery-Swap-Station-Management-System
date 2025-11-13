@@ -4,6 +4,7 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
 import { VehicleStatus } from '@prisma/client';
 import { UsersService } from '../users/users.service';
+import { AddVehicleDto } from './dto/add-vehicle.dto';
 
 @Injectable()
 export class VehiclesService {
@@ -222,41 +223,24 @@ export class VehiclesService {
     }
   }
 
-<<<<<<< HEAD
-  async update(id: number, updateVehicleDto: UpdateVehicleDto, tx?: any) {
-    const prisma = tx ?? this.databaseService;
-=======
-  async removeVehicleFromUser(
-    assignVehicleDto: { vin: string; user_id: number },
-  ) {
-    try {
-      // ✅ Check if user exists
-      const user = await this.userService.findOneById(assignVehicleDto.user_id);
-      // ✅ Check if vehicle exists
-      const vehicle = await this.findByVin(assignVehicleDto.vin);
+  async removeVehicleFromUser(vin: string, user_id: number) {
+    const vehicle = await this.findByVin(vin);
 
-      // ✅ Check if vehicle is assigned to the user
-      if (vehicle.user_id !== assignVehicleDto.user_id) {
-        throw new BadRequestException(
-          `Vehicle with VIN ${assignVehicleDto.vin} is not assigned to User with ID ${assignVehicleDto.user_id}`
-        );
-      }
-
-      const updatedVehicle = await this.databaseService.vehicle.update({
-        where: { vin: assignVehicleDto.vin },
-        data: { user_id: null, status: VehicleStatus.inactive },
-      });
-
-      return updatedVehicle;
-    } catch (error) {
-      throw error;
+    if (vehicle.user_id !== user_id) {
+      throw new BadRequestException('This user does not own this vehicle!');
     }
+
+    const unLinkedVehicle = await this.update(vehicle.vehicle_id, {
+      user_id: null,
+      status: VehicleStatus.inactive
+    })
+
+    return unLinkedVehicle;
+
   }
 
-  async update(id: number, updateVehicleDto: UpdateVehicleDto) {
-    await this.findOne(id); // Check if vehicle exists
-
->>>>>>> origin/develop
+  async update(id: number, updateVehicleDto: UpdateVehicleDto, tx?: any) {
+    const prisma = tx ?? this.databaseService;
     try {
       await this.findOne(id); // Check if vehicle exists
       const updatedVehicle = await prisma.vehicle.update({
