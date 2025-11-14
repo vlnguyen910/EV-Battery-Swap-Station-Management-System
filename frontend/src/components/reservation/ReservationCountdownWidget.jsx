@@ -109,7 +109,7 @@ export default function ReservationCountdownWidget() {
                 <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8 text-center">
                     <BookingSuccessHeader
                         title="Appointment canceled"
-                        subtitle="Hope to see you again soon 💫"
+                        subtitle="Hope to see you again soon"
                         variant="cancel"
                     />
                     <div className="flex justify-center">
