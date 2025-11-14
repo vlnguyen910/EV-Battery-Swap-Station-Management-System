@@ -158,19 +158,32 @@ export class BatteryTransferTicketService {
         // For import ticket: update battery station_id to destination station
         if (dto.ticket_type === TicketType.import) {
           this.logger.log(`Updating batteries to station ID ${dto.station_id} for Ticket ID: ${ticket.ticket_id}`);
-          await prisma.battery.updateMany({
+          
+          // ✅ FIXED: Fetch batteries to get their current_charge values
+          const batteriesToUpdate = await prisma.battery.findMany({
             where: {
               battery_id: {
                 in: dto.battery_ids,
               },
             },
-            data: {
-              station_id: dto.station_id,
-              status: BatteryStatus.charging,
-            },
           });
 
-          //Update transfer request status to completed
+          // Update each battery individually to set correct status based on charge
+          await Promise.all(
+            batteriesToUpdate.map((battery) =>
+              prisma.battery.update({
+                where: { battery_id: battery.battery_id },
+                data: {
+                  station_id: dto.station_id,
+                  status: Number(battery.current_charge) === 100 
+                    ? BatteryStatus.full 
+                    : BatteryStatus.charging,
+                },
+              })
+            )
+          );
+
+          // Update transfer request status to completed
           await prisma.batteryTransferRequest.update({
             where: { transfer_request_id: dto.transfer_request_id },
             data: { status: TransferStatus.completed },
