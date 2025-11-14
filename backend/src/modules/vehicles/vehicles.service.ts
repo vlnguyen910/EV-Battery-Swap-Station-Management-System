@@ -249,7 +249,9 @@ export class VehiclesService {
     }
   }
 
-  async update(id: number, updateVehicleDto: UpdateVehicleDto) {
+  async update(id: number, updateVehicleDto: UpdateVehicleDto, tx?: any) {
+    const prisma = tx || this.databaseService;
+
     await this.findOne(id); // Check if vehicle exists
 
     try {

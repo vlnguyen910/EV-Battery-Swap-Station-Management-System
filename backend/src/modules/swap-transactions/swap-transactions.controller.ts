@@ -41,11 +41,6 @@ export class SwapTransactionsController {
     return this.swapTransactionsService.findOne(id);
   }
 
-  @Roles($Enums.Role.admin)
-  @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateSwapTransactionDto) {
-    return this.swapTransactionsService.updateStatus(id, updateDto.status);
-  }
 
   @Roles($Enums.Role.admin)
   @Delete(':id')

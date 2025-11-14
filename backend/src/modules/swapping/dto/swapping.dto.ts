@@ -12,5 +12,9 @@ export class SwappingDto {
     @IsInt({ message: 'station_id must be an integer' })
     @IsNotEmpty({ message: 'station_id is required' })
     station_id: number;
+
+    @IsInt({ message: 'cabinet_id must be an integer' })
+    @IsNotEmpty({ message: 'cabinet_id is required' })
+    cabinet_id: number;
 }
 

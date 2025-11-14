@@ -89,6 +89,7 @@ export class BatteriesService {
   async findBestBatteryForVehicle(
     vehicle_id: number,
     station_id: number,
+    cabinet_id?: number,
   ) {
 
     const { battery_model, battery_type } = await this.vehiclesService.findOne(vehicle_id);
@@ -100,6 +101,7 @@ export class BatteriesService {
     const bestBattery = await this.databaseService.battery.findFirst({
       where: {
         station_id,
+        cabinet_id,
         model: battery_model,
         type: battery_type,
         status: 'full'

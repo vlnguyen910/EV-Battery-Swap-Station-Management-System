@@ -13,6 +13,7 @@ model Station {
   supports                          Support[]
   swap_transactions                 SwapTransaction[]
   staff                             User[]
+  cabinets                          Cabinet[]
 
   @@map("stations")
 }
