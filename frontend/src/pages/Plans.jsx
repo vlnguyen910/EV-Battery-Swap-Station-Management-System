@@ -171,8 +171,8 @@ export default function Plans() {
       const payload = {
         user_id: user.user_id,
         package_id: selectedPlan.rawData.package_id,
-        vehicle_id: parseInt(vehicleId)
-        //TODO: THÊM PAYMENT TYPE VÔ CÁI NÀY 
+        vehicle_id: parseInt(vehicleId),
+        payment_type: 'subscription_with_deposit'
       }
 
       const res = await paymentService.createPayment(payload)
@@ -203,7 +203,8 @@ export default function Plans() {
       const payload = {
         user_id: user.user_id,
         package_id: selectedPlan.rawData.package_id,
-        vehicle_id: parseInt(vehicleId)
+        vehicle_id: parseInt(vehicleId),
+        payment_type: 'subscription_with_deposit'
       }
 
       console.log('Creating direct payment with payload:', payload)
