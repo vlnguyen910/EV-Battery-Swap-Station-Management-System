@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/button';
 
 // Zod validation schema based on batteries table structure
 const batterySchema = z.object({
-    model: z.string().min(2, 'Model must be at least 2 characters').max(100, 'Model must not exceed 100 characters').optional().default('EV Model 1'),
+    model: z.string().min(2, 'Model must be at least 2 characters').max(100, 'Model must not exceed 100 characters').optional().default('Tesla Model 3'),
     type: z.string().min(2, 'Type must be at least 2 characters').max(50, 'Type must not exceed 50 characters').optional().default('Lithium-ion'),
     capacity: z.coerce.number().positive('Capacity must be positive').finite('Capacity must be a valid number').refine(val => {
         const str = val.toString();
@@ -25,6 +25,7 @@ const batterySchema = z.object({
     status: z.enum(['full', 'charging', 'in_use', 'in_transit', 'booked'], {
         errorMap: () => ({ message: 'Please select a valid status' })
     }).optional().default('full'),
+    quantity: z.coerce.number().int().min(1, 'Quantity must be at least 1').max(100, 'Maximum 100 batteries per batch').default(1),
 });
 
 export default function CreateBattery() {
@@ -57,12 +58,13 @@ export default function CreateBattery() {
         resolver: zodResolver(batterySchema),
         mode: 'onBlur',
         defaultValues: {
-            model: 'EV Model 1',
+            model: 'Tesla Model 3',
             type: 'Lithium-ion',
             capacity: 100,
             current_charge: 100,
             soh: 100,
             status: 'full',
+            quantity: 1,
         },
     });
 
@@ -76,7 +78,7 @@ export default function CreateBattery() {
             setSubmitting(true);
             const batteryData = {
                 station_id: parseInt(user.station_id),
-                model: values.model || 'EV Model 1',
+                model: values.model || 'Tesla Model 3',
                 type: values.type || 'Lithium-ion',
                 capacity: parseFloat(values.capacity),
                 current_charge: parseFloat(values.current_charge),
@@ -84,9 +86,11 @@ export default function CreateBattery() {
                 status: values.status || 'full',
             };
 
-            console.log('Sending battery data:', batteryData);
-            await batteryService.createBattery(batteryData);
-            toast.success('Battery created successfully');
+            for (let i = 0; i < values.quantity; i++) {
+                // eslint-disable-next-line no-await-in-loop
+                await batteryService.createBattery(batteryData);
+            }
+            toast.success(`Successfully created ${values.quantity} batteries!`);
             navigate('/staff/inventory');
         } catch (err) {
             console.error('Error creating battery:', err);
@@ -146,6 +150,22 @@ export default function CreateBattery() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {/* Số lượng */}
+                                <div className="flex flex-col col-span-1">
+                                    <label className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2">
+                                        Quantity <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        {...register('quantity')}
+                                        min={1}
+                                        max={100}
+                                        className={`form-input flex w-full rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 border bg-slate-50 dark:bg-slate-800/50 h-11 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-3 text-sm ${errors.quantity ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-primary/50 focus:border-primary'
+                                            }`}
+                                        placeholder="Enter quantity"
+                                    />
+                                    {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity.message}</p>}
+                                </div>
                                 {/* Model */}
                                 <div className="flex flex-col col-span-1">
                                     <label className="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2">
