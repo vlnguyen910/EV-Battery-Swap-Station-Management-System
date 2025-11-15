@@ -69,7 +69,7 @@ const updateBatteryCharge = async (batteryId, chargePercentage) => {
       API_ENDPOINTS.BATTERY.UPDATE_BATTERY_CHARGE,
       {
         battery_id: batteryId,
-        charge_percentage: chargePercentage
+        charge_percentage: chargePercentage,
       }
     );
     return response.data;
@@ -83,13 +83,26 @@ const simulateCharging = async (stationId, increaseAmount = 10) => {
   try {
     const response = await api.post(API_ENDPOINTS.BATTERY.SIMULATE_CHARGING, {
       station_id: stationId,
-      increase_amount: increaseAmount
+      increase_amount: increaseAmount,
     });
     return response.data;
   } catch (error) {
     console.error("Error simulating charging:", error);
     throw error;
-  } 
+  }
+};
+
+const createBattery = async (batteryData) => {
+  try {
+    const response = await api.post(
+      API_ENDPOINTS.BATTERY.CREATE_BATTERY,
+      batteryData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating battery:", error);
+    throw error;
+  }
 };
 
 export const batteryService = {
@@ -99,4 +112,5 @@ export const batteryService = {
   simulateCharging,
   updateBatteryById,
   updateBatteryCharge,
+  createBattery,
 };
