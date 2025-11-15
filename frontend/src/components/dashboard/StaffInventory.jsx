@@ -15,6 +15,7 @@ export default function StaffInventory() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
     const [simulatingCharge, setSimulatingCharge] = React.useState(false);
+    const [increaseAmount, setIncreaseAmount] = React.useState(10);
 
     const [filters, setFilters] = React.useState({
         model: "all",
@@ -103,7 +104,7 @@ export default function StaffInventory() {
     const handleSimulateCharging = async () => {
         setSimulatingCharge(true);
         try {
-            const response = await batteryService.simulateCharging(user.station_id);
+            const response = await batteryService.simulateCharging(user.station_id, increaseAmount);
             toast.success('Charging simulation completed successfully!');
             // Refresh batteries after simulation
             const data = await batteryService.getBatteriesByStationId(user.station_id);
@@ -147,6 +148,23 @@ export default function StaffInventory() {
                 >
                     {simulatingCharge ? 'Simulating...' : 'Simulate Charging'}
                 </button>
+            </div>
+
+            {/* Increase Amount Input */}
+            <div className="mb-6 flex items-center gap-4">
+                <label htmlFor="increaseAmount" className="text-sm font-medium text-gray-700">
+                    Charge Increase Amount (%)
+                </label>
+                <input
+                    id="increaseAmount"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={increaseAmount}
+                    onChange={(e) => setIncreaseAmount(Math.max(1, Math.min(100, parseInt(e.target.value) || 10)))}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-500">Default: 10%</span>
             </div>
 
             {/* Filter Section */}

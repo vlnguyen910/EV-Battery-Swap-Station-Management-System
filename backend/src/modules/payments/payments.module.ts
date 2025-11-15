@@ -4,11 +4,10 @@ import { FeeCalculationService } from './services/fee-calculation.service';
 import { PaymentsController } from './payments.controller';
 import { DatabaseModule } from '../database/database.module';
 import { BatteryServicePackagesModule } from '../battery-service-packages/battery-service-packages.module';
-import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { PaymentExpiryTask } from './tasks/payment-expiry.task';
 
 @Module({
-  imports: [DatabaseModule, BatteryServicePackagesModule, SubscriptionsModule],
+  imports: [DatabaseModule, BatteryServicePackagesModule],
   providers: [PaymentsService, FeeCalculationService, PaymentExpiryTask],
   controllers: [PaymentsController],
   exports: [PaymentsService, FeeCalculationService],

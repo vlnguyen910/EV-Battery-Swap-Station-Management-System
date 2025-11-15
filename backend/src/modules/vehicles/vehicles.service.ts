@@ -2,8 +2,9 @@ import { ConflictException, Injectable, NotFoundException, Logger, BadRequestExc
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { DatabaseService } from '../database/database.service';
-import { VehicleStatus } from '@prisma/client';
+import { SubscriptionStatus, VehicleStatus } from '@prisma/client';
 import { UsersService } from '../users/users.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
 export class VehiclesService {
@@ -12,6 +13,7 @@ export class VehiclesService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userService: UsersService,
+    private readonly subscriptionsService: SubscriptionsService
   ) { }
 
   async create(createVehicleDto: CreateVehicleDto) {
@@ -238,6 +240,16 @@ export class VehiclesService {
         );
       }
 
+      const subscription = await this.subscriptionsService.findOneByVehicleId(vehicle.vehicle_id);
+      if (subscription) {
+        const updatedSubscription = await this.subscriptionsService.update(subscription.subscription_id, {
+          status: SubscriptionStatus.cancelled // SubscriptionStatus.cancelled
+        });
+      }
+
+      this.logger.log(
+        `Removing Vehicle with VIN ${assignVehicleDto.vin} from User with ID ${assignVehicleDto.user_id}`
+      );
       const updatedVehicle = await this.databaseService.vehicle.update({
         where: { vin: assignVehicleDto.vin },
         data: { user_id: null, status: VehicleStatus.inactive },
@@ -250,9 +262,9 @@ export class VehiclesService {
   }
 
   async update(id: number, updateVehicleDto: UpdateVehicleDto) {
-    await this.findOne(id); // Check if vehicle exists
-
     try {
+      await this.findOne(id); // Check if vehicle exists
+
       return await this.databaseService.vehicle.update({
         where: { vehicle_id: id },
         data: updateVehicleDto,

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -27,12 +28,12 @@ import { SystemConfigService } from '../config/system-config.service';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private prisma: DatabaseService,
     @Inject(FeeCalculationService)
     private feeCalculationService: FeeCalculationService,
-    private batteryServicePackage: BatteryServicePackagesService,
-    private subscriptionsService: SubscriptionsService,
     private systemConfigService: SystemConfigService,
   ) { }
 
@@ -52,7 +53,7 @@ export class PaymentsService {
    */
   async cancelExpiredPayments(): Promise<number> {
     const now = new Date();
-    
+
     const result = await this.prisma.payment.updateMany({
       where: {
         status: PaymentStatus.pending,
@@ -271,6 +272,10 @@ export class PaymentsService {
         // Thanh toán gói + tiền đặt cọc pin
         // Tách số tiền: gói đăng ký + phí đặt cọc pin
         await this.createSubscriptionWithDeposit(payment);
+        break;
+
+      case 'subscription_renewal':  // NEW CASE
+        await this.handleSubscriptionRenewalPayment(payment);
         break;
 
       case 'battery_deposit':
@@ -638,7 +643,7 @@ export class PaymentsService {
           existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
         );
         feeAmount = depositResult.deposit_fee;
-        
+
         // Update breakdown text based on whether deposit is included
         if (depositResult.deposit_fee > 0) {
           feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
@@ -779,7 +784,7 @@ export class PaymentsService {
     // 9. If success, create subscription (only for subscription payment types)
     let subscription: any = null;
     const isSubscriptionPayment = ['subscription', 'subscription_with_deposit'].includes(mockPaymentDto.payment_type || '');
-    
+
     if (paymentStatus === PaymentStatus.success && isSubscriptionPayment && servicePackage) {
       // Validate vehicle_id for subscription payments
       if (!mockPaymentDto.vehicle_id) {
@@ -920,7 +925,7 @@ export class PaymentsService {
           existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
         );
         feeAmount = depositResult.deposit_fee;
-        
+
         // Update breakdown text based on whether deposit is included
         if (depositResult.deposit_fee > 0) {
           feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
@@ -1075,163 +1080,320 @@ export class PaymentsService {
    * 
    * Use for: Demo, testing, or when VNPAY is unavailable
    */
-  async createDirectPaymentWithFees(
-    createPaymentWithFeesDto: CreateDirectPaymentDto,
-  ): Promise<{
-    success: boolean;
-    payment: any;
-    subscription?: any;
-    feeBreakdown: any;
-    message: string;
-  }> {
-    try {
-      // 1. Get package information
-      const servicePackage = await this.prisma.batteryServicePackage.findUnique({
-        where: { package_id: createPaymentWithFeesDto.package_id },
-      });
+  // async createDirectPaymentWithFees(
+  //   createPaymentWithFeesDto: CreateDirectPaymentDto,
+  // ): Promise<{
+  //   success: boolean;
+  //   payment: any;
+  //   subscription?: any;
+  //   feeBreakdown: any;
+  //   message: string;
+  // }> {
+  //   try {
+  //     // 1. Get package information
+  //     const servicePackage = await this.prisma.batteryServicePackage.findUnique({
+  //       where: { package_id: createPaymentWithFeesDto.package_id },
+  //     });
 
-      if (!servicePackage) {
-        throw new NotFoundException('Package not found');
-      }
+  //     if (!servicePackage) {
+  //       throw new NotFoundException('Package not found');
+  //     }
 
-      if (!servicePackage.active) {
-        throw new BadRequestException('Package is not active');
-      }
+  //     if (!servicePackage.active) {
+  //       throw new BadRequestException('Package is not active');
+  //     }
 
-      const existingSubscription = await this.subscriptionsService.findOneByVehicleId(createPaymentWithFeesDto.vehicle_id);
-      if (existingSubscription && existingSubscription.status === SubscriptionStatus.active) {
-        throw new BadRequestException('This vehicle is already have a subscription, choose other vehicle or cancle current subscription')
-      }
+  //     const existingSubscription = await this.subscriptionsService.findOneByVehicleId(createPaymentWithFeesDto.vehicle_id);
+  //     if (existingSubscription && existingSubscription.status === SubscriptionStatus.active) {
+  //       throw new BadRequestException('This vehicle is already have a subscription, choose other vehicle or cancle current subscription')
+  //     }
 
-      // 2. Calculate fee based on fee type (same logic as createPaymentUrlWithFees)
-      let feeAmount = 0;
-      let feeBreakdownText = '';
-      let feeDetails: any = {
-        baseAmount: servicePackage.base_price.toNumber(),
-        totalAmount: 0,
-      };
+  //     // 2. Calculate fee based on fee type (same logic as createPaymentUrlWithFees)
+  //     let feeAmount = 0;
+  //     let feeBreakdownText = '';
+  //     let feeDetails: any = {
+  //       baseAmount: servicePackage.base_price.toNumber(),
+  //       totalAmount: 0,
+  //     };
 
-      // Call appropriate fee calculation method
-      switch (createPaymentWithFeesDto.payment_type) {
-        case 'subscription_with_deposit':
-          const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
-            createPaymentWithFeesDto.package_id,
-            existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
-          );
-          feeAmount = depositResult.deposit_fee;
-          
-          // Update breakdown text based on whether deposit is included
-          if (depositResult.deposit_fee > 0) {
-            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
-          } else {
-            feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
-          }
-          feeDetails.depositFee = depositResult.deposit_fee;
-          feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
-          break;
+  //     // Call appropriate fee calculation method
+  //     switch (createPaymentWithFeesDto.payment_type) {
+  //       case 'subscription_with_deposit':
+  //         const depositResult = await this.feeCalculationService.calculateSubscriptionWithDeposit(
+  //           createPaymentWithFeesDto.package_id,
+  //           existingSubscription?.subscription_id, // Pass subscription_id to check deposit status
+  //         );
+  //         feeAmount = depositResult.deposit_fee;
 
-        case 'battery_replacement':
-          if (createPaymentWithFeesDto.distance_traveled) {
-            feeAmount = 0;
-            feeBreakdownText = `Thanh toán thay pin: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
-          }
-          break;
+  //         // Update breakdown text based on whether deposit is included
+  //         if (depositResult.deposit_fee > 0) {
+  //           feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND, Cọc: ${depositResult.deposit_fee.toLocaleString('vi-VN')} VND, Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+  //         } else {
+  //           feeBreakdownText = `Gói: ${depositResult.breakdown.package_price.toLocaleString('vi-VN')} VND (Đã đặt cọc trước đó), Tổng: ${depositResult.total_fee.toLocaleString('vi-VN')} VND`;
+  //         }
+  //         feeDetails.depositFee = depositResult.deposit_fee;
+  //         feeDetails.depositAlreadyPaid = existingSubscription?.deposit_paid || false;
+  //         break;
 
-        case 'subscription':
-        case 'other':
-        default:
-          feeAmount = 0;
-          feeBreakdownText = `Tổng tiền: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
-          break;
-      }
+  //       case 'battery_replacement':
+  //         if (createPaymentWithFeesDto.distance_traveled) {
+  //           feeAmount = 0;
+  //           feeBreakdownText = `Thanh toán thay pin: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+  //         }
+  //         break;
 
-      // 3. Calculate total amount
-      const totalAmount = servicePackage.base_price.toNumber() + feeAmount;
-      feeDetails.totalAmount = totalAmount;
-      feeDetails.breakdown_text = feeBreakdownText;
+  //       case 'subscription':
+  //       case 'other':
+  //       default:
+  //         feeAmount = 0;
+  //         feeBreakdownText = `Tổng tiền: ${servicePackage.base_price.toNumber().toLocaleString('vi-VN')} VND`;
+  //         break;
+  //     }
 
-      // 4. Create payment record with SUCCESS status (direct payment confirmed)
-      const payment = await this.prisma.payment.create({
-        data: {
-          user_id: createPaymentWithFeesDto.user_id,
-          package_id: createPaymentWithFeesDto.package_id,
-          vehicle_id: createPaymentWithFeesDto.vehicle_id,
-          amount: totalAmount, // Total amount including fee
-          method: PaymentMethod.cash, // Direct payment method
-          status: PaymentStatus.success, // Immediate success
-          payment_type: createPaymentWithFeesDto.payment_type as any,
-          payment_time: new Date(),
-          transaction_id: `DIRECT${moment().format('YYYYMMDDHHmmss')}`,
-          order_info:
-            createPaymentWithFeesDto.order_info ||
-            `Direct payment for ${servicePackage.name}${feeAmount > 0 ? ' + fees' : ''}`,
-        },
-        include: {
-          package: true,
-        },
-      });
+  //     // 3. Calculate total amount
+  //     const totalAmount = servicePackage.base_price.toNumber() + feeAmount;
+  //     feeDetails.totalAmount = totalAmount;
+  //     feeDetails.breakdown_text = feeBreakdownText;
 
-      // 5. Create subscription immediately (if payment_type requires it)
-      let subscription: any = null;
+  //     // 4. Create payment record with SUCCESS status (direct payment confirmed)
+  //     const payment = await this.prisma.payment.create({
+  //       data: {
+  //         user_id: createPaymentWithFeesDto.user_id,
+  //         package_id: createPaymentWithFeesDto.package_id,
+  //         vehicle_id: createPaymentWithFeesDto.vehicle_id,
+  //         amount: totalAmount, // Total amount including fee
+  //         method: PaymentMethod.cash, // Direct payment method
+  //         status: PaymentStatus.success, // Immediate success
+  //         payment_type: createPaymentWithFeesDto.payment_type as any,
+  //         payment_time: new Date(),
+  //         transaction_id: `DIRECT${moment().format('YYYYMMDDHHmmss')}`,
+  //         order_info:
+  //           createPaymentWithFeesDto.order_info ||
+  //           `Direct payment for ${servicePackage.name}${feeAmount > 0 ? ' + fees' : ''}`,
+  //       },
+  //       include: {
+  //         package: true,
+  //       },
+  //     });
 
-      if (
-        createPaymentWithFeesDto.payment_type === 'subscription' ||
-        createPaymentWithFeesDto.payment_type === 'subscription_with_deposit'
-      ) {
-        const startDate = new Date();
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + servicePackage.duration_days);
+  //     // 5. Create subscription immediately (if payment_type requires it)
+  //     let subscription: any = null;
 
-        // Set deposit_paid = true if payment type includes deposit
-        const depositPaid = createPaymentWithFeesDto.payment_type === 'subscription_with_deposit';
+  //     if (
+  //       createPaymentWithFeesDto.payment_type === 'subscription' ||
+  //       createPaymentWithFeesDto.payment_type === 'subscription_with_deposit'
+  //     ) {
+  //       const startDate = new Date();
+  //       const endDate = new Date(startDate);
+  //       endDate.setDate(endDate.getDate() + servicePackage.duration_days);
 
-        subscription = await this.prisma.subscription.create({
-          data: {
-            user_id: createPaymentWithFeesDto.user_id,
-            package_id: createPaymentWithFeesDto.package_id,
-            vehicle_id: createPaymentWithFeesDto.vehicle_id,
-            start_date: startDate,
-            end_date: endDate,
-            status: 'active',
-            swap_used: 0,
-            deposit_paid: depositPaid, // Set based on payment type
-          },
-          include: {
-            package: true,
-            vehicle: true,
-          },
-        });
+  //       // Set deposit_paid = true if payment type includes deposit
+  //       const depositPaid = createPaymentWithFeesDto.payment_type === 'subscription_with_deposit';
 
-        // Link payment to subscription
-        await this.prisma.payment.update({
-          where: { payment_id: payment.payment_id },
-          data: { subscription_id: subscription.subscription_id },
-        });
-      }
+  //       subscription = await this.prisma.subscription.create({
+  //         data: {
+  //           user_id: createPaymentWithFeesDto.user_id,
+  //           package_id: createPaymentWithFeesDto.package_id,
+  //           vehicle_id: createPaymentWithFeesDto.vehicle_id,
+  //           start_date: startDate,
+  //           end_date: endDate,
+  //           status: 'active',
+  //           swap_used: 0,
+  //           deposit_paid: depositPaid, // Set based on payment type
+  //         },
+  //         include: {
+  //           package: true,
+  //           vehicle: true,
+  //         },
+  //       });
 
-      // 6. Return detailed response
-      return {
-        success: true,
-        payment: {
-          ...payment,
-          subscription_id: subscription?.subscription_id,
-        },
-        subscription,
-        feeBreakdown: {
-          baseAmount: feeDetails.baseAmount,
-          depositFee: feeDetails.depositFee,
-          overchargeFee: feeDetails.overchargeFee,
-          damageFee: feeDetails.damageFee,
-          totalAmount: feeDetails.totalAmount,
-          breakdown_text: feeDetails.breakdown_text,
-        },
-        message: subscription
-          ? 'Direct payment with fees processed successfully and subscription created'
-          : 'Direct payment with fees processed successfully',
-      };
-    } catch (error) {
-      throw error;
+  //       // Link payment to subscription
+  //       await this.prisma.payment.update({
+  //         where: { payment_id: payment.payment_id },
+  //         data: { subscription_id: subscription.subscription_id },
+  //       });
+  //     }
+
+  //     // 6. Return detailed response
+  //     return {
+  //       success: true,
+  //       payment: {
+  //         ...payment,
+  //         subscription_id: subscription?.subscription_id,
+  //       },
+  //       subscription,
+  //       feeBreakdown: {
+  //         baseAmount: feeDetails.baseAmount,
+  //         depositFee: feeDetails.depositFee,
+  //         overchargeFee: feeDetails.overchargeFee,
+  //         damageFee: feeDetails.damageFee,
+  //         totalAmount: feeDetails.totalAmount,
+  //         breakdown_text: feeDetails.breakdown_text,
+  //       },
+  //       message: subscription
+  //         ? 'Direct payment with fees processed successfully and subscription created'
+  //         : 'Direct payment with fees processed successfully',
+  //     };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  /**
+   * Create payment for subscription renewal (includes penalty fee)
+   * POST /payments/subscription-renewal
+   */
+  async createSubscriptionRenewalPayment(
+    subscriptionId: number,
+    ipAddr: string,
+  ): Promise<PaymentWithFeesResponse> {
+    // 1. Get old subscription
+    const oldSubscription = await this.prisma.subscription.findUnique({
+      where: { subscription_id: subscriptionId },
+      include: { package: true },
+    });
+
+    if (!oldSubscription) {
+      throw new NotFoundException('Subscription not found');
     }
+
+    if (oldSubscription.status !== SubscriptionStatus.expired) {
+      throw new BadRequestException('Only expired subscriptions can be renewed');
+    }
+
+    const vehicleId = oldSubscription.vehicle_id;
+    const userId = oldSubscription.user_id;
+
+    // 2. Calculate penalty fee
+    const overChargeFee = await this.feeCalculationService.calculateOverchargeFee(
+      oldSubscription.subscription_id,
+    );
+
+    let penaltyFee = overChargeFee.overcharge_fee;
+    const baseDistance = oldSubscription.package?.base_distance || 0;
+
+    // 3. Calculate total amount
+    const basePrice = oldSubscription.package?.base_price.toNumber() || 0;
+    const totalAmount = basePrice + penaltyFee;
+
+    // 4. Create payment record
+    const vnpTxnRef = moment().format('DDHHmmss');
+    const expiresAt = this.getPaymentExpiryTime();
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        user_id: userId,
+        package_id: oldSubscription.package_id,
+        vehicle_id: vehicleId,
+        amount: totalAmount,
+        method: PaymentMethod.vnpay,
+        status: PaymentStatus.pending,
+        payment_type: PaymentType.subscription,
+        vnp_txn_ref: vnpTxnRef,
+        expires_at: expiresAt,
+        order_info: `Gia han goi ${oldSubscription.package.name}${penaltyFee > 0 ? ' + phat' : ''}`,
+      },
+    });
+
+    // 5. Build VNPAY URL
+    const createDate = moment().format('YYYYMMDDHHmmss');
+    const vnpAmount = Math.floor(totalAmount * 100);
+
+    let vnpParams: any = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: vnpayConfig.vnp_TmnCode,
+      vnp_Locale: 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: vnpTxnRef,
+      vnp_OrderInfo: payment.order_info,
+      vnp_OrderType: 'other',
+      vnp_Amount: vnpAmount,
+      vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: createDate,
+    };
+
+    vnpParams = sortObject(vnpParams);
+    const signData = qs.stringify(vnpParams, { encode: false });
+    const hmac = crypto.createHmac('sha512', vnpayConfig.vnp_HashSecret);
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+    vnpParams['vnp_SecureHash'] = signed;
+    const paymentUrl = vnpayConfig.vnp_Url + '?' + qs.stringify(vnpParams, { encode: false });
+
+    return {
+      payment_id: payment.payment_id,
+      paymentUrl,
+      vnp_txn_ref: vnpTxnRef,
+      feeBreakdown: {
+        baseAmount: basePrice,
+        depositFee: 0,
+        overchargeFee: 0,
+        damageFee: penaltyFee, // Penalty fee shown as damage fee
+        totalAmount: totalAmount,
+        breakdown_text: `Goi: ${basePrice.toLocaleString('vi-VN')} VND, Phat: ${penaltyFee.toLocaleString('vi-VN')} VND, Tong: ${totalAmount.toLocaleString('vi-VN')} VND`,
+      },
+      paymentInfo: {
+        user_id: payment.user_id,
+        package_id: payment.package_id ?? 0,
+        vehicle_id: payment.vehicle_id ?? 0,
+        payment_type: payment.payment_type,
+        status: payment.status,
+        created_at: payment.created_at.toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Handle subscription renewal payment success
+   * Called from handleVnpayReturn()
+   */
+  private async handleSubscriptionRenewalPayment(payment: any) {
+    if (!payment.package) return;
+
+    // Get old subscription
+    const oldSubscription = await this.prisma.subscription.findFirst({
+      where: {
+        user_id: payment.user_id,
+        package_id: payment.package_id,
+        status: SubscriptionStatus.expired,
+      },
+      orderBy: { end_date: 'desc' },
+    });
+
+    if (!oldSubscription) {
+      console.warn('Original expired subscription not found for renewal');
+      return;
+    }
+
+    // Create new subscription
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + payment.package.duration_days);
+
+    const newSubscription = await this.prisma.subscription.create({
+      data: {
+        user_id: payment.user_id,
+        package_id: payment.package_id,
+        vehicle_id: payment.vehicle_id,
+        start_date: startDate,
+        end_date: endDate,
+        status: 'active',
+        swap_used: 0,
+        distance_traveled: 0,
+        deposit_paid: oldSubscription.deposit_paid,
+      },
+    });
+
+    this.logger.log(`New subscription created with ID: ${newSubscription.subscription_id}`);
+
+    // Link payment to new subscription
+    await this.prisma.payment.update({
+      where: { payment_id: payment.payment_id },
+      data: { subscription_id: newSubscription.subscription_id },
+    });
+
   }
 }
 

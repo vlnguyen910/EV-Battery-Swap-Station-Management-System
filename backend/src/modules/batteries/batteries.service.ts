@@ -58,8 +58,16 @@ export class BatteriesService {
   }
 
   create(createBatteryDto: CreateBatteryDto) {
-    this.logger.log('Creating a new battery');
-    return 'This action adds a new battery';
+    try {
+      const newBattery = this.databaseService.battery.create({
+        data: {
+          ...createBatteryDto,
+        },
+      });
+      return newBattery;
+    } catch (error) {
+      throw error;
+    }
   }
 
   findAll() {

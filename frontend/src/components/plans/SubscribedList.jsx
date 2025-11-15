@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Calendar, CreditCard, Car, MapPin, Zap } from 'lucide-react';
+import { Eye, Calendar, CreditCard, Car, MapPin, Zap, RefreshCcw } from 'lucide-react';
 import { Button } from '../ui/button';
 import SubscriptionDetailModal from './SubscriptionDetailModal';
 
@@ -215,6 +215,19 @@ export default function SubscribedList({ subscriptions, onRefresh }) {
                     <Eye className="w-4 h-4" />
                     View Details
                   </Button>
+                {/* Renewal Button */}
+                  {subscription.status === 'expired' && (
+                    <Button
+                      as="a"
+                      href={`/renew/${subscription.id}`}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <RefreshCcw className="w-4 h-4" />
+                      Renew Subscription
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
