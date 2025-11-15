@@ -26,7 +26,7 @@ export default function StaffPage() {
             </div>
 
             {/* Main Content */}
-            <main className="relative z-5 p-6 pl-64">
+            <main className="relative z-5 p-6 pl-80">
                 {/* Trang con sẽ render ở đây */}
                 <Outlet />
             </main>
