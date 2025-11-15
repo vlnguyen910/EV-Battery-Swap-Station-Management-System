@@ -79,10 +79,11 @@ const updateBatteryCharge = async (batteryId, chargePercentage) => {
   }
 };
 
-const simulateCharging = async (stationId) => {
+const simulateCharging = async (stationId, increaseAmount = 10) => {
   try {
     const response = await api.post(API_ENDPOINTS.BATTERY.SIMULATE_CHARGING, {
-      station_id: stationId
+      station_id: stationId,
+      increase_amount: increaseAmount
     });
     return response.data;
   } catch (error) {
