@@ -110,6 +110,7 @@ export default function Navigation({ type = "main" }) {
       { name: 'Battery Inventory', path: '/staff/inventory', icon: Package },
       { name: 'Swap Requests', path: '/staff/swap-requests', icon: ArrowLeftRight },
       { name: 'Transfer Requests', path: '/staff/transfer-requests', icon: ArrowLeftRight },
+      { name: 'Import Batteries', path: '/staff/import-batteries', icon: FileText },
       { name: 'Profile', path: '/staff/profile', icon: UserIcon },
     ]
 
