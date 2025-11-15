@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Battery, MapPin, Clock, X, Zap, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 import { useReservation, useAuth } from '../../hooks/useContext';
 import { useNavigate } from 'react-router-dom';
 import BookingSuccessHeader from '../booking/BookingSuccessHeader';
+import { reservationService } from '../../services/reservationService';
 
 export default function ReservationCountdownWidget() {
     const { activeReservation, updateReservationStatus, clearActiveReservation } = useReservation();
@@ -11,43 +12,113 @@ export default function ReservationCountdownWidget() {
     const navigate = useNavigate();
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isMinimized, setIsMinimized] = useState(false);
+    const [reservationStatus, setReservationStatus] = useState(null);
 
-    // confirmation modal state (declare early to avoid closure timing issues)
+    // confirmation modal state
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [showCancelledScreen, setShowCancelledScreen] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
-    // Calculate initial time remaining
+    // Real-time polling state
+    const pollingIntervalRef = useRef(null);
+    const countdownIntervalRef = useRef(null);
+    const [isPolling, setIsPolling] = useState(false);
+
+    // Fetch latest reservation status from backend (every 2 seconds)
+    const fetchReservationStatus = useCallback(async () => {
+        if (!activeReservation?.reservation_id || !user) return;
+
+        try {
+            setIsPolling(true);
+            const response = await reservationService.getReservationById(activeReservation.reservation_id);
+            const latestReservation = response.data || response;
+
+            setReservationStatus(latestReservation.status);
+
+            // Check if reservation is completed
+            if (latestReservation.status === 'completed') {
+                clearActiveReservation();
+                setShowCancelledScreen(false);
+                toast.success('Battery swapped successfully! 🎉');
+                // Optionally navigate or show success message
+                return;
+            }
+
+            // Check if reservation is already cancelled from another source
+            if (latestReservation.status === 'cancelled') {
+                clearActiveReservation();
+                toast.info('Reservation has been cancelled');
+                return;
+            }
+
+        } catch (error) {
+            console.error('Error fetching reservation status:', error);
+        } finally {
+            setIsPolling(false);
+        }
+    }, [activeReservation?.reservation_id, user, clearActiveReservation]);
+
+    // Calculate initial time remaining (30 minutes from scheduled time)
     useEffect(() => {
         if (activeReservation?.scheduled_time) {
             const scheduledTime = new Date(activeReservation.scheduled_time);
             const now = new Date();
             const diff = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
-            setTimeRemaining(Math.max(0, diff + 3600)); // 1 hour from scheduled time
+            // 30 minutes = 1800 seconds
+            setTimeRemaining(Math.max(0, diff + 1800));
+            setReservationStatus(activeReservation.status);
         }
     }, [activeReservation]);
 
+    // Handle time expired - auto cancel reservation
     const handleTimeExpired = useCallback(async () => {
         if (!activeReservation || !user) return;
 
         try {
-            // Auto-cancel when time expires (scheduled → cancelled)
-            await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
+            await updateReservationStatus(
+                Number(activeReservation.reservation_id),
+                Number(user.id ?? user.user_id),
+                'cancelled'
+            );
             clearActiveReservation();
             toast.info('Your reservation has expired and been cancelled');
         } catch (error) {
             console.error('Failed to cancel expired reservation:', error);
+            toast.error('Failed to cancel expired reservation');
         }
     }, [activeReservation, user, updateReservationStatus, clearActiveReservation]);
 
-    // Countdown timer
+    // Real-time polling every 2 seconds
+    useEffect(() => {
+        if (!activeReservation) {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+            return;
+        }
+
+        // Initial fetch
+        fetchReservationStatus();
+
+        // Set up polling interval (2 seconds)
+        pollingIntervalRef.current = setInterval(() => {
+            fetchReservationStatus();
+        }, 2000);
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
+    }, [activeReservation, fetchReservationStatus]);
+
+    // Countdown timer (1 second)
     useEffect(() => {
         if (!activeReservation || timeRemaining <= 0) return;
 
-        const timer = setInterval(() => {
+        countdownIntervalRef.current = setInterval(() => {
             setTimeRemaining(prev => {
                 if (prev <= 1) {
-                    // Time expired - cancel reservation
                     handleTimeExpired();
                     return 0;
                 }
@@ -55,40 +126,42 @@ export default function ReservationCountdownWidget() {
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+            }
+        };
     }, [activeReservation, timeRemaining, handleTimeExpired]);
 
-
-
     const handleCancelBooking = async () => {
-        if (!activeReservation) return;
-        // show confirmation modal
         setShowCancelDialog(true);
     };
 
     const handleCancel = async () => {
-        if (!activeReservation) return;
-        // open confirmation modal
         setShowCancelDialog(true);
     };
 
     const performCancelReservation = useCallback(async () => {
         if (!activeReservation || !user) return;
-        console.debug('performCancelReservation: start (optimistic)', { reservationId: activeReservation?.reservation_id, userId: user?.id ?? user?.user_id });
+        console.debug('performCancelReservation: start', {
+            reservationId: activeReservation?.reservation_id,
+            userId: user?.id ?? user?.user_id
+        });
 
-        // Optimistic UI: immediately show cancelled screen so user sees feedback.
         setShowCancelDialog(false);
         setShowCancelledScreen(true);
         setIsCancelling(true);
 
         try {
-            const updated = await updateReservationStatus(Number(activeReservation.reservation_id), Number(user.id ?? user.user_id), 'cancelled');
+            const updated = await updateReservationStatus(
+                Number(activeReservation.reservation_id),
+                Number(user.id ?? user.user_id),
+                'cancelled'
+            );
             console.debug('performCancelReservation: api success', updated);
-            // clear active reservation in context so other consumers update
             clearActiveReservation();
         } catch (error) {
             console.error('Failed to cancel reservation (api):', error);
-            // revert optimistic UI and inform the user
             setShowCancelledScreen(false);
             toast.error('Failed to cancel reservation. Please try again.');
         } finally {
@@ -103,7 +176,6 @@ export default function ReservationCountdownWidget() {
     if (!activeReservation && !showCancelledScreen) return null;
 
     if (showCancelledScreen) {
-        // Full-screen cancelled view (reuses booking header styling)
         return (
             <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/20">
                 <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8 text-center">
@@ -113,7 +185,42 @@ export default function ReservationCountdownWidget() {
                         variant="cancel"
                     />
                     <div className="flex justify-center">
-                        <button onClick={() => { setShowCancelledScreen(false); clearActiveReservation(); navigate('/driver/map'); }} className="bg-blue-600 text-white py-2 px-4 rounded-lg">Back to map</button>
+                        <button
+                            onClick={() => {
+                                setShowCancelledScreen(false);
+                                clearActiveReservation();
+                                navigate('/driver/map');
+                            }}
+                            className="bg-blue-600 text-white py-2 px-4 rounded-lg"
+                        >
+                            Back to map
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show completion message when status changes to completed
+    if (reservationStatus === 'completed') {
+        return (
+            <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/20">
+                <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8 text-center">
+                    <BookingSuccessHeader
+                        title="Battery swapped successfully!"
+                        subtitle="Thank you for using our service 🔋"
+                        variant="success"
+                    />
+                    <div className="flex justify-center">
+                        <button
+                            onClick={() => {
+                                clearActiveReservation();
+                                navigate('/driver/map');
+                            }}
+                            className="bg-blue-600 text-white py-2 px-4 rounded-lg"
+                        >
+                            Back to map
+                        </button>
                     </div>
                 </div>
             </div>
@@ -135,6 +242,9 @@ export default function ReservationCountdownWidget() {
                     <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-white" />
                         <span className="text-white font-semibold">Active Reservation</span>
+                        {isPolling && (
+                            <span className="ml-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -165,6 +275,14 @@ export default function ReservationCountdownWidget() {
                             <div className="text-4xl font-bold text-white tabular-nums">
                                 {formatTime(timeRemaining)}
                             </div>
+                            <div className="text-white/60 text-xs mt-2">
+                                30 minutes to complete battery swap
+                            </div>
+                        </div>
+
+                        {/* Reservation Status */}
+                        <div className="bg-white/5 rounded-lg p-3 text-center">
+                            <div className="text-white/80 text-xs">Status: <span className="font-semibold capitalize">{reservationStatus || 'Loading...'}</span></div>
                         </div>
 
                         {/* Station Info */}
@@ -192,10 +310,10 @@ export default function ReservationCountdownWidget() {
                                 <X className="w-4 h-4" />
                                 <span>Cancel Booking</span>
                             </button>
-
                         </div>
                     </div>
                 )}
+
                 {/* Confirmation modal */}
                 {showCancelDialog && (
                     <div className="fixed inset-0 z-[99999] flex items-center justify-center">
@@ -204,9 +322,19 @@ export default function ReservationCountdownWidget() {
                             <h3 className="text-lg font-bold mb-2">Confirm Cancellation</h3>
                             <p className="text-gray-600 mb-4">Are you sure you want to cancel this reservation?</p>
                             <div className="flex gap-3 justify-end">
-                                <button onClick={() => setShowCancelDialog(false)} className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">No</button>
-                                <button onClick={performCancelReservation} disabled={isCancelling} className={`bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded ${isCancelling ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                                    {isCancelling ? 'Cancelling...' : 'Yes'}
+                                <button
+                                    onClick={() => setShowCancelDialog(false)}
+                                    className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded"
+                                >
+                                    No
+                                </button>
+                                <button
+                                    onClick={performCancelReservation}
+                                    disabled={isCancelling}
+                                    className={`bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded ${isCancelling ? 'opacity-60 cursor-not-allowed' : ''
+                                        }`}
+                                >
+                                    {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
                                 </button>
                             </div>
                         </div>

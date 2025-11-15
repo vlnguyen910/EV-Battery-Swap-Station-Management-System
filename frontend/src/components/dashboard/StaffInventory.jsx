@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useContext";
 import { batteryService } from "../../services/batteryService";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 import Filter from "../common/Filter"
 import BatteryCard from "../batteries/BatteryCard"
 
@@ -11,6 +13,7 @@ import BatteryCard from "../batteries/BatteryCard"
  */
 export default function StaffInventory() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [batteries, setBatteries] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
@@ -104,7 +107,7 @@ export default function StaffInventory() {
     const handleSimulateCharging = async () => {
         setSimulatingCharge(true);
         try {
-            const response = await batteryService.simulateCharging(user.station_id, increaseAmount);
+            await batteryService.simulateCharging(user.station_id, increaseAmount);
             toast.success('Charging simulation completed successfully!');
             // Refresh batteries after simulation
             const data = await batteryService.getBatteriesByStationId(user.station_id);
@@ -115,6 +118,10 @@ export default function StaffInventory() {
         } finally {
             setSimulatingCharge(false);
         }
+    };
+
+    const handleCreateBattery = () => {
+        navigate('/staff/batteries/create');
     };
 
     if (loading) {
@@ -141,13 +148,22 @@ export default function StaffInventory() {
                     <p className="text-3xl font-black text-gray-900 leading-tight tracking-tight">Battery Inventory</p>
                     <p className="text-base font-normal text-gray-500">Monitor and manage battery slot status at your station.</p>
                 </div>
-                <button
-                    onClick={handleSimulateCharging}
-                    disabled={simulatingCharge}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {simulatingCharge ? 'Simulating...' : 'Simulate Charging'}
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleCreateBattery}
+                        className="px-4 py-2 flex items-center justify-center gap-2 overflow-hidden rounded-lg h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="truncate">Create Battery</span>
+                    </button>
+                    <button
+                        onClick={handleSimulateCharging}
+                        disabled={simulatingCharge}
+                        className="px-4 py-2 bg-green-600 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {simulatingCharge ? 'Simulating...' : 'Simulate Charging'}
+                    </button>
+                </div>
             </div>
 
             {/* Increase Amount Input */}
