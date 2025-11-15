@@ -53,6 +53,10 @@ export default function User() {
     };
 
     fetchVehicleData();
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(fetchVehicleData, 5000);
+    return () => clearInterval(interval);
   }, [user?.user_id]);
 
   const nearbyStations = useMemo(() => {
