@@ -7,16 +7,45 @@ A full-stack application with a NestJS backend and a modern frontend, featuring 
 ```
 ├── backend/              # NestJS backend application
 ├── frontend/             # Frontend application
-└── ai-chat-log/         # AI chat logs and usage tracking
+├── ai-chat-log/         # AI chat logs and usage tracking
+├── Dockerfile           # Multi-stage Docker build
+├── docker-compose.yml   # Docker Compose configuration
+└── Makefile            # Docker convenience commands
 ```
+
+## Quick Start with Docker 🐳
+
+The easiest way to run the entire application is with Docker:
+
+```bash
+# Build and start all services
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+```
+
+**Access the application:**
+
+- Frontend: <http://localhost:5173>
+- Backend API: <http://localhost:3000>
+- Database: localhost:5432
+
+For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
-- PostgreSQL (for backend)
+### For Docker Setup
 
-## Getting Started
+- Docker & Docker Compose
+
+### For Local Development
+
+- Node.js (v18 or higher)
+- npm or yarn
+- PostgreSQL (v16 or higher)
+
+## Local Development Setup
 
 ### Backend Setup
 
@@ -38,13 +67,21 @@ npm install
 cp .env.example .env
 ```
 
-4. Run database migrations:
+4. Configure your `.env` file with database credentials and API keys
+
+5. Run database migrations:
 
 ```bash
 npx prisma migrate dev
 ```
 
-5. Start the development server:
+6. (Optional) Seed the database:
+
+```bash
+npx prisma db seed
+```
+
+7. Start the development server:
 
 ```bash
 npm run start:dev
@@ -72,40 +109,58 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at the configured port (typically `http://localhost:5173` or `http://localhost:3000`)
+The frontend will be available at <http://localhost:5173>
 
 ## Features
 
 - **AI Chat Integration** - AI-powered chat functionality with conversation logging
-- **Payment Processing** - VNPAY integration for payment handling
+- **Payment Processing** - VNPAY integration for secure payment handling
 - **User Authentication** - Secure login and password reset functionality
-- **Station Analysis** - AI-based analysis tools for stations
+- **Station Analysis** - AI-based analysis tools for EV battery swap stations
+- **Real-time Updates** - Live station status and battery availability tracking
 
 ## Development
 
 ### Backend
 
-- Framework: NestJS
-- Database: Prisma ORM
-- Code Quality: ESLint, Prettier
+- **Framework:** NestJS with TypeScript
+- **Database:** PostgreSQL with Prisma ORM
+- **API:** RESTful API with Swagger documentation
+- **Code Quality:** ESLint, Prettier
 
 **Useful scripts:**
 
 ```bash
+cd backend
 npm run start:dev       # Development mode with hot reload
 npm run build          # Build for production
-npm run test           # Run tests
+npm run test           # Run unit tests
+npm run test:e2e       # Run end-to-end tests
+npm run lint           # Run ESLint
+npm run format         # Format code with Prettier
 ```
 
 ### Frontend
 
-- Styling: Tailwind CSS
-- Code Quality: ESLint
-- Build Tool: Vite (inferred from config structure)
+- **Framework:** React/Vue (based on your setup)
+- **Styling:** Tailwind CSS
+- **Build Tool:** Vite
+- **Code Quality:** ESLint
+
+**Useful scripts:**
+
+```bash
+cd frontend
+npm run dev            # Development server with hot reload
+npm run build          # Build for production
+npm run preview        # Preview production build
+npm run lint           # Run ESLint
+npm run format         # Format code with Prettier
+```
 
 ## Testing
 
-The backend includes several test scripts:
+Run the included test scripts:
 
 ```bash
 ./test-ai-station-analysis.sh     # Test AI station analysis
@@ -115,14 +170,228 @@ The backend includes several test scripts:
 
 ## Configuration
 
-- **Backend**: See [backend/.env.example](backend/.env.example) for required environment variables
-- **Frontend**: Configuration in [frontend/jsconfig.json](frontend/jsconfig.json)
-- **Styling**: See [frontend/tailwind.config.js](frontend/tailwind.config.js)
+### Environment Variables
 
-## Documentation
+- **Backend**: See [backend/.env.example](backend/.env.example)
+- **Frontend**: Configuration in [frontend/vite.config.js](frontend/vite.config.js)
 
-- Backend documentation: [backend/README.md](backend/README.md)
-- Frontend documentation: [frontend/README.md](frontend/README.md)
+### Key Configuration Files
+
+- **Backend:**
+  - `backend/prisma/schema.prisma` - Database schema
+  - `backend/src/config/` - Application configuration
+  - `backend/.env` - Environment variables
+
+- **Frontend:**
+  - `frontend/vite.config.js` - Build configuration
+  - `frontend/tailwind.config.js` - Styling configuration
+  - `frontend/.env` - Environment variables
+
+## Database
+
+### Schema
+
+The application uses Prisma ORM with the following main entities:
+
+- Users (authentication & profiles)
+- Stations (EV battery swap stations)
+- Batteries (battery inventory)
+- Transactions (payment & swap records)
+- Chat Logs (AI conversation history)
+
+### Migrations
+
+```bash
+# Create a new migration
+npx prisma migrate dev --name migration_name
+
+# Apply pending migrations
+npx prisma migrate deploy
+
+# Reset database (development only)
+npx prisma migrate reset
+```
+
+## API Documentation
+
+Backend API documentation is available at:
+
+```
+http://localhost:3000/api/docs
+```
+
+## Logging
+
+AI chat logs and usage statistics are organized in:
+
+```
+ai-chat-log/
+├── user-[id]/
+│   ├── conversations.json
+│   └── analytics.json
+```
+
+## Payment Integration (VNPAY)
+
+The application integrates with VNPAY for payment processing.
+
+**Configuration required:**
+
+- `VNPAY_MERCHANT_ID` - Your merchant ID
+- `VNPAY_HASH_SECRET` - Your hash secret
+- `VNPAY_RETURN_URL` - Return URL for payments
+
+See [backend/VNPAY_CREDENTIALS_FIX.md](backend/VNPAY_CREDENTIALS_FIX.md) for detailed setup.
+
+## Docker Commands
+
+Using Docker Compose makes deployment simple:
+
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f [service_name]
+
+# Rebuild images
+docker-compose build
+
+# Execute commands in container
+docker-compose exec app npm run migrate
+docker-compose exec db psql -U postgres -d ai_station
+```
+
+### Using Makefile
+
+```bash
+make build       # Build Docker images
+make up          # Start containers
+make down        # Stop containers
+make logs        # View application logs
+make shell       # Open app container shell
+make db-shell    # Open database shell
+make restart     # Restart all containers
+make clean       # Remove containers and volumes (⚠️ deletes data)
+make ps          # Show running containers
+```
+
+## Deployment
+
+### Docker Production Build
+
+```bash
+docker-compose -f docker-compose.yml up -d --build
+```
+
+### Environment Configuration
+
+Update `.env.docker` with production values before deploying.
+
+## Contributing
+
+Please follow these guidelines:
+
+1. **Code Quality:**
+
+   ```bash
+   npm run lint      # Check code style
+   npm run format    # Format code
+   npm run test      # Run tests
+   ```
+
+2. **Commit Messages:**
+   - Use clear, descriptive commit messages
+   - Reference issue numbers when applicable
+
+3. **Pull Requests:**
+   - Provide detailed description of changes
+   - Include screenshots for UI changes
+   - Ensure all tests pass
+
+## Project Documentation
+
+- [Docker Setup Guide](DOCKER_SETUP.md)
+- [Backend Documentation](backend/README.md)
+- [Frontend Documentation](frontend/README.md)
+- [Payment Setup Guide](backend/VNPAY_CREDENTIALS_FIX.md)
+
+## Troubleshooting
+
+### Docker Issues
+
+```bash
+# Check service status
+docker-compose ps
+
+# View detailed logs
+docker-compose logs -f [service_name]
+
+# Restart services
+docker-compose restart
+
+# Reset everything
+docker-compose down -v && docker-compose up -d --build
+```
+
+### Database Connection Failed
+
+```bash
+# Check database is running
+docker-compose logs db
+
+# Test connection
+docker-compose exec db pg_isready
+```
+
+### Port Already in Use
+
+Change ports in `docker-compose.yml`:
+
+- Frontend: Change `5173:5173` to `PORT:5173`
+- Backend: Change `3000:3000` to `PORT:3000`
+- Database: Change `5432:5432` to `PORT:5432`
+
+## Performance Tips
+
+- Use `docker-compose -d` to run in background
+- Enable Docker BuildKit: `export DOCKER_BUILDKIT=1`
+- Clean up unused Docker resources: `docker system prune`
+
+## Security
+
+⚠️ **Important Security Notes:**
+
+1. **Never commit `.env` files** with sensitive data
+2. **Use strong database passwords** in production
+3. **Enable HTTPS** in production
+4. **Validate all user inputs** on both frontend and backend
+5. **Keep dependencies updated**: `npm audit` and `npm update`
+
+## License
+
+[Add your license information here]
+
+## Support & Contact
+
+For issues, questions, or suggestions:
+
+- Open an issue on the repository
+- Contact the development team
+- Check existing documentation
+
+## Team
+
+- **Lead Developer:** [Your Name]
+- **Contributors:** [Team Members]
+
+---
+
+**Last Updated:** November 19, 2025
+
 - Payment credentials guide: [backend/VNPAY_CREDENTIALS_FIX.md](backend/VNPAY_CREDENTIALS_FIX.md)
 
 ## Logging

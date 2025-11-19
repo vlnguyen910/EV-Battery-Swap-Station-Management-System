@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ai_station_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-ai_station}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/seed.sql:/docker-entrypoint-initdb.d/01-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai_station_network
+
+  app:
+    build: .
+    container_name: ai_station_app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-ai_station}
+      NODE_ENV: production
+      SEED_DATABASE: ${SEED_DATABASE:-false}
+      # Add other environment variables as needed
+      VNPAY_MERCHANT_ID: ${VNPAY_MERCHANT_ID}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET}
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    networks:
+      - ai_station_network
+    volumes:
+      - ./ai-chat-log:/app/ai-chat-log
+
+volumes:
+  postgres_data:
+
+networks:
+  ai_station_network:
+    driver: bridge
