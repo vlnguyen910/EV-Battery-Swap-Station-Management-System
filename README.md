@@ -383,7 +383,7 @@ Change ports in `docker-compose.yml`:
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the LICENSE.md file for details.
 
 ## Support & Contact
 
