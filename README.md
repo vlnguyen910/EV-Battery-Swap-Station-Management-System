@@ -2,6 +2,16 @@
 
 A full-stack application with a NestJS backend and a modern frontend, featuring AI chat capabilities and payment processing.
 
+## Team
+
+- **Lead Developer:** Ngo Phan Gia Bao
+- **Backend Developer:** Vo Lam Nguyen
+- **Frontend Developer:** Le Nhut Anh
+- **Frontend Developer:** Lam Huynh Hue Man
+
+---
+
+
 ## Project Structure
 
 ```
@@ -217,7 +227,7 @@ npx prisma migrate reset
 Backend API documentation is available at:
 
 ```
-http://localhost:3000/api/docs
+http://localhost:8080/api/docs
 ```
 
 ## Logging
@@ -382,17 +392,6 @@ For issues, questions, or suggestions:
 - Open an issue on the repository
 - Contact the development team
 - Check existing documentation
-
-## Team
-
-- **Lead Developer:** [Your Name]
-- **Contributors:** [Team Members]
-
----
-
-**Last Updated:** November 19, 2025
-
-- Payment credentials guide: [backend/VNPAY_CREDENTIALS_FIX.md](backend/VNPAY_CREDENTIALS_FIX.md)
 
 ## Logging
 
