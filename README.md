@@ -1,4 +1,4 @@
-# AI Station Project
+# EV Battery Swap Station Management System
 
 A full-stack application with a NestJS backend and a modern frontend, featuring AI chat capabilities and payment processing.
 
