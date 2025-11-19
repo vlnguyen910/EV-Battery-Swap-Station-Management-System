@@ -13,7 +13,7 @@ A full-stack application with a NestJS backend and a modern frontend, featuring 
 └── Makefile            # Docker convenience commands
 ```
 
-## Quick Start with Docker 🐳
+## Quick Start with Docker 
 
 The easiest way to run the entire application is with Docker:
 
@@ -28,7 +28,7 @@ docker-compose logs -f
 **Access the application:**
 
 - Frontend: <http://localhost:5173>
-- Backend API: <http://localhost:3000>
+- Backend API: <http://localhost:8080>
 - Database: localhost:5432
 
 For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
