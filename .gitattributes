@@ -1,0 +1,6 @@
+*.js linguist-vendored
+*.jsx linguist-vendored
+*.js.map linguist-vendored
+
+dist/* linguist-vendored
+build/* linguist-vendored
